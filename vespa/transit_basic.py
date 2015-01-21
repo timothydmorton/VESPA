@@ -98,40 +98,71 @@ def correct_fs(fs):
     return fflat.reshape(fs.shape)
 
 class MAInterpolationFunction(object):
-    def __init__(self,u1=0.394,u2=0.261,pmin=0.007,pmax=2,nps=200,nzs=200,zmax=None):
-    #def __init__(self,pmin=0.007,pmax=2,nps=500,nzs=500):
-        self.u1 = u1
-        self.u2 = u2
-        self.pmin = pmin
-        self.pmax = pmax
-        if zmax is None:
-            zmax = 1+pmax
-        self.zmax = zmax
-        self.nps = nps
+    def __init__(self,filename=None,u1=0.394,u2=0.261,
+                 pmin=0.007,pmax=2,nps=200,nzs=200,zmax=None,
+                 savefile=None):
+        """Interpolation function for Mandel-Agol transit light curve
 
-        ps = np.logspace(np.log10(pmin),np.log10(pmax),nps)
-        if pmax < 0.5:
-            zs = np.concatenate([np.array([0]),ps-1e-10,ps,np.arange(pmax,1-pmax,0.01),
-                              np.arange(1-pmax,zmax,0.005)])
-        elif pmax < 1:
-            zs = np.concatenate([np.array([0]),ps-1e-10,ps,np.arange(1-pmax,zmax,0.005)])
+        TODO: save grid, for easy loading.
+        """
+
+        if filename is None:
+            self.u1 = u1
+            self.u2 = u2
+            self.pmin = pmin
+            self.pmax = pmax
+            if zmax is None:
+                zmax = 1+pmax
+            self.zmax = zmax
+            self.nps = nps
+
+            ps = np.logspace(np.log10(pmin),np.log10(pmax),nps)
+            if pmax < 0.5:
+                zs = np.concatenate([np.array([0]),ps-1e-10,ps,np.arange(pmax,1-pmax,0.01),
+                                  np.arange(1-pmax,zmax,0.005)])
+            elif pmax < 1:
+                zs = np.concatenate([np.array([0]),ps-1e-10,ps,np.arange(1-pmax,zmax,0.005)])
+            else:
+                zs = np.concatenate([np.array([0]),ps-1e-10,ps,np.arange(pmax,zmax,0.005)])
+
+            self.nzs = np.size(zs)
+            #zs = linspace(0,zmax,nzs)
+            #zs = concatenate([zs,ps,ps+1e-10])
+
+            mu0s = np.zeros((np.size(ps),np.size(zs)))
+            lambdads = np.zeros((np.size(ps),np.size(zs)))
+            etads = np.zeros((np.size(ps),np.size(zs)))
+            fs = np.zeros((np.size(ps),np.size(zs)))
+            for i,p0 in enumerate(ps):
+                f,res = occultquad(zs,u1,u2,p0,return_components=True)
+                mu0s[i,:] = res[0]
+                lambdads[i,:] = res[1]
+                etads[i,:] = res[2]
+                fs[i,:] = f
+
+            if savefile is not None:
+                np.savez(savefile, ps=ps, zs=zs,
+                         mu0s=mu0s, lambdads=lambdads,
+                         etads=etads, fs=fs,
+                         u1=u1, u2=u2)
         else:
-            zs = np.concatenate([np.array([0]),ps-1e-10,ps,np.arange(pmax,zmax,0.005)])
+            #ok, try different strategy to rather save triangulations...
+            data = np.load(filename)
+            ps = data['ps']
+            zs = data['zs']
+            mu0s = data['mu0s']
+            lambdads = data['lambdads']
+            etads = data['etads']
+            fs = data['fs']
+            u1 = data['u1']
+            u2 = data['u2']
 
-        self.nzs = np.size(zs)
-        #zs = linspace(0,zmax,nzs)
-        #zs = concatenate([zs,ps,ps+1e-10])
+            self.pmin = ps.min()
+            self.pmax = ps.max()
+            self.zmax = zs.max()
+            self.nps = np.size(ps)
 
-        mu0s = np.zeros((np.size(ps),np.size(zs)))
-        lambdads = np.zeros((np.size(ps),np.size(zs)))
-        etads = np.zeros((np.size(ps),np.size(zs)))
-        fs = np.zeros((np.size(ps),np.size(zs)))
-        for i,p0 in enumerate(ps):
-            f,res = occultquad(zs,u1,u2,p0,return_components=True)
-            mu0s[i,:] = res[0]
-            lambdads[i,:] = res[1]
-            etads[i,:] = res[2]
-            fs[i,:] = f
+
         P,Z = np.meshgrid(ps,zs)
         points = np.array([P.ravel(),Z.ravel()]).T
         self.mu0 = interpnd(points,mu0s.T.ravel())
