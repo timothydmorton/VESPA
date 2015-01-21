@@ -31,6 +31,7 @@ RSUN = const.R_sun.cgs.value
 MSUN = const.M_sun.cgs.value
 REARTH = const.R_earth.cgs.value
 MEARTH = const.M_earth.cgs.value
+DAY = 86400
 
 DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
@@ -263,7 +264,7 @@ def minimum_inclination(P,M1,M2,R1,R2):
             raise AllWithinRocheError('All simulated systems within Roche lobe')
         else:
             raise EmptyPopulationError('no valid systems! (see above)')
-    mininc = np.arccos(rads[ok].max())*180/pi
+    mininc = np.arccos(rads[ok].max())*180/np.pi
     return mininc
 
 def a_over_Rs(P,R2,M2,M1=1,R1=1,planet=True):
@@ -276,9 +277,9 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
     """Returns ts and zs for an eclipse (npts points right around the eclipse)
     """
     if sec:
-        eccfactor = np.sqrt(1-ecc**2)/(1-ecc*np.sin(w*pi/180))
+        eccfactor = np.sqrt(1-ecc**2)/(1-ecc*np.sin(w*np.pi/180))
     else:
-        eccfactor = np.sqrt(1-ecc**2)/(1+ecc*np.sin(w*pi/180))
+        eccfactor = np.sqrt(1-ecc**2)/(1+ecc*np.sin(w*np.pi/180))
     if eccfactor < 1:
         width /= eccfactor
         #if width > 5:
@@ -300,7 +301,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         dMs = subMs[1:] - subMs[:-1]
 
         if np.any(subMs < 0) and dMs.max()>1: #if there's a discontinuous wrap-around...
-            subMs[(subMs < 0)] += 2*pi
+            subMs[(subMs < 0)] += 2*np.pi
 
                       
         logging.debug(subMs)
@@ -319,15 +320,15 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         zs,in_eclipse = tru.find_eclipse(Es,b,aR,ecc,w,width,sec)
 
         Mcenter = Ms[zs.argmin()]
-        phs = (Ms - Mcenter) / (2*pi)
+        phs = (Ms - Mcenter) / (2*np.pi)
         ts = phs*P
         return ts,zs
     
     if not approx:
         if sec:
-            inc = np.arccos(b/aR*(1-ecc*np.sin(w*pi/180))/(1-ecc**2))
+            inc = np.arccos(b/aR*(1-ecc*np.sin(w*np.pi/180))/(1-ecc**2))
         else:
-            inc = np.arccos(b/aR*(1+ecc*np.sin(w*pi/180))/(1-ecc**2))
+            inc = np.arccos(b/aR*(1+ecc*np.sin(w*np.pi/180))/(1-ecc**2))
 
         Ms = np.linspace(-np.pi,np.pi,2e3) #mean anomalies around whole orbit
         if ecc != 0:
