@@ -20,29 +20,29 @@ import transit_utils as tru
 try:
     import transit_utils as tru
 except ImportError:
-    print('transit_basic: did not import transit_utils.')
+    logging.warning('transit_basic: did not import transit_utils.')
 
 import emcee
 
 DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
-LDDATA = recfromtxt('{}/keplerld.dat'.format(DATAFOLDER),names=True)
+LDDATA = np.recfromtxt('{}/keplerld.dat'.format(DATAFOLDER),names=True)
 LDOK = ((LDDATA.teff < 10000) & (LDDATA.logg > 2.0) & (LDDATA.feh > -2))
-LDPOINTS = array([LDDATA.teff[LDOK],LDDATA.logg[LDOK]]).T
+LDPOINTS = np.array([LDDATA.teff[LDOK],LDDATA.logg[LDOK]]).T
 U1FN = interpnd(LDPOINTS,LDDATA.u1[LDOK])
 U2FN = interpnd(LDPOINTS,LDDATA.u2[LDOK])
 
 def ldcoeffs(teff,logg=4.5,feh=0):
-    teffs = atleast_1d(teff)
-    loggs = atleast_1d(logg)
+    teffs = np.atleast_1d(teff)
+    loggs = np.atleast_1d(logg)
 
     Tmin,Tmax = (LDPOINTS[:,0].min(),LDPOINTS[:,0].max())
     gmin,gmax = (LDPOINTS[:,1].min(),LDPOINTS[:,1].max())
 
-    teffs[where(teffs < Tmin)] = Tmin + 1
-    teffs[where(teffs > Tmax)] = Tmax - 1
-    loggs[where(loggs < gmin)] = gmin + 0.01
-    loggs[where(loggs > gmax)] = gmax - 0.01
+    teffs[(teffs < Tmin)] = Tmin + 1
+    teffs[(teffs > Tmax)] = Tmax - 1
+    loggs[(loggs < gmin)] = gmin + 0.01
+    loggs[(loggs > gmax)] = gmax - 0.01
 
     u1,u2 = (U1FN(teffs,loggs),U2FN(teffs,loggs))
     return u1,u2
@@ -176,7 +176,7 @@ class MAInterpolationFunction(object):
             U1 = u1
             U2 = u2
             
-        if size(u1)>1 or any(u1 != self.u1) or any(u2 != self.u2):
+        if np.size(u1)>1 or np.any(u1 != self.u1) or np.any(u2 != self.u2):
             mu0 = self.mu0(P,zs)
             lambdad = self.lambdad(P,zs)
             etad = self.etad(P,zs)
@@ -475,20 +475,20 @@ def occultquad(z,u1,u2,p0,return_components=False):
             notusedyet = notusedyet[notused2]
                 
     # Case 2, 7, 8 - ingress/egress (uniform disk only)
-    inegressuni = np.where((z[notusedyet] >= absolute(1.-p)) & (z[notusedyet] < 1.+p))
+    inegressuni = np.where((z[notusedyet] >= np.absolute(1.-p)) & (z[notusedyet] < 1.+p))
     if np.size(inegressuni) != 0:
         ndxuse = notusedyet[inegressuni]
         tmp = (1.-p**2.+z[ndxuse]**2.)/2./z[ndxuse]
         tmp = np.where(tmp > 1.,1.,tmp)
         tmp = np.where(tmp < -1.,-1.,tmp)
-        kap1 = arccos(tmp)
+        kap1 = np.arccos(tmp)
         tmp = (p**2.+z[ndxuse]**2-1.)/2./p/z[ndxuse]
         tmp = np.where(tmp > 1.,1.,tmp)
         tmp = np.where(tmp < -1.,-1.,tmp)
         kap0 = np.arccos(tmp)
         tmp = 4.*z[ndxuse]**2-(1.+z[ndxuse]**2-p**2)**2
         tmp = np.where(tmp < 0,0,tmp)
-        lambdae[ndxuse] = (p**2*kap0+kap1 - 0.5*sqrt(tmp))/np.pi
+        lambdae[ndxuse] = (p**2*kap0+kap1 - 0.5*np.sqrt(tmp))/np.pi
         # eta_1
         etad[ndxuse] = 1./2./np.pi*(kap1+p**2*(p**2+2.*z[ndxuse]**2)*kap0- \
            (1.+5.*p**2+z[ndxuse]**2)/4.*np.sqrt((1.-x1[ndxuse])*(x2[ndxuse]-1.)))
@@ -539,10 +539,10 @@ def occultquad(z,u1,u2,p0,return_components=False):
         #(z[notusedyet] < 1.+p))  | \
         #( (p > 0.5) & (z[notusedyet] > abs(1.-p)) & \
         #(z[notusedyet] < p)) )#, complement=notused4)
-    if size(inegress) != 0:
+    if np.size(inegress) != 0:
 
         ndxuse = notusedyet[inegress]
-        q=sqrt((1.-x1[ndxuse])/(x2[ndxuse]-x1[ndxuse]))
+        q=np.sqrt((1.-x1[ndxuse])/(x2[ndxuse]-x1[ndxuse]))
         Ek,Kk = ellke(q)
         n=1./x1[ndxuse]-1.
 
@@ -614,7 +614,7 @@ def occultquad(z,u1,u2,p0,return_components=False):
         ## (please report it)
         #notused5 = where(z[notusedyet] > (1.-p))
         if notused5[0] != 0:
-            print "ERROR: the following values of z didn't fit into a case:"
+            logging.error("The following values of z didn't fit into a case:")
 
         return finish(p,z,u1,u2,lambdae,lambdad,etad)
 
@@ -657,7 +657,7 @@ def ellke(k):
 def ellpic_bulirsch(n,k):
     kc=np.sqrt(1.-k**2); p=n+1.
     if(p.min() < 0.):
-        print 'Negative p'
+        logging.warning('Negative p')
     m0=1.; c=1.; p=np.sqrt(p); d=1./p; e=kc
     while 1:
         f = c; c = d/p+c; g = e/p; d = 2.*(f*g+d)
