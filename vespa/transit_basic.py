@@ -24,6 +24,13 @@ except ImportError:
 
 import emcee
 
+import astropy.constants as const
+AU = const.au.cgs.value
+RSUN = const.R_sun.cgs.value
+MSUN = const.M_sun.cgs.value
+REARTH = const.R_earth.cgs.value
+MEARTH = const.M_earth.cgs.value
+
 DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
 LDDATA = np.recfromtxt('{}/keplerld.dat'.format(DATAFOLDER),names=True)
