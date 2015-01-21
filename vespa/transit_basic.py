@@ -4,6 +4,8 @@ import os
 import numpy as np
 import numpy.random as rand
 
+import cPickle as pickle
+
 import logging
 
 import pkg_resources
@@ -140,45 +142,48 @@ class MAInterpolationFunction(object):
                 etads[i,:] = res[2]
                 fs[i,:] = f
 
-            if savefile is not None:
-                np.savez(savefile, ps=ps, zs=zs,
-                         mu0s=mu0s, lambdads=lambdads,
-                         etads=etads, fs=fs,
-                         u1=u1, u2=u2)
+            #if savefile is not None:
+            #    np.savez(savefile, ps=ps, zs=zs,
+            #             mu0s=mu0s, lambdads=lambdads,
+            #             etads=etads, fs=fs,
+            #             u1=u1, u2=u2)
+
+            
+            P,Z = np.meshgrid(ps,zs)
+            points = np.array([P.ravel(),Z.ravel()]).T
+            self.mu0 = interpnd(points,mu0s.T.ravel())
+
+            ##need to make two interpolation functions for lambdad 
+            ## b/c it's strongly discontinuous at z=p
+            mask = (Z<P)
+            pointmask = points[:,1] < points[:,0]
+
+            w1 = np.where(mask)
+            w2 = np.where(~mask)
+            wp1 = np.where(pointmask)
+            wp2 = np.where(~pointmask)
+
+            self.lambdad1 = interpnd(points[wp1],lambdads.T[w1].ravel())
+            self.lambdad2 = interpnd(points[wp2],lambdads.T[w2].ravel())
+
+            #self.lambdad = interpnd(points,lambdads.T.ravel())
+            self.etad = interpnd(points,etads.T.ravel())        
+            self.fn = interpnd(points,fs.T.ravel())
+
         else:
-            #ok, try different strategy to rather save triangulations...
-            data = np.load(filename)
-            ps = data['ps']
-            zs = data['zs']
-            mu0s = data['mu0s']
-            lambdads = data['lambdads']
-            etads = data['etads']
-            fs = data['fs']
-            u1 = data['u1']
-            u2 = data['u2']
-
-            self.pmin = ps.min()
-            self.pmax = ps.max()
-            self.zmax = zs.max()
-            self.nps = np.size(ps)
-
-
-        P,Z = np.meshgrid(ps,zs)
-        points = np.array([P.ravel(),Z.ravel()]).T
-        self.mu0 = interpnd(points,mu0s.T.ravel())
-        
-        ##need to make two interpolation functions for lambdad 
-        ## b/c it's strongly discontinuous at z=p
-        mask = (Z<P)
-        pointmask = points[:,1] < points[:,0]
-
-        w1 = np.where(mask)
-        w2 = np.where(~mask)
-        wp1 = np.where(pointmask)
-        wp2 = np.where(~pointmask)
-
-        self.lambdad1 = interpnd(points[wp1],lambdads.T[w1].ravel())
-        self.lambdad2 = interpnd(points[wp2],lambdads.T[w2].ravel())
+            fin = open(filename,'rb')
+            d = pickle.load(fin)
+            fin.close()
+            #load all the saved interpolation functions, etc.
+            for k,v in d.iteritems():
+                setattr(self,k,v) 
+                
+            self.pmin = self.ps.min()
+            self.pmax = self.ps.max()
+            self.zmax = self.zs.max()
+            self.nps = len(self.ps)
+            
+            
         def lambdad(p,z):
             #where p and z are exactly equal, this will return nan....
             p = np.atleast_1d(p)
@@ -191,10 +196,22 @@ class MAInterpolationFunction(object):
             return l1*~bad1 + l2*bad1
         self.lambdad = lambdad
         
-        #self.lambdad = interpnd(points,lambdads.T.ravel())
-        self.etad = interpnd(points,etads.T.ravel())        
-        self.fn = interpnd(points,fs.T.ravel())
 
+        if savefile is not None:
+            fout = open(savefile,'wb')
+            d = {'fn':self.fn,
+                 'etad':self.etad,
+                 'lambdad1':self.lambdad1,
+                 'lambdad2':self.lambdad2,
+                 'mu0':self.mu0,
+                 'ps':ps,
+                 'zs':zs,
+                 'u1':u1,
+                 'u2':u2}
+            pickle.dump(d,fout)
+            fout.close()
+            
+        
     def __call__(self,ps,zs,u1=.394,u2=0.261,force_broadcast=False,fix=False):
         """  returns array of fluxes; if ps and zs aren't the same shape, then returns array of 
         shape (nps, nzs)
