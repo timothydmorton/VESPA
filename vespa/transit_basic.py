@@ -404,6 +404,56 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         zs = aR*(1-ecc**2)/(1+ecc*np.cos(fs))*np.sqrt(1-(np.sin(w*np.pi/180 + fs))**2 * (np.sin(inc))**2)
         return ts,zs
 
+
+def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
+    """retuns p,b,aR from P,M1,M2,R1,R2,ecc,inc,w"""
+    a = semimajor(P,M1+M2)
+    if sec:
+        b = a*AU*np.cos(inc*np.pi/180)/(R1*RSUN) * (1-ecc**2)/(1 - ecc*np.sin(w*np.pi/180))
+        aR = a*AU/(R2*RSUN)
+        p0 = R1/R2
+    else:
+        b = a*AU*np.cos(inc*np.pi/180)/(R1*RSUN) * (1-ecc**2)/(1 + ecc*np.sin(w*np.pi/180))
+        aR = a*AU/(R1*RSUN)
+        p0 = R2/R1
+    return p0,b,aR
+
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,texp=0.0204,frac=1,sec=False,dt=2,approx=False,new=False):
+    """ frac is fraction of total light in eclipsed object"""
+    if sec:
+        ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
+                           sec=sec,dt=dt,approx=approx,new=new)
+        if zs.min() > (1 + 1/p0):
+            raise NoEclipseError
+    else:
+        ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
+                           sec=sec,dt=dt,approx=approx,new=new)
+        if zs.min() > (1+p0):
+            raise NoEclipseError
+        
+    if MAfn is None:
+        if sec:
+            fs = occultquad(zs,u1,u2,1/p0)
+        else:
+            fs = occultquad(zs,u1,u2,p0)            
+    else:
+        if sec:
+            fs = MAfn(1/p0,zs,u1,u2)
+        else:
+            fs = MAfn(p0,zs,u1,u2)
+        fs[np.isnan(fs)] = 1.
+
+    if conv:
+        dt = ts[1]-ts[0]
+        npts = np.round(texp/dt)
+        if npts % 2 == 0:
+            npts += 1
+        boxcar = np.ones(npts)/npts
+        fs = convolve1d(fs,boxcar)
+    fs = 1 - frac*(1-fs)
+    return ts,fs #ts are in the same units P is given in.
+
+
 #### Mandel-Agol code:
 #   Python translation of IDL code.
 #   This routine computes the lightcurve for occultation of a
