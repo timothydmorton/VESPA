@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 import os
 import numpy as np
+import numpy.random as rand
 
 import logging
 
@@ -674,6 +675,56 @@ def ellpic_bulirsch(n,k):
         else:
             return 0.5*np.pi*(c*m0+d)/(m0*(m0+p))
 
+
+def traptransit(ts,p):
+    return tru.traptransit(ts,p)
+
+def fit_traptransit(ts,fs,p0):
+    pfit,success = leastsq(tru.traptransit_resid,p0,args=(ts,fs))
+    if success not in [1,2,3,4]:
+        raise NoFitError
+    logging.debug('success = {}'.format(success))
+    return pfit
+
+class TraptransitModel(object):
+    def __init__(self,ts,fs,sigs=1e-4,maxslope=30):
+        self.n = np.size(ts)
+        if np.size(sigs)==1:
+            sigs = np.ones(self.n)*sigs
+        self.ts = ts
+        self.fs = fs
+        self.sigs = sigs
+        self.maxslope = maxslope
+        
+    def __call__(self,pars):
+        pars = np.array(pars)
+        return traptransit_lhood(pars,self.ts,self.fs,self.sigs,maxslope=self.maxslope)
+
+def traptransit_lhood(pars,ts,fs,sigs,maxslope=30):
+    if pars[0] < 0 or pars[1] < 0 or pars[2] < 2 or pars[2] > maxslope:
+        return -np.inf
+    resid = tru.traptransit_resid(pars,ts,fs)
+    return (-0.5*resid**2/sigs**2).sum()
+
+def traptransit_MCMC(ts,fs,dfs=1e-5,nwalkers=200,nburn=300,niter=1000,
+                     threads=1,p0=[0.1,0.1,3,0],return_sampler=False,
+                     verbose=False,maxslope=30):
+    model = TraptransitModel(ts,fs,dfs,maxslope=maxslope)
+    sampler = emcee.EnsembleSampler(nwalkers,4,model,threads=threads)
+    T0 = p0[0]*(1+rand.normal(size=nwalkers)*0.1)
+    d0 = p0[1]*(1+rand.normal(size=nwalkers)*0.1)
+    slope0 = p0[2]*(1+rand.normal(size=nwalkers)*0.1)
+    ep0 = p0[3]+rand.normal(size=nwalkers)*0.0001
+
+    p0 = np.array([T0,d0,slope0,ep0]).T
+
+    pos, prob, state = sampler.run_mcmc(p0, nburn)
+    sampler.reset()
+    sampler.run_mcmc(pos, niter, rstate0=state)
+    if return_sampler:
+        return sampler
+    else:
+        return sampler.flatchain[:,0],sampler.flatchain[:,1],sampler.flatchain[:,2],sampler.flatchain[:,3]
 
 ##### Custom Exceptions
 
