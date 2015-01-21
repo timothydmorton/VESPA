@@ -453,6 +453,23 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,
     fs = 1 - frac*(1-fs)
     return ts,fs #ts are in the same units P is given in.
 
+def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,leastsq=True,conv=False,texp=0.0204,frac=1,sec=False,new=True,pars0=None):
+    
+    ts,fs = eclipse(p0,b,aR,P,ecc,w,xmax,npts,MAfn,u1,u2,
+                    conv=conv,texp=texp,frac=frac,sec=sec,new=new)
+    
+    logging.debug(p0,',',b,',',aR,',',P,',',ecc,',',w,',',xmax,',',npts,',',None,',',u1,',',u2,',',leastsq,',',conv,',',texp,',',frac,',',sec,',',new)
+    logging.debug(ts,fs)
+
+    if pars0 is None:
+        depth = 1 - fs.min()
+        duration = (fs < (1-0.01*depth)).sum()/float(len(fs)) * (ts[-1] - ts[0])
+        tc0 = ts[fs.argmin()]
+        pars0 = np.array([duration,depth,5.,tc0])
+    
+    dur,dep,slope,epoch = fit_traptransit(ts,fs,pars0)
+    return dur,dep,slope
+
 
 #### Mandel-Agol code:
 #   Python translation of IDL code.
