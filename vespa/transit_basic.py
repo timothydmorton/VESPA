@@ -296,19 +296,20 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         if in_eclipse.sum() < 2:
             raise NoEclipseError
 
-        subMs = Ms[in_eclipse]
+        wecl = np.where(in_eclipse)
+        subMs = Ms[wecl]
 
         dMs = subMs[1:] - subMs[:-1]
 
         if np.any(subMs < 0) and dMs.max()>1: #if there's a discontinuous wrap-around...
-            subMs[(subMs < 0)] += 2*np.pi
+            subMs[np.where(subMs < 0)] += 2*np.pi
 
-                      
-        logging.debug(subMs)
+
+        logging.debug('subMs: {}'.format(subMs))
+
 
         minM,maxM = (subMs.min(),subMs.max())
-                      
-        logging.debug(minM,maxM)
+        logging.debug('minM: {}, maxM: {}'.format(minM,maxM))
 
         dM = 2*np.pi*dt/(P*24*60)   #the spacing in mean anomaly that corresponds to dt (minutes)
         Ms = np.arange(minM,maxM+dM,dM)
@@ -345,15 +346,13 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         rsky = np.sqrt(X**2 + Y**2)
 
         if not sec:
-            inds = np.where((np.sin(nus + w*np.pi/180) > 0) & 
-                            (rsky < width))  #where "front half" of orbit and w/in width
+            inds = np.where((np.sin(nus + w*np.pi/180) > 0) & (rsky < width))  #where "front half" of orbit and w/in width
         if sec:
-            inds = np.where((np.sin(nus + w*np.pi/180) < 0) & 
-                            (rsky < width))  #where "front half" of orbit and w/in width
+            inds = np.where((np.sin(nus + w*np.pi/180) < 0) & (rsky < width))  #where "front half" of orbit and w/in width
         subMs = Ms[inds].copy()
 
         if np.any((subMs[1:]-subMs[:-1]) > np.pi):
-            subMs[(subMs < 0)] += 2*np.pi
+            subMs[np.where(subMs < 0)] += 2*np.pi
 
         if np.size(subMs)<2:
             logging.error(subMs)
@@ -373,10 +372,13 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         Y = -r*np.sin(w*np.pi/180 + nus)*np.cos(inc)
         zs = np.sqrt(X**2 + Y**2)  #rsky
     
+        #center = absolute(X).argmin()
+        #c = polyfit(Ms[center-1:center+2],X[center-1:center+2],1)
+        #Mcenter = -c[1]/c[0]
         if not sec:
-            Mcenter = Ms[np.absolute(X[(np.sin(nus + w*np.pi/180) > 0)]).argmin()]
+            Mcenter = Ms[np.absolute(X[np.where(np.sin(nus + w*np.pi/180) > 0)]).argmin()]
         else:
-            Mcenter = Ms[np.absolute(X[(np.sin(nus + w*np.pi/180) < 0)]).argmin()]
+            Mcenter = Ms[np.absolute(X[np.where(np.sin(nus + w*np.pi/180) < 0)]).argmin()]
         phs = (Ms - Mcenter) / (2*np.pi)
         wmin = np.absolute(phs).argmin()
         ts = phs*P
@@ -384,25 +386,25 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         return ts,zs
     else:
         if sec:
-            f0 = -np.pi/2 - (w*np.pi/180)
-            inc = np.arccos(b/aR*(1-ecc*np.sin(w*np.pi/180))/(1-ecc**2))
+            f0 = -pi/2 - (w*pi/180)
+            inc = arccos(b/aR*(1-ecc*sin(w*pi/180))/(1-ecc**2))
         else:
-            f0 = np.pi/2 - (w*np.pi/180)
-            inc = np.arccos(b/aR*(1+ecc*np.sin(w*np.pi/180))/(1-ecc**2))
-        fmin = -np.arcsin(1./aR*np.sqrt(width**2 - b**2)/np.sin(inc))
-        fmax = np.arcsin(1./aR*np.sqrt(width**2 - b**2)/np.sin(inc))
-        if np.isnan(fmin) or np.isnan(fmax):
+            f0 = pi/2 - (w*pi/180)
+            inc = arccos(b/aR*(1+ecc*sin(w*pi/180))/(1-ecc**2))
+        fmin = -arcsin(1./aR*sqrt(width**2 - b**2)/sin(inc))
+        fmax = arcsin(1./aR*sqrt(width**2 - b**2)/sin(inc))
+        if isnan(fmin) or isnan(fmax):
             raise NoEclipseError('no eclipse:  P=%.2f, b=%.3f, aR=%.2f, ecc=%0.2f, w=%.1f' % (P,b,aR,ecc,w))
-        fs = np.linspace(fmin,fmax,npts)
+        fs = linspace(fmin,fmax,npts)
         if sec:
-            ts = fs*P/2./np.pi * np.sqrt(1-ecc**2)/(1 - ecc*np.sin(w)) #approximation of constant angular velocity
+            ts = fs*P/2./pi * sqrt(1-ecc**2)/(1 - ecc*sin(w)) #approximation of constant angular velocity
         else:
-            ts = fs*P/2./np.pi * np.sqrt(1-ecc**2)/(1 + ecc*np.sin(w)) #approximation of constant ang. vel.
+            ts = fs*P/2./pi * sqrt(1-ecc**2)/(1 + ecc*sin(w)) #approximation of constant ang. vel.
         fs += f0
-        rs = aR*(1-ecc**2)/(1+ecc*np.cos(fs))
-        xs = -rs*np.cos(w*np.pi/180 + fs)
-        ys = -rs*np.sin(w*np.pi/180 + fs)*np.cos(inc)
-        zs = aR*(1-ecc**2)/(1+ecc*np.cos(fs))*np.sqrt(1-(np.sin(w*np.pi/180 + fs))**2 * (np.sin(inc))**2)
+        rs = aR*(1-ecc**2)/(1+ecc*cos(fs))
+        xs = -rs*cos(w*pi/180 + fs)
+        ys = -rs*sin(w*pi/180 + fs)*cos(inc)
+        zs = aR*(1-ecc**2)/(1+ecc*cos(fs))*sqrt(1-(sin(w*pi/180 + fs))**2 * (sin(inc))**2)
         return ts,zs
 
 
@@ -421,15 +423,20 @@ def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
 
 def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,texp=0.0204,frac=1,sec=False,dt=2,approx=False,new=False):
     """ frac is fraction of total light in eclipsed object"""
+
     if sec:
         ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
                            sec=sec,dt=dt,approx=approx,new=new)
         if zs.min() > (1 + 1/p0):
+            logging.debug('ts: {}'.format(ts))
+            logging.debug('zs: {}'.format(zs))
             raise NoEclipseError
     else:
         ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
                            sec=sec,dt=dt,approx=approx,new=new)
         if zs.min() > (1+p0):
+            logging.debug('ts: {}'.format(ts))
+            logging.debug('zs: {}'.format(zs))
             raise NoEclipseError
         
     if MAfn is None:
@@ -459,8 +466,8 @@ def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.2
     ts,fs = eclipse(p0,b,aR,P,ecc,w,xmax,npts,MAfn,u1,u2,
                     conv=conv,texp=texp,frac=frac,sec=sec,new=new)
     
-    logging.debug(p0,',',b,',',aR,',',P,',',ecc,',',w,',',xmax,',',npts,',',None,',',u1,',',u2,',',leastsq,',',conv,',',texp,',',frac,',',sec,',',new)
-    logging.debug(ts,fs)
+    logging.debug('{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}'.format(p0,b,aR,P,ecc,w,xmax,npts,u1,u2,leastsq,conv,texp,frac,sec,new))
+    logging.debug('ts: {} fs: {}'.format(ts,fs))
 
     if pars0 is None:
         depth = 1 - fs.min()
