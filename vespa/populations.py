@@ -23,5 +23,7 @@ class EclipsePopulation(StarPopulation):
                  **kwargs):
         """Base class for populations of eclipsing things.
 
+
+        
         """
-                 
+        
