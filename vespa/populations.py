@@ -3,9 +3,11 @@ from __future__ import print_function, division
 import logging
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
-from .transit_basic import impact_parameter
+from .transit_basic import impact_parameter, occultquad
+import .transit_basic as tr
 
 from starutils.populations import StarPopulation
 from starutils.utils import draw_eccs, semimajor, withinroche
@@ -74,7 +76,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                        Ps=None, period=None, logperkde=RAGHAVAN_LOGPERKDE,
                        incs=None, eccs=None, band='i',
                        mininc=None, maxecc=0.97, verbose=False,
-                       return_probability=False):
+                       return_probability=False, return_indices=False):
     """Returns random eclipse parameters for provided inputs
 
     """
@@ -228,5 +230,49 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     ftra = MAFN(k,b_tra,u11,u21)
     focc = MAFN(1/k,b_occ/k,u12,u22)
         
+    #fix those with k or 1/k out of range of MAFN....or do it in MAfn eventually?
+    wtrabad = where((k < MAFN.pmin) | (k > MAFN.pmax))
+    woccbad = where((1/k < MAFN.pmin) | (1/k > MAFN.pmax))
+    for ind in wtrabad[0]:
+        ftra[ind] = occultquad(b_tra[ind],u11[ind],u21[ind],k[ind])
+    for ind in woccbad[0]:
+        focc[ind] = occultquad(b_occ[ind]/k[ind],u12[ind],u22[ind],1/k[ind])
     
-    
+    F1 = 10**(-0.4*mag1) + switched*10**(-0.4*mag2)
+    F2 = 10**(-0.4*mag2) + switched*10**(-0.4*mag1)
+
+    dtra = 1-(F2 + F1*ftra)/(F1+F2)
+    docc = 1-(F1 + F2*focc)/(F1+F2)
+
+    totmag = -2.5*np.log10(F1+F2)
+
+    #wswitched = where(switched)
+    dtra[switched],docc[switched] = (docc[switched],dtra[switched])
+    T14_tra[switched],T14_occ[switched] = (T14_occ[switched],T14_tra[switched])
+    T23_tra[switched],T23_occ[switched] = (T23_occ[switched],T23_tra[switched])
+    b_tra[switched],b_occ[switched] = (b_occ[switched],b_tra[switched])
+    #mag1[wswitched],mag2[wswitched] = (mag2[wswitched],mag1[wswitched])
+    F1[switched],F2[switched] = (F2[switched],F1[switched])
+    u11[switched],u12[switched] = (u12[switched],u11[switched])
+    u21[switched],u22[switched] = (u22[switched],u21[switched])
+
+    dtra[(np.isnan(dtra))] = 0
+    docc[(np.isnan(docc))] = 0
+
+    df =  pd.DataFrame({'{}_mag_tot'.format(band) : totmag,
+                        'P':P, 'ecc':ecc, 'inc':inc, 'w':w,
+                        'dpri':dpri, 'dsec':dsec,
+                        'T14_pri',T14_tra, 'T23_pri':T23_tra,
+                        'T14_sec',T14_occ, 'T23_sec':T23_occ,
+                        'b_pri':b_tra, 'b_sec':b_occ,
+                        '{}_mag1'.format(band) : mag1,
+                        '{}_mag2'.format(band) : mag2,
+                        'fluxfrac1':F1/(F1+F2),
+                        'fluxfrac2':F2/(F1+F2),
+                        'switched':switched,
+                        'u11':u11, 'u21':u21, 'u12':u12, 'u22':u22})
+
+    if return_indices:
+        return wany, df, (prob, dprob)
+    else:
+        return df, (prob, dprob)
