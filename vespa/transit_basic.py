@@ -198,6 +198,17 @@ class MAInterpolationFunction(object):
             
         return fs
 
+def impact_parameter(a, R, inc, ecc=0, w=0, return_occ=False):
+    """a in AU, R in Rsun, inc & w in radians
+    """
+    b_tra = a*AU*np.cos(inc)/(R*RSUN) * (1-ecc**2)/(1 + ecc*np.sin(w))
+
+    if return_occ:
+        b_tra = a*AU*np.cos(inc)/(R*RSUN) * (1-ecc**2)/(1 - ecc*np.sin(w))
+        return b_tra, b_occ
+    else:
+        return b_tra
+
 def transit_T14(P,Rp,Rs=1,b=0,Ms=1,ecc=0,w=0):
     """P in days, Rp in Earth radii, Rs in Solar radii, b=impact parameter, Ms Solar masses. Returns T14 in hours. w in deg.
     """
