@@ -421,7 +421,7 @@ def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
         p0 = R2/R1
     return p0,b,aR
 
-def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,texp=0.0204,frac=1,sec=False,dt=2,approx=False,new=False):
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=False):
     """ frac is fraction of total light in eclipsed object"""
 
     if sec:
@@ -453,7 +453,7 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,
 
     if conv:
         dt = ts[1]-ts[0]
-        npts = np.round(texp/dt)
+        npts = np.round(cadence/dt)
         if npts % 2 == 0:
             npts += 1
         boxcar = np.ones(npts)/npts
@@ -461,12 +461,12 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,
     fs = 1 - frac*(1-fs)
     return ts,fs #ts are in the same units P is given in.
 
-def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,leastsq=True,conv=False,texp=0.0204,frac=1,sec=False,new=True,pars0=None):
+def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,leastsq=True,conv=False,cadence=0.020434028,frac=1,sec=False,new=True,pars0=None):
     
     ts,fs = eclipse(p0,b,aR,P,ecc,w,xmax,npts,MAfn,u1,u2,
-                    conv=conv,texp=texp,frac=frac,sec=sec,new=new)
+                    conv=conv,cadence=cadence,frac=frac,sec=sec,new=new)
     
-    logging.debug('{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}'.format(p0,b,aR,P,ecc,w,xmax,npts,u1,u2,leastsq,conv,texp,frac,sec,new))
+    logging.debug('{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}'.format(p0,b,aR,P,ecc,w,xmax,npts,u1,u2,leastsq,conv,cadence,frac,sec,new))
     logging.debug('ts: {} fs: {}'.format(ts,fs))
 
     if pars0 is None:
