@@ -206,18 +206,27 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     if bad.sum() > 0:
         logging.error('Something snuck through with no eclipses!')
         logging.error('k: {}'.format(k[wbad]))
-        logging.error('b_tra:',b_tra[wbad]
-        logging.error('b_occ:',b_occ[wbad]
-        logging.error('T14_tra:',T14_tra[wbad]
-        logging.error('T14_occ:',T14_occ[wbad]
-        logging.error('under sqrt (tra):',(1+k[wbad])**2 - b_tra[wbad]**2
-        logging.error('under sqrt (occ):',(1+k[wbad])**2 - b_occ[wbad]**2
-        logging.error('ecc:',ecc[wbad]**2
-        logging.error('a in Rsun:',a[wbad]/RSUN
-        logging.error('R_large:',R_large[wbad]
-        logging.error('R_small:',R_small[wbad]
-        logging.error('P:',P[wbad]
-        logging.error('total M:',M1[w]+M2[wbad]
+        logging.error('b_tra: {}'.format(b_tra[wbad]))
+        logging.error('b_occ: {}'.format(b_occ[wbad]))
+        logging.error('T14_tra: {}'.format(T14_tra[wbad]))
+        logging.error('T14_occ: {}'.format(T14_occ[wbad]))
+        logging.error('under sqrt (tra): {}'.format((1+k[wbad])**2 - b_tra[wbad]**2))
+        logging.error('under sqrt (occ): {}'.format((1+k[wbad])**2 - b_occ[wbad]**2))
+        logging.error('eccsq: {}'.format(ecc[wbad]**2))
+        logging.error('a in Rsun: {}'.format(a[wbad]/RSUN))
+        logging.error('R_large: {}'.format(R_large[wbad]))
+        logging.error('R_small: {}'.format(R_small[wbad]))
+        logging.error('P: {}'.format(P[wbad]))
+        logging.error('total M: {}'.format(M1[w]+M2[wbad]))
+
+    T14_tra[(np.isnan(T14_tra))] = 0
+    T23_tra[(np.isnan(T23_tra))] = 0
+    T14_occ[(np.isnan(T14_occ))] = 0
+    T23_occ[(np.isnan(T23_occ))] = 0
+
+    #calling mandel-agol
+    ftra = MAFN(k,b_tra,u11,u21)
+    focc = MAFN(1/k,b_occ/k,u12,u22)
         
     
     
