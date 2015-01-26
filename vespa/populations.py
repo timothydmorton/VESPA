@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from .transit_basic import impact_parameter, occultquad
 import .transit_basic as tr
 
-from starutils.populations import StarPopulation
+from starutils.populations import StarPopulation, MultipleStarPopulation
 from starutils.utils import draw_eccs, semimajor, withinroche
 from starutils.utils import RAGHAVAN_LOGPERKDE
 
@@ -70,6 +70,11 @@ class EclipsePopulation(StarPopulation):
 
         self.make_kdes()
 
+
+class HEBPopulation(EclipsePopulation, MultipleStarPopulation):
+    def __init__(self, filename=None, band='Kepler', modelname='HEBs',
+                 m1=1., age=9.6, feh=0.0, minq=0.1, minmass=0.11):
+        
 
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                        u11s=None, u21s=None, u12s=None, u22s=None,
