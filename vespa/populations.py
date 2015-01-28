@@ -10,7 +10,9 @@ from .transit_basic import impact_parameter, occultquad
 import .transit_basic as tr
 
 from starutils.populations import StarPopulation, MultipleStarPopulation
+from starutils.populationas import ColormatchMultipleStarPopulation
 from starutils.utils import draw_eccs, semimajor, withinroche
+from starutils.utils import mult_masses
 from starutils.utils import RAGHAVAN_LOGPERKDE
 
 SHORT_MODELNAMES = {'Planets':'pl',
@@ -27,8 +29,9 @@ from astropy.constants as const
 AU = const.au.cgs.value
 
 class EclipsePopulation(StarPopulation):
-    def __init__(self, stars, P=None, model='',
+    def __init__(self, stars=None, P=None, model='',
                  priorfactors=None, lhoodcachefile=None,
+                 orbpop=None,
                  **kwargs):
         """Base class for populations of eclipsing things.
 
@@ -37,11 +40,21 @@ class EclipsePopulation(StarPopulation):
         'P', 'M1', 'M2', 'R1', 'R2', 'inc', 'ecc', 'w', 'dpri', 
         'dsec', 'b_sec', 'b_pri', 'fluxfrac1', 'fluxfrac2', 
         'u11', 'u12', 'u21', 'u22'
+
+        For some functionality, also needs to have trapezoid fit 
+        parameters in DataFrame
         
         """
         
         self.P = P
         self.model = model
+        if priorfactors is None:
+            priorfactors = {}
+        self.priorfactors = priorfactors
+        self.lhoodcachefile = lhoodcachefile
+        
+        self.is_specific = False
+        self.is_ruled_out = False
 
         try:
             self.modelshort = SHORT_MODELNAMES[model]
@@ -53,27 +66,45 @@ class EclipsePopulation(StarPopulation):
         except KeyError:
             raise KeyError('No short name for model: %s' % model)
 
-        if priorfactors is None:
-            priorfactors = {}
-        self.priorfactors = priorfactors
-
-        self.lhoodcacefile = lhoodcachefile
-
-        self.is_specific = False
-
-        StarPopulation.__init__(self, stars)
+        StarPopulation.__init__(self, stars=stars, orbpop=orbpop)
         
-        self.is_ruled_out = False
+        if stars is not None:
+            if len(self.stars)==0:
+                raise EmptyPopulationError('Zero elements in {} population'.format(model))
 
-        if len(self.stars)==0:
-            raise EmptyPopulationError('Zero elements in {} population'.format(model))
-
+        #This will throw error if trapezoid fits not done
         self.make_kdes()
 
 
-class HEBPopulation(EclipsePopulation, MultipleStarPopulation):
-    def __init__(self, filename=None, band='Kepler', modelname='HEBs',
-                 m1=1., age=9.6, feh=0.0, minq=0.1, minmass=0.11):
+class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
+    def __init__(self, filename=None, mags=None, colors=['JK'], 
+                 mdist=None, agedist=None, fehdist=None, starfield=None,
+                 band='Kepler', modelname='HEBs', ftrip=0.12, n=2e4,
+                 **kwargs):
+        """Population of HEBs
+
+        If file is passed, population is loaded from .h5 file.
+
+        If file not passed, then a population will be generated.
+        If mdist, agedist, and fehdist are passed, then the primary of
+        the population will be generated according to those distributions.
+        If distributions are not passed, then populations should be generated
+        in order to match colors.
+
+        kwargs passed to ``ColormatchMultipleStarPopulation`` 
+        """
+        
+        if filename is not None:
+            self.load_hdf(filename)
+
+        else:
+            ColormatchMultipleStarPopulation.__init__(self, mags=mags,
+                                                      colors=colors, m1=mdist,
+                                                      age=agedist, feh=fehdist,
+                                                      starfield=starfield,
+                                                      ftrip=ftrip)
+        
+
         
 
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
