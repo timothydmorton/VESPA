@@ -123,14 +123,18 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
         else:
             #if provided, period_short is the observed period of the eclipse
-            ColormatchMultipleStarPopulation.__init__(self, mags=mags,
-                                                      colors=colors, mA=mass,
-                                                      age=age, feh=feh,
-                                                      starfield=starfield,
-                                                      f_triple=1, period_short=self.period,
-                                                      n=n)
+            pop_kwargs = {'mags':mags, 'colors':colors,
+                          'starfield':starfield, 'f_triple':1,
+                          'period_short':self.period}
+
+            pop = ColormatchMultipleStarPopulation(mags=mags,
+                                                   colors=colors, mA=mass,
+                                                   age=age, feh=feh,
+                                                   starfield=starfield,
+                                                   f_triple=1, period_short=self.period,
+                                                   n=n)
             
-            s = self.stars
+            s = pop.stars
 
             #calculate limb-darkening coefficients
             u1A, u2A = ldcoeffs(s['Teff_A'], s['logg_A'])
@@ -140,14 +144,22 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
             #calculate eclipses.  In the MultipleStarPopulation, stars '_B' and '_C'
             # are always the ones eclipsing each other.
-            df, (prob,dprob) = calculate_eclipses(s['mass_B'], s['mass_C'],
-                                                  s['radius_B'], s['radius_C'],
-                                                  s['{}_mag_B'.format(band)], 
-                                                  s['{}_mag_C'.format(band)],
-                                                  u11s=u1B, u21s=u2B,
-                                                  u12s=u1C, u22s=u2C,
-                                                  period=self.period, calc_mininc=True)
 
+            #Need to change this to return the right number/stars....
+
+            inds, df, (prob,dprob) = calculate_eclipses(s['mass_B'], s['mass_C'],
+                                                        s['radius_B'], s['radius_C'],
+                                                        s['{}_mag_B'.format(band)], 
+                                                        s['{}_mag_C'.format(band)],
+                                                        u11s=u1B, u21s=u2B,
+                                                        u12s=u1C, u22s=u2C, band=band,
+                                                        period=self.period, calc_mininc=True,
+                                                        return_indices=True)
+
+            logging.debug('{} nans in dpri'.format(np.isnan(df['dpri']).sum()))
+            logging.debug('{} nans in dsec'.format(np.isnan(df['dsec']).sum()))
+
+            self.eclipse_pars = df
             self.eclipse_prob = prob
             self.eclipse_dprob = dprob
             for col in df.columns:
@@ -341,7 +353,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     #calling mandel-agol
     ftra = MAfn(k,b_tra,u11,u21)
     focc = MAfn(1/k,b_occ/k,u12,u22)
-        
+
     #fix those with k or 1/k out of range of MAFN....or do it in MAfn eventually?
     wtrabad = np.where((k < MAfn.pmin) | (k > MAfn.pmax))
     woccbad = np.where((1/k < MAfn.pmin) | (1/k > MAfn.pmax))
@@ -349,7 +361,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
         ftra[ind] = occultquad(b_tra[ind],u11[ind],u21[ind],k[ind])
     for ind in woccbad[0]:
         focc[ind] = occultquad(b_occ[ind]/k[ind],u12[ind],u22[ind],1/k[ind])
-    
+
     F1 = 10**(-0.4*mag1) + switched*10**(-0.4*mag2)
     F2 = 10**(-0.4*mag2) + switched*10**(-0.4*mag1)
 
