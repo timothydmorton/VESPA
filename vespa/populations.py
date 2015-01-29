@@ -6,11 +6,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from .transit_basic import impact_parameter, occultquad
-import .transit_basic as tr
+from .transit_basic import occultquad, ldcoeffs, minimum_inclination
+from .transit_basic import MAInterpolationFunction
 
 from starutils.populations import StarPopulation, MultipleStarPopulation
-from starutils.populationas import ColormatchMultipleStarPopulation
+from starutils.populations import ColormatchMultipleStarPopulation
 from starutils.utils import draw_eccs, semimajor, withinroche
 from starutils.utils import mult_masses
 from starutils.utils import RAGHAVAN_LOGPERKDE
@@ -25,8 +25,10 @@ SHORT_MODELNAMES = {'Planets':'pl',
                         
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 
-from astropy.constants as const
+import astropy.constants as const
 AU = const.au.cgs.value
+RSUN = const.R_sun.cgs.value
+G = const.G.cgs.value
 
 class EclipsePopulation(StarPopulation):
     def __init__(self, stars=None, P=None, model='',
@@ -35,11 +37,11 @@ class EclipsePopulation(StarPopulation):
                  **kwargs):
         """Base class for populations of eclipsing things.
 
-
-        stars DataFrame must have parameters describing orbit/eclipse:
-        'P', 'M1', 'M2', 'R1', 'R2', 'inc', 'ecc', 'w', 'dpri', 
-        'dsec', 'b_sec', 'b_pri', 'fluxfrac1', 'fluxfrac2', 
-        'u11', 'u12', 'u21', 'u22'
+        stars DataFrame must have the following columns:
+        'M_1', 'M_2', 'R_1', 'R_2', 'u1_1', 'u1_2', 'u2_1', 'u2_2', and 
+        either the P keyword argument provided or a `period column, as 
+        well as the eclipse parameters: 'inc', 'ecc', 'w', 'dpri', 
+        'dsec', 'b_sec', 'b_pri', 'fluxfrac_1', 'fluxfrac_2'
 
         For some functionality, also needs to have trapezoid fit 
         parameters in DataFrame
@@ -75,11 +77,26 @@ class EclipsePopulation(StarPopulation):
         #This will throw error if trapezoid fits not done
         self.make_kdes()
 
+    def fit_trapezoids(self):
+        pass
+
+    def save_hdf(self, filename, path='', properties=None, **kwargs):
+        if properties is None:
+            properties = {}
+        
+        for prop in []:
+            properties[prop] = getattr(self,prop)
+
+        StarPopulation.save_hdf(self, filename, path=path,
+                                properties=properties, **kwargs)
+
+    def load_hdf(self): #perhaps this doesn't need to be written?
+        pass
 
 class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
-    def __init__(self, filename=None, mags=None, colors=['JK'], 
-                 mdist=None, agedist=None, fehdist=None, starfield=None,
-                 band='Kepler', modelname='HEBs', ftrip=0.12, n=2e4,
+    def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
+                 mass=None, age=None, feh=None, starfield=None,
+                 band='Kepler', modelname='HEBs', f_triple=0.12, n=2e4,
                  **kwargs):
         """Population of HEBs
 
@@ -91,32 +108,90 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         If distributions are not passed, then populations should be generated
         in order to match colors.
 
+        mass is primary mass.  mass, age, and feh can be distributions
+        (or tuples)
+
         kwargs passed to ``ColormatchMultipleStarPopulation`` 
         """
-        
+
+        self.period = period
+        self.band = band
+        self.f_triple = f_triple
+
         if filename is not None:
             self.load_hdf(filename)
 
         else:
+            #if provided, period_short is the observed period of the eclipse
             ColormatchMultipleStarPopulation.__init__(self, mags=mags,
-                                                      colors=colors, m1=mdist,
-                                                      age=agedist, feh=fehdist,
+                                                      colors=colors, mA=mass,
+                                                      age=age, feh=feh,
                                                       starfield=starfield,
-                                                      ftrip=ftrip)
-        
+                                                      f_triple=1, period_short=self.period,
+                                                      n=n)
+            
+            s = self.stars
 
+            #calculate limb-darkening coefficients
+            u1A, u2A = ldcoeffs(s['Teff_A'], s['logg_A'])
+            u1B, u2B = ldcoeffs(s['Teff_B'], s['logg_B'])
+            u1C, u2C = ldcoeffs(s['Teff_C'], s['logg_C'])
+
+
+            #calculate eclipses.  In the MultipleStarPopulation, stars '_B' and '_C'
+            # are always the ones eclipsing each other.
+            df, (prob,dprob) = calculate_eclipses(s['mass_B'], s['mass_C'],
+                                                  s['radius_B'], s['radius_C'],
+                                                  s['{}_mag_B'.format(band)], 
+                                                  s['{}_mag_C'.format(band)],
+                                                  u11s=u1B, u21s=u2B,
+                                                  u12s=u1C, u22s=u2C,
+                                                  period=self.period, calc_mininc=True)
+
+            self.eclipse_prob = prob
+            self.eclipse_dprob = dprob
+            for col in df.columns:
+                s[col] = df[col]
+            
+            
+                                                  
+
+
+    def save_hdf(self, filename, path='', properties=None, **kwargs):
+        if properties is None:
+            properties = {}
         
+        for prop in []:
+            properties[prop] = getattr(self,prop)
+
+        EclipsePopulation.save_hdf(self, filename, path=path,
+                                   properties=properties, **kwargs)
+
 
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                        u11s=None, u21s=None, u12s=None, u22s=None,
                        Ps=None, period=None, logperkde=RAGHAVAN_LOGPERKDE,
                        incs=None, eccs=None, band='i',
                        mininc=None, maxecc=0.97, verbose=False,
-                       return_probability=False, return_indices=False):
+                       return_probability_only=False, return_indices=False,
+                       calc_mininc=True, MAfn=None):
     """Returns random eclipse parameters for provided inputs
 
+    If single period desired, pass 'period' keyword.
     """
+    if MAfn is None:
+        MAfn = MAInterpolationFunction(nzs=200,nps=400,pmin=0.007,pmax=1/0.007)
 
+    M1s = np.atleast_1d(M1s)
+    M2s = np.atleast_1d(M2s)
+    R1s = np.atleast_1d(R1s)
+    R2s = np.atleast_1d(R2s)
+    mag1s = np.atleast_1d(mag1s)
+    mag2s = np.atleast_1d(mag2s)
+    u11s = np.atleast_1d(u11s)
+    u12s = np.atleast_1d(u12s)
+    u21s = np.atleast_1d(u21s)
+    u22s = np.atleast_1d(u22s)
 
     n = np.size(M1s)
     
@@ -148,10 +223,10 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     if simPs:
         while ntooclose > 0:
             lastntooclose=ntooclose
-            Ps[tooclose] = 10**(logperkde.draw(ntooclose))
+            Ps[tooclose] = 10**(logperkde.rvs(ntooclose))
             if simeccs:
-                eccs[wtooclose] = draw_eccs(ntooclose,Ps[tooclose])
-            semimajors[wtooclose] = semimajor(Ps[tooclose],M1s[tooclose]+M2s[tooclose])*AU
+                eccs[tooclose] = draw_eccs(ntooclose,Ps[tooclose])
+            semimajors[tooclose] = semimajor(Ps[tooclose],M1s[tooclose]+M2s[tooclose])*AU
             tooclose = withinroche(semimajors*(1-eccs)/AU,M1s,R1s,M2s,R2s)
             ntooclose = tooclose.sum()
             if ntooclose==lastntooclose:   #prevent infinite loop
@@ -177,6 +252,9 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                     break                       
 
     #randomize inclinations, either full range, or within restricted range
+    if mininc is None and calc_mininc:
+        mininc = minimum_inclination(Ps, M1s, M2s, R1s, R2s)
+
     if incs is None:
         if mininc is None:
             incs = np.arccos(np.random.random(n)) #random inclinations in radians
@@ -194,13 +272,11 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     R_small = switched*R1s + ~switched*R2s
 
 
-    #b_tras, b_occs = impact_parameter(semimajors/AU, R_large, incs, ecc=eccs, w=ws,
-    #                                  return_occ=True)
     b_tras = semimajors*np.cos(incs)/(R_large*RSUN) * (1-eccs**2)/(1 + eccs*np.sin(ws))
     b_occs = semimajors*np.cos(incs)/(R_large*RSUN) * (1-eccs**2)/(1 - eccs*np.sin(ws))
 
-    b_tras[tooclose] = inf
-    b_occs[tooclose] = inf
+    b_tras[tooclose] = np.inf
+    b_occs[tooclose] = np.inf
 
     ks = R_small/R_large
     Rtots = (R_small + R_large)/R_large
@@ -208,8 +284,8 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     occ = (b_occs < Rtots)
     nany = (tra | occ).sum()
     peb = nany/float(n)
-    if return_probability:
-        return prob*peb,prob*np.sqrt(nany)/n
+    if return_probability_only:
+        return prob,prob*np.sqrt(nany)/n
 
 
     i = (tra | occ)
@@ -263,12 +339,12 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     T23_occ[(np.isnan(T23_occ))] = 0
 
     #calling mandel-agol
-    ftra = MAFN(k,b_tra,u11,u21)
-    focc = MAFN(1/k,b_occ/k,u12,u22)
+    ftra = MAfn(k,b_tra,u11,u21)
+    focc = MAfn(1/k,b_occ/k,u12,u22)
         
     #fix those with k or 1/k out of range of MAFN....or do it in MAfn eventually?
-    wtrabad = where((k < MAFN.pmin) | (k > MAFN.pmax))
-    woccbad = where((1/k < MAFN.pmin) | (1/k > MAFN.pmax))
+    wtrabad = np.where((k < MAfn.pmin) | (k > MAfn.pmax))
+    woccbad = np.where((1/k < MAfn.pmin) | (1/k > MAfn.pmax))
     for ind in wtrabad[0]:
         ftra[ind] = occultquad(b_tra[ind],u11[ind],u21[ind],k[ind])
     for ind in woccbad[0]:
@@ -297,18 +373,18 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
 
     df =  pd.DataFrame({'{}_mag_tot'.format(band) : totmag,
                         'P':P, 'ecc':ecc, 'inc':inc, 'w':w,
-                        'dpri':dpri, 'dsec':dsec,
-                        'T14_pri',T14_tra, 'T23_pri':T23_tra,
-                        'T14_sec',T14_occ, 'T23_sec':T23_occ,
+                        'dpri':dtra, 'dsec':docc,
+                        'T14_pri':T14_tra, 'T23_pri':T23_tra,
+                        'T14_sec':T14_occ, 'T23_sec':T23_occ,
                         'b_pri':b_tra, 'b_sec':b_occ,
-                        '{}_mag1'.format(band) : mag1,
-                        '{}_mag2'.format(band) : mag2,
-                        'fluxfrac1':F1/(F1+F2),
-                        'fluxfrac2':F2/(F1+F2),
+                        '{}_mag_1'.format(band) : mag1,
+                        '{}_mag_2'.format(band) : mag2,
+                        'fluxfrac_1':F1/(F1+F2),
+                        'fluxfrac_2':F2/(F1+F2),
                         'switched':switched,
-                        'u11':u11, 'u21':u21, 'u12':u12, 'u22':u22})
+                        'u1_1':u11, 'u2_1':u21, 'u1_2':u12, 'u2_2':u22})
 
     if return_indices:
-        return wany, df, (prob, dprob)
+        return wany, df, (prob, prob*np.sqrt(nany)/n)
     else:
-        return df, (prob, dprob)
+        return df, (prob, prob*np.sqrt(nany)/n)
