@@ -164,6 +164,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                                                             return_indices=True,
                                                             MAfn=MAfn)
 
+                #something still not working here?
                 s = s.iloc[inds]
                 for col in df.columns:
                     s[col] = df[col]
