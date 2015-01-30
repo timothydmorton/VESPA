@@ -164,17 +164,23 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                                                             return_indices=True,
                                                             MAfn=MAfn)
 
-                #something still not working here?
-                s = s.iloc[inds]
+                s = s.iloc[inds].copy()
+                s.reset_index(inplace=True)
                 for col in df.columns:
                     s[col] = df[col]
                 stars = pd.concat((stars, s))
-                df_long = pd.concat((df_long, 
-                                     pop.orbpop.orbpop_long.dataframe.iloc[inds]))
-                df_short = pd.concat((df_short, 
-                                     pop.orbpop.orbpop_short.dataframe.iloc[inds]))
-                logging.info('{} eclipsing HEB systems generated (target {})'.format(len(stars),n))
 
+                new_df_long = pop.orbpop.orbpop_long.dataframe.iloc[inds].copy()
+                new_df_long.reset_index(inplace=True)
+                new_df_short = pop.orbpop.orbpop_short.dataframe.iloc[inds].copy()
+                new_df_short.reset_index(inplace=True)
+
+                df_long = pd.concat((df_long, new_df_long))
+                df_short = pd.concat((df_short, new_df_short))
+
+                logging.info('{} eclipsing HEB systems generated (target {})'.format(len(stars),n))
+                logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
+                logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
 
                 if tot_prob is None:
                     prob_norm = (1/dprob**2)
@@ -431,6 +437,6 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                         'u1_1':u11, 'u2_1':u21, 'u1_2':u12, 'u2_2':u22})
 
     if return_indices:
-        return wany[0], df, (prob, prob*np.sqrt(nany)/n)
+        return wany, df, (prob, prob*np.sqrt(nany)/n)
     else:
         return df, (prob, prob*np.sqrt(nany)/n)
