@@ -99,6 +99,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
                  mass=None, age=None, feh=None, starfield=None,
                  band='Kepler', modelname='HEBs', f_triple=0.12, n=2e4,
+                 MAfn=None,
                  **kwargs):
         """Population of HEBs
 
@@ -157,10 +158,11 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                                                             s['{}_mag_C'.format(band)],
                                                             u11s=u1B, u21s=u2B,
                                                             u12s=u1C, u22s=u2C, 
-                                                            band=band,
+                                                            band=band, 
                                                             period=self.period, 
                                                             calc_mininc=True,
-                                                            return_indices=True)
+                                                            return_indices=True,
+                                                            MAfn=MAfn)
 
                 s = s.iloc[inds]
                 for col in df.columns:
