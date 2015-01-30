@@ -82,22 +82,16 @@ class EclipsePopulation(StarPopulation):
     def fit_trapezoids(self):
         pass
 
-    def save_hdf(self, filename, path='', properties=None, **kwargs):
-        if properties is None:
-            properties = {}
-        
-        for prop in []:
-            properties[prop] = getattr(self,prop)
+    @property
+    def _properties(self):
+        return super(EclipsePopulation,self)._properties
 
-        StarPopulation.save_hdf(self, filename, path=path,
-                                properties=properties, **kwargs)
-
-    def load_hdf(self): #perhaps this doesn't need to be written?
-        pass
+    #def load_hdf(self, filename): #perhaps this doesn't need to be written?
+    #    pass
 
 class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
-                 mass=None, age=None, feh=None, starfield=None,
+                 mass=None, age=None, feh=None, starfield=None, colortol=0.1,
                  band='Kepler', modelname='HEBs', f_triple=0.12, n=2e4,
                  MAfn=None, 
                  **kwargs):
@@ -123,19 +117,20 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         if filename is not None:
             self.load_hdf(filename)
         else:
-            self.generate(mags=mags, colors=colors,
+            self.generate(mags=mags, colors=colors, colortol=colortol,
                           starfield=starfield, mass=mass,
                           age=age, feh=feh, n=n, MAfn=MAfn,
                           f_triple=f_triple, **kwargs)
 
 
-    def generate(self, mags, colors, starfield=None,
+    def generate(self, mags, colors, starfield=None, colortol=0.1,
                  mass=None, age=None, feh=None, n=2e4,
                  MAfn=None, f_triple=0.12, **kwargs):
 
         #if provided, period_short (self.period) 
         #  is the observed period of the eclipse
         pop_kwargs = {'mags':mags, 'colors':colors,
+                      'colortol':colortol,
                       'starfield':starfield,
                       'period_short':self.period}
 
@@ -221,17 +216,11 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         self.dprob = tot_dprob
         self.f_triple = f_triple #overwrite the simulated f_triple=1
 
-
-    def save_hdf(self, filename, path='', properties=None, **kwargs):
-        if properties is None:
-            properties = {}
-        
-        for prop in []:
-            properties[prop] = getattr(self,prop)
-
-        EclipsePopulation.save_hdf(self, filename, path=path,
-                                   properties=properties, **kwargs)
-
+    @property
+    def _properties(self):
+        return ['prob','dprob','f_triple'] +\
+            super(HEBPopulation,self)._properties
+            
 
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                        u11s=None, u21s=None, u12s=None, u22s=None,
