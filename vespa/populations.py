@@ -99,7 +99,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
                  mass=None, age=None, feh=None, starfield=None,
                  band='Kepler', modelname='HEBs', f_triple=0.12, n=2e4,
-                 MAfn=None,
+                 MAfn=None, 
                  **kwargs):
         """Population of HEBs
 
@@ -119,94 +119,107 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
         self.period = period
         self.band = band
-        self.f_triple = f_triple
 
         if filename is not None:
             self.load_hdf(filename)
-
         else:
-            #if provided, period_short is the observed period of the eclipse
-            pop_kwargs = {'mags':mags, 'colors':colors,
-                          'starfield':starfield,
-                          'period_short':self.period}
-
-            stars = pd.DataFrame()
-            df_long = pd.DataFrame() #orbit populations
-            df_short = pd.DataFrame() #orbit populations
-            
-            tot_prob = None; tot_dprob = None; prob_norm = None
-            n_adapt = n
-            while len(stars) < n:
-                pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
-                                                       f_triple=1, n=n_adapt,
-                                                       **pop_kwargs)
-
-                s = pop.stars.copy()
-
-                #calculate limb-darkening coefficients
-                u1A, u2A = ldcoeffs(s['Teff_A'], s['logg_A'])
-                u1B, u2B = ldcoeffs(s['Teff_B'], s['logg_B'])
-                u1C, u2C = ldcoeffs(s['Teff_C'], s['logg_C'])
+            self.generate(mags=mags, colors=colors,
+                          starfield=starfield, mass=mass,
+                          age=age, feh=feh, n=n, MAfn=MAfn,
+                          f_triple=f_triple, **kwargs)
 
 
-                #calculate eclipses.  In the MultipleStarPopulation, stars '_B' and '_C'
-                # are always the ones eclipsing each other.
+    def generate(self, mags, colors, starfield=None,
+                 mass=None, age=None, feh=None, n=2e4,
+                 MAfn=None, f_triple=0.12, **kwargs):
 
-                inds, df, (prob,dprob) = calculate_eclipses(s['mass_B'], s['mass_C'],
-                                                            s['radius_B'], s['radius_C'],
-                                                            s['{}_mag_B'.format(band)], 
-                                                            s['{}_mag_C'.format(band)],
-                                                            u11s=u1B, u21s=u2B,
-                                                            u12s=u1C, u22s=u2C, 
-                                                            band=band, 
-                                                            period=self.period, 
-                                                            calc_mininc=True,
-                                                            return_indices=True,
-                                                            MAfn=MAfn)
+        #if provided, period_short (self.period) 
+        #  is the observed period of the eclipse
+        pop_kwargs = {'mags':mags, 'colors':colors,
+                      'starfield':starfield,
+                      'period_short':self.period}
 
-                s = s.iloc[inds].copy()
-                s.reset_index(inplace=True)
-                for col in df.columns:
-                    s[col] = df[col]
-                stars = pd.concat((stars, s))
+        #insert additionl arguments
+        for kw,val in kwargs.iteritems():
+            pop_kwargs[kw] = val
 
-                new_df_long = pop.orbpop.orbpop_long.dataframe.iloc[inds].copy()
-                new_df_long.reset_index(inplace=True)
-                new_df_short = pop.orbpop.orbpop_short.dataframe.iloc[inds].copy()
-                new_df_short.reset_index(inplace=True)
+        stars = pd.DataFrame()
+        df_long = pd.DataFrame() #orbit populations
+        df_short = pd.DataFrame() #orbit populations
 
-                df_long = pd.concat((df_long, new_df_long))
-                df_short = pd.concat((df_short, new_df_short))
+        tot_prob = None; tot_dprob = None; prob_norm = None
+        n_adapt = n
+        while len(stars) < n:
+            pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
+                                                   f_triple=1, n=n_adapt,
+                                                   **pop_kwargs)
 
-                logging.info('{} eclipsing HEB systems generated (target {})'.format(len(stars),n))
-                logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
-                logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
+            s = pop.stars.copy()
 
-                if tot_prob is None:
-                    prob_norm = (1/dprob**2)
-                    tot_prob = prob
-                    tot_dprob = dprob
-                else:
-                    prob_norm = (1/tot_dprob**2 + 1/dprob**2)
-                    tot_prob = (tot_prob/tot_dprob**2 + prob/dprob**2)/prob_norm
-                    tot_dprob = 1/np.sqrt(prob_norm)
-                
-                n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
-            
-            stars = stars.iloc[:n]
-            df_long = df_long.iloc[:n]
-            df_short = df_short.iloc[:n]
-            orbpop = TripleOrbitPopulation_FromDF(df_long, df_short)            
-                             
-            stars = stars.reset_index()
-            stars.drop('index', axis=1, inplace=True)
-                                                  
-            ColormatchMultipleStarPopulation.__init__(self, stars=stars,
-                                                      orbpop=orbpop,
-                                                      **pop_kwargs)
-            self.prob = tot_prob
-            self.dprob = tot_dprob
-            self.f_triple = f_triple #overwrite the simulated f_triple=1
+            #calculate limb-darkening coefficients
+            u1A, u2A = ldcoeffs(s['Teff_A'], s['logg_A'])
+            u1B, u2B = ldcoeffs(s['Teff_B'], s['logg_B'])
+            u1C, u2C = ldcoeffs(s['Teff_C'], s['logg_C'])
+
+
+            #calculate eclipses.  In the MultipleStarPopulation, stars '_B' and '_C'
+            # are always the ones eclipsing each other.
+
+            inds, df, (prob,dprob) = calculate_eclipses(s['mass_B'], s['mass_C'],
+                                                        s['radius_B'], s['radius_C'],
+                                                        s['{}_mag_B'.format(self.band)], 
+                                                        s['{}_mag_C'.format(self.band)],
+                                                        u11s=u1B, u21s=u2B,
+                                                        u12s=u1C, u22s=u2C, 
+                                                        band=self.band, 
+                                                        period=self.period, 
+                                                        calc_mininc=True,
+                                                        return_indices=True,
+                                                        MAfn=MAfn)
+
+            s = s.iloc[inds].copy()
+            s.reset_index(inplace=True)
+            for col in df.columns:
+                s[col] = df[col]
+            stars = pd.concat((stars, s))
+
+            new_df_long = pop.orbpop.orbpop_long.dataframe.iloc[inds].copy()
+            new_df_long.reset_index(inplace=True)
+            new_df_short = pop.orbpop.orbpop_short.dataframe.iloc[inds].copy()
+            new_df_short.reset_index(inplace=True)
+
+            df_long = pd.concat((df_long, new_df_long))
+            df_short = pd.concat((df_short, new_df_short))
+
+            logging.info('{} eclipsing HEB systems generated (target {})'.format(len(stars),n))
+            logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
+            logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
+
+            if tot_prob is None:
+                prob_norm = (1/dprob**2)
+                tot_prob = prob
+                tot_dprob = dprob
+            else:
+                prob_norm = (1/tot_dprob**2 + 1/dprob**2)
+                tot_prob = (tot_prob/tot_dprob**2 + prob/dprob**2)/prob_norm
+                tot_dprob = 1/np.sqrt(prob_norm)
+
+            n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
+
+        stars = stars.iloc[:n]
+        df_long = df_long.iloc[:n]
+        df_short = df_short.iloc[:n]
+        orbpop = TripleOrbitPopulation_FromDF(df_long, df_short)            
+
+        stars = stars.reset_index()
+        stars.drop('index', axis=1, inplace=True)
+
+        ColormatchMultipleStarPopulation.__init__(self, stars=stars,
+                                                  orbpop=orbpop,
+                                                  **pop_kwargs)
+        self.prob = tot_prob
+        self.dprob = tot_dprob
+        self.f_triple = f_triple #overwrite the simulated f_triple=1
 
 
     def save_hdf(self, filename, path='', properties=None, **kwargs):
