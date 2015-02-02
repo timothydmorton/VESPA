@@ -207,6 +207,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                 tot_dprob = 1/np.sqrt(prob_norm)
 
             n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
+            n_adapt = max(n_adapt, 100)
 
         stars = stars.iloc[:n]
         df_orbpop = df_orbpop.iloc[:n]
