@@ -15,7 +15,7 @@ from starutils.utils import draw_eccs, semimajor, withinroche
 from starutils.utils import mult_masses
 from starutils.utils import RAGHAVAN_LOGPERKDE
 
-from orbitutils.populations import TripleOrbitPopulation_FromDF
+from orbitutils.populations import OrbitPopulation_FromDF, TripleOrbitPopulation_FromDF
 
 SHORT_MODELNAMES = {'Planets':'pl',
                     'EBs':'eb',
@@ -97,9 +97,139 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'],
                  mass=None, age=None, feh=None, starfield=None, colortol=0.1,
                  band='Kepler', model='EBs', f_binary=0.4, n=2e4,
-                 MAfn=None, lhoodcachfile=None, **kwargs):
+                 MAfn=None, lhoodcachefile=None, **kwargs):
         """Population of EBs
+
+        Mostly a copy of HEBPopulation, with small modifications.
+
+        If file is passed, population is loaded from .h5 file.
+
+        If file not passed, then a population will be generated.
+        If mass, age, and feh are passed, then the primary of
+        the population will be generated according to those distributions.
+        If distributions are not passed, then populations will be generated
+        according to provided starfield.
+
+        mass is primary mass.  mass, age, and feh can be distributions
+        (or tuples)
+
+        kwargs passed to ``ColormatchMultipleStarPopulation`` 
+
+        currently doesn't work if mags is None.
         """
+
+        self.period = period
+        self.model = model
+        self.band = band
+        self.lhoodcachefile = lhoodcachefile
+
+        if filename is not None:
+            self.load_hdf(filename)
+        elif mags is not None or mass is not None:
+            #generates stars from ColormatchMultipleStarPopulation
+            # and eclipses using calculate_eclipses
+            self.generate(mags=mags, colors=colors, colortol=colortol,
+                          starfield=starfield, mass=mass,
+                          age=age, feh=feh, n=n, MAfn=MAfn,
+                          f_binary=f_binary, **kwargs)
+
+
+    def generate(self, mags, colors, starfield=None, colortol=0.1,
+                 mass=None, age=None, feh=None, n=2e4,
+                 MAfn=None, f_binary=0.4, **kwargs):
+        """Generates stars and eclipses
+
+        stars from ColormatchStellarPopulation; eclipses using calculate_eclipses
+        """
+
+        #if provided, period_long (self.period) 
+        #  is the observed period of the eclipse
+        pop_kwargs = {'mags':mags, 'colors':colors,
+                      'colortol':colortol,
+                      'starfield':starfield,
+                      'period_long':self.period}
+
+        #insert additionl arguments
+        for kw,val in kwargs.iteritems():
+            pop_kwargs[kw] = val
+
+        stars = pd.DataFrame()
+        df_orbpop = pd.DataFrame() #for orbit population
+
+        tot_prob = None; tot_dprob = None; prob_norm = None
+        n_adapt = n
+        while len(stars) < n:
+            pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
+                                                   f_triple=0, f_binary=1,
+                                                   n=n_adapt, **pop_kwargs)
+
+            s = pop.stars.copy()
+
+            #calculate limb-darkening coefficients
+            u1A, u2A = ldcoeffs(s['Teff_A'], s['logg_A'])
+            u1B, u2B = ldcoeffs(s['Teff_B'], s['logg_B'])
+
+            #calculate eclipses.
+            inds, df, (prob,dprob) = calculate_eclipses(s['mass_A'], s['mass_B'],
+                                                        s['radius_A'], s['radius_B'],
+                                                        s['{}_mag_A'.format(self.band)], 
+                                                        s['{}_mag_B'.format(self.band)],
+                                                        u11s=u1A, u21s=u2A,
+                                                        u12s=u1B, u22s=u2B, 
+                                                        band=self.band, 
+                                                        period=self.period, 
+                                                        calc_mininc=True,
+                                                        return_indices=True,
+                                                        MAfn=MAfn)
+
+            s = s.iloc[inds].copy()
+            s.reset_index(inplace=True)
+            for col in df.columns:
+                s[col] = df[col]
+            stars = pd.concat((stars, s))
+
+            new_df_orbpop = pop.orbpop.orbpop_long.dataframe.iloc[inds].copy()
+            new_df_orbpop.reset_index(inplace=True)
+
+            df_orbpop = pd.concat((df_orbpop, new_df_orbpop))
+
+            logging.info('{} Eclipsing EB systems generated (target {})'.format(len(stars),n))
+            logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
+            logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
+
+            if tot_prob is None:
+                prob_norm = (1/dprob**2)
+                tot_prob = prob
+                tot_dprob = dprob
+            else:
+                prob_norm = (1/tot_dprob**2 + 1/dprob**2)
+                tot_prob = (tot_prob/tot_dprob**2 + prob/dprob**2)/prob_norm
+                tot_dprob = 1/np.sqrt(prob_norm)
+
+            n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
+
+        stars = stars.iloc[:n]
+        df_orbpop = df_orbpop.iloc[:n]
+        orbpop = OrbitPopulation_FromDF(df_orbpop)            
+
+        stars = stars.reset_index()
+        stars.drop('index', axis=1, inplace=True)
+
+        ColormatchMultipleStarPopulation.__init__(self, stars=stars,
+                                                  orbpop=orbpop, 
+                                                  f_triple=0, f_binary=f_binary,
+                                                  **pop_kwargs)
+
+        #self.prob = tot_prob
+        #self.dprob = tot_dprob #not really ever using this...?
+
+        priorfactors = {'f_binary':f_binary}
+
+        EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
+                                   period=self.period, model=self.model,
+                                   lhoodcachefile=self.lhoodcachefile,
+                                   priorfactors=priorfactors, prob=tot_prob)
+
 
 class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
