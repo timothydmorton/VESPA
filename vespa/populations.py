@@ -33,10 +33,9 @@ RSUN = const.R_sun.cgs.value
 G = const.G.cgs.value
 
 class EclipsePopulation(StarPopulation):
-    def __init__(self, stars=None, P=None, model='',
+    def __init__(self, stars=None, period=None, model='',
                  priorfactors=None, lhoodcachefile=None,
-                 orbpop=None,
-                 **kwargs):
+                 orbpop=None, prob=None, **kwargs):
         """Base class for populations of eclipsing things.
 
         stars DataFrame must have the following columns:
@@ -48,14 +47,18 @@ class EclipsePopulation(StarPopulation):
         For some functionality, also needs to have trapezoid fit 
         parameters in DataFrame
         
+        if prob is not passed; should be able to calculated from given
+        star/orbit properties.
         """
         
-        self.P = P
+        self.period = period
         self.model = model
         if priorfactors is None:
             priorfactors = {}
         self.priorfactors = priorfactors
+        self.prob = prob #calculate this if not provided?
         self.lhoodcachefile = lhoodcachefile
+
         
         self.is_specific = False
         self.is_ruled_out = False
@@ -70,21 +73,22 @@ class EclipsePopulation(StarPopulation):
         except KeyError:
             raise KeyError('No short name for model: %s' % model)
 
-        StarPopulation.__init__(self, stars=stars, orbpop=orbpop)
+        StarPopulation.__init__(self, stars=stars, orbpop=orbpop, **kwargs)
         
         if stars is not None:
             if len(self.stars)==0:
                 raise EmptyPopulationError('Zero elements in {} population'.format(model))
 
         #This will throw error if trapezoid fits not done
-        self.make_kdes()
+        #self.make_kdes()
 
     def fit_trapezoids(self):
         pass
 
     @property
     def _properties(self):
-        return super(EclipsePopulation,self)._properties
+        return ['period','model','priorfactors','lhoodcachefile'] + \
+            super(EclipsePopulation,self)._properties
 
     #def load_hdf(self, filename): #perhaps this doesn't need to be written?
     #    pass
@@ -92,8 +96,8 @@ class EclipsePopulation(StarPopulation):
 class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
                  mass=None, age=None, feh=None, starfield=None, colortol=0.1,
-                 band='Kepler', modelname='HEBs', f_triple=0.12, n=2e4,
-                 MAfn=None, 
+                 band='Kepler', model='HEBs', f_triple=0.12, n=2e4,
+                 MAfn=None, lhoodcachefile=None,
                  **kwargs):
         """Population of HEBs
 
@@ -112,11 +116,15 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         """
 
         self.period = period
+        self.model = model
         self.band = band
+        self.lhoodcachefile = lhoodcachefile
 
         if filename is not None:
             self.load_hdf(filename)
-        else:
+        elif mags is not None or mass is not None:
+            #generates stars from ColormatchMultipleStarPopulation
+            # and eclipses using calculate_eclipses
             self.generate(mags=mags, colors=colors, colortol=colortol,
                           starfield=starfield, mass=mass,
                           age=age, feh=feh, n=n, MAfn=MAfn,
@@ -126,6 +134,10 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def generate(self, mags, colors, starfield=None, colortol=0.1,
                  mass=None, age=None, feh=None, n=2e4,
                  MAfn=None, f_triple=0.12, **kwargs):
+        """Generates stars and eclipses
+
+        stars from ColormatchStellarPopulation; eclipses using calculate_eclipses
+        """
 
         #if provided, period_short (self.period) 
         #  is the observed period of the eclipse
@@ -146,8 +158,8 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         n_adapt = n
         while len(stars) < n:
             pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
-                                                   f_triple=1, n=n_adapt,
-                                                   **pop_kwargs)
+                                                   f_triple=1,
+                                                   n=n_adapt, **pop_kwargs)
 
             s = pop.stars.copy()
 
@@ -210,16 +222,28 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         stars.drop('index', axis=1, inplace=True)
 
         ColormatchMultipleStarPopulation.__init__(self, stars=stars,
-                                                  orbpop=orbpop,
+                                                  orbpop=orbpop, 
+                                                  f_triple=f_triple,
                                                   **pop_kwargs)
-        self.prob = tot_prob
-        self.dprob = tot_dprob
-        self.f_triple = f_triple #overwrite the simulated f_triple=1
 
-    @property
-    def _properties(self):
-        return ['prob','dprob','f_triple'] +\
-            super(HEBPopulation,self)._properties
+        #self.prob = tot_prob
+        #self.dprob = tot_dprob #not really ever using this...?
+
+        priorfactors = {'f_triple':f_triple}
+
+        EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
+                                   period=self.period, model=self.model,
+                                   lhoodcachefile=self.lhoodcachefile,
+                                   priorfactors=priorfactors, prob=tot_prob)
+
+
+    #@property
+    #def _properties(self):
+    #    #still unclear how this gets _properties
+    #    # from both EclipsePopulation and ColormatchMultipleStarPopulation,
+    #    # but it seems to...
+
+    #    return super(HEBPopulation,self)._properties
             
 
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
