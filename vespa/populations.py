@@ -93,26 +93,35 @@ class EclipsePopulation(StarPopulation):
     #def load_hdf(self, filename): #perhaps this doesn't need to be written?
     #    pass
 
+class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
+    def __init__(self, filename=None, period=None, mags=None, colors=['JK'],
+                 mass=None, age=None, feh=None, starfield=None, colortol=0.1,
+                 band='Kepler', model='EBs', f_binary=0.4, n=2e4,
+                 MAfn=None, lhoodcachfile=None, **kwargs):
+        """Population of EBs
+        """
+
 class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
                  mass=None, age=None, feh=None, starfield=None, colortol=0.1,
                  band='Kepler', model='HEBs', f_triple=0.12, n=2e4,
-                 MAfn=None, lhoodcachefile=None,
-                 **kwargs):
+                 MAfn=None, lhoodcachefile=None, **kwargs):
         """Population of HEBs
 
         If file is passed, population is loaded from .h5 file.
 
         If file not passed, then a population will be generated.
-        If mdist, agedist, and fehdist are passed, then the primary of
+        If mass, age, and feh are passed, then the primary of
         the population will be generated according to those distributions.
-        If distributions are not passed, then populations should be generated
-        in order to match colors.
+        If distributions are not passed, then populations will be generated
+        according to provided starfield.
 
         mass is primary mass.  mass, age, and feh can be distributions
         (or tuples)
 
         kwargs passed to ``ColormatchMultipleStarPopulation`` 
+
+        currently doesn't work if mags is None.
         """
 
         self.period = period
