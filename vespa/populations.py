@@ -14,6 +14,7 @@ from starutils.populations import StarPopulation, MultipleStarPopulation
 from starutils.populations import ColormatchMultipleStarPopulation
 from starutils.utils import draw_eccs, semimajor, withinroche
 from starutils.utils import mult_masses
+from starutils.utils import fluxfrac, addmags
 from starutils.utils import RAGHAVAN_LOGPERKDE
 
 from orbitutils.populations import OrbitPopulation_FromDF, TripleOrbitPopulation_FromDF
@@ -92,7 +93,13 @@ class EclipsePopulation(StarPopulation):
         for col in trapfit_df.columns:
             self.stars[col] = trapfit_df[col]
 
-            
+    @property
+    def dilution_factor(self):
+        return 1
+
+    @property
+    def depth(self):
+        return self.dilution_factor * self.stars['depth']
 
     @property
     def _properties(self):
@@ -141,7 +148,6 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                           starfield=starfield, mass=mass,
                           age=age, feh=feh, n=n, MAfn=MAfn,
                           f_binary=f_binary, **kwargs)
-
 
     def generate(self, mags, colors, starfield=None, colortol=0.1,
                  mass=None, age=None, feh=None, n=2e4,
@@ -284,8 +290,14 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                           starfield=starfield, mass=mass,
                           age=age, feh=feh, n=n, MAfn=MAfn,
                           f_triple=f_triple, **kwargs)
-
             
+
+    @property
+    def dilution_factor(self):
+        magA = self.stars['{}_mag_A'.format(self.band)]
+        magB = self.stars['{}_mag_B'.format(self.band)]
+        magC = self.stars['{}_mag_C'.format(self.band)]
+        return fluxfrac(addmags(magB,magC), magA)
 
 
     def generate(self, mags, colors, starfield=None, colortol=0.1,
