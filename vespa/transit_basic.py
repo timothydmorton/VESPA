@@ -8,7 +8,7 @@ import logging
 
 import pkg_resources
 
-import orbitutils as ou
+from orbitutils.kepler import Efn
 
 from scipy.optimize import leastsq
 from scipy.ndimage import convolve1d
@@ -299,7 +299,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
     if new:
         Ms = np.linspace(-np.pi,np.pi,2e3)
         if ecc != 0:
-            Es = ou.Efn(Ms,ecc) #eccentric anomalies
+            Es = Efn(Ms,ecc) #eccentric anomalies
         else:
             Es = Ms
         zs,in_eclipse = tru.find_eclipse(Es,b,aR,ecc,w,width,sec)
@@ -316,16 +316,16 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
             subMs[np.where(subMs < 0)] += 2*np.pi
 
 
-        logging.debug('subMs: {}'.format(subMs))
+        #logging.debug('subMs: {}'.format(subMs))
 
 
         minM,maxM = (subMs.min(),subMs.max())
-        logging.debug('minM: {}, maxM: {}'.format(minM,maxM))
+        #logging.debug('minM: {}, maxM: {}'.format(minM,maxM))
 
         dM = 2*np.pi*dt/(P*24*60)   #the spacing in mean anomaly that corresponds to dt (minutes)
         Ms = np.arange(minM,maxM+dM,dM)
         if ecc != 0:
-            Es = ou.Efn(Ms,ecc) #eccentric anomalies
+            Es = Efn(Ms,ecc) #eccentric anomalies
         else:
             Es = Ms
 
@@ -344,7 +344,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
 
         Ms = np.linspace(-np.pi,np.pi,2e3) #mean anomalies around whole orbit
         if ecc != 0:
-            Es = ou.Efn(Ms,ecc) #eccentric anomalies
+            Es = Efn(Ms,ecc) #eccentric anomalies
             nus = 2 * np.arctan2(np.sqrt(1+ecc)*np.sin(Es/2),
                                  np.sqrt(1-ecc)*np.cos(Es/2)) #true anomalies
         else:
@@ -373,7 +373,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         dM = 2*np.pi*dt/(P*24*60)   #the spacing in mean anomaly that corresponds to dt (minutes)
         Ms = np.arange(minM,maxM+dM,dM)
         if ecc != 0:
-            Es = ou.Efn(Ms,ecc) #eccentric anomalies
+            Es = Efn(Ms,ecc) #eccentric anomalies
             nus = 2 * np.arctan2(np.sqrt(1+ecc)*np.sin(Es/2),
                                  np.sqrt(1-ecc)*np.cos(Es/2)) #true anomalies
         else:
@@ -439,15 +439,15 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,
         ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
                            sec=sec,dt=dt,approx=approx,new=new)
         if zs.min() > (1 + 1/p0):
-            logging.debug('ts: {}'.format(ts))
-            logging.debug('zs: {}'.format(zs))
+            #logging.debug('ts: {}'.format(ts))
+            #logging.debug('zs: {}'.format(zs))
             raise NoEclipseError
     else:
         ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
                            sec=sec,dt=dt,approx=approx,new=new)
         if zs.min() > (1+p0):
-            logging.debug('ts: {}'.format(ts))
-            logging.debug('zs: {}'.format(zs))
+            #logging.debug('ts: {}'.format(ts))
+            #logging.debug('zs: {}'.format(zs))
             raise NoEclipseError
         
     if MAfn is None:
@@ -477,8 +477,8 @@ def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.2
     ts,fs = eclipse(p0,b,aR,P,ecc,w,xmax,npts,MAfn,u1,u2,
                     conv=conv,cadence=cadence,frac=frac,sec=sec,new=new)
     
-    logging.debug('{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}'.format(p0,b,aR,P,ecc,w,xmax,npts,u1,u2,leastsq,conv,cadence,frac,sec,new))
-    logging.debug('ts: {} fs: {}'.format(ts,fs))
+    #logging.debug('{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}'.format(p0,b,aR,P,ecc,w,xmax,npts,u1,u2,leastsq,conv,cadence,frac,sec,new))
+    #logging.debug('ts: {} fs: {}'.format(ts,fs))
 
     if pars0 is None:
         depth = 1 - fs.min()

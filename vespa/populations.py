@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
+from .fitebs import fitebs
 
 from starutils.populations import StarPopulation, MultipleStarPopulation
 from starutils.populations import ColormatchMultipleStarPopulation
@@ -82,8 +83,16 @@ class EclipsePopulation(StarPopulation):
         #This will throw error if trapezoid fits not done
         #self.make_kdes()
 
-    def fit_trapezoids(self):
-        pass
+    def fit_trapezoids(self, MAfn=None, msg=None, **kwargs):
+        if MAfn is None:
+            MAfn = MAInterpolationFunction(nzs=200,nps=400,pmin=0.007,pmax=1/0.007)
+        if msg is None:
+            msg = '{}: '.format(self.model)
+        trapfit_df = fitebs(self.stars, MAfn=MAfn, msg=msg, **kwargs)
+        for col in trapfit_df.columns:
+            self.stars[col] = trapfit_df[col]
+
+            
 
     @property
     def _properties(self):
@@ -216,6 +225,12 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
 
+        stars['mass_1'] = stars['mass_A']
+        stars['radius_1'] = stars['radius_A']
+        stars['mass_2'] = stars['mass_B']
+        stars['radius_2'] = stars['radius_B']
+
+
         ColormatchMultipleStarPopulation.__init__(self, stars=stars,
                                                   orbpop=orbpop, 
                                                   f_triple=0, f_binary=f_binary,
@@ -269,6 +284,8 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                           starfield=starfield, mass=mass,
                           age=age, feh=feh, n=n, MAfn=MAfn,
                           f_triple=f_triple, **kwargs)
+
+            
 
 
     def generate(self, mags, colors, starfield=None, colortol=0.1,
@@ -352,6 +369,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                 tot_dprob = 1/np.sqrt(prob_norm)
 
             n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
+            n_adapt = max(100, n_adapt)
 
         stars = stars.iloc[:n]
         df_long = df_long.iloc[:n]
@@ -360,6 +378,11 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
+
+        stars['mass_1'] = stars['mass_B']
+        stars['radius_1'] = stars['radius_B']
+        stars['mass_2'] = stars['mass_C']
+        stars['radius_2'] = stars['radius_C']
 
         ColormatchMultipleStarPopulation.__init__(self, stars=stars,
                                                   orbpop=orbpop, 
