@@ -105,7 +105,7 @@ class EclipsePopulation(StarPopulation):
     def depth(self):
         return self.dilution_factor * self.stars['depth']
 
-    def _make_kde(self, use_scipy=False, bandwidth=None, rtol=1e-6,
+    def _make_kde(self, use_sklearn=False, bandwidth=None, rtol=1e-6,
                   **kwargs):
         """Creates KDE objects for 3-d shape parameter distribution
 
@@ -125,18 +125,13 @@ class EclipsePopulation(StarPopulation):
         durs = self.stars['duration'][ok]
         slopes = self.stars['slope'][ok]
 
-        if use_scipy:
-            self.scipy_kde = True
-            points = np.array([durs, logdeps, slopes])
-            self.kde = gaussian_kde(points, **kwargs)
-        else:
-            self.scipy_kde = False
+        if use_sklearn:
+            self.sklearn_kde = True
             logdeps_normed = (logdeps - logdeps.mean())/logdeps.std()
             durs_normed = (durs - durs.mean())/durs.std()
             slopes_normed = (slopes - slopes.mean())/slopes.std()
 
             #use sklearn preprocessing to replace below
-
             self.mean_logdepth = logdeps.mean()
             self.std_logdepth = logdeps.std()
             self.mean_dur = durs.mean()
@@ -154,17 +149,22 @@ class EclipsePopulation(StarPopulation):
                 self.kde = grid.best_estimator_
             else:
                 self.kde = KernelDensity(rtol=rtol, bandwidth=bandwidth).fit(points)
+        else:
+            self.sklearn_kde = False
+            points = np.array([durs, logdeps, slopes])
+            self.kde = gaussian_kde(points, **kwargs)
                 
     def _density(self, logd, dur, slope):
         """
         """
-        if self.scipy_kde:
-            return self.kde(np.array([logd, dur, slope]))
-        else:
+        if self.sklearn_kde:
+            #fix preprocessing
             pts = np.array([(logd - self.mean_logdepth)/self.std_logdepth,
                             (dur - self.mean_dur)/self.std_dur,
                             (slope - self.mean_slope)/self.std_slope])
             return self.kde.score_samples(pts)
+        else:
+            return self.kde(np.array([logd, dur, slope]))
 
     @property
     def _properties(self):
