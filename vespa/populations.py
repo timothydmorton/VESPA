@@ -6,6 +6,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from scipy.stats import gaussian_kde
+from sklearn.neighbors import KernelDensity
+from sklearn.grid_search import GridSearchCV
+
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .fitebs import fitebs
@@ -100,6 +104,67 @@ class EclipsePopulation(StarPopulation):
     @property
     def depth(self):
         return self.dilution_factor * self.stars['depth']
+
+    def _make_kde(self, use_scipy=False, bandwidth=None, rtol=1e-6,
+                  **kwargs):
+        """Creates KDE objects for 3-d shape parameter distribution
+
+        Uses scikit-learn KDE by default
+
+        Keyword arguments passed to gaussian_kde
+        """
+        #define points that are ok to use
+        ok = (self.stars['slope'] > 0) & (self.stars['duration'] > 0) & \
+            (self.stars['duration'] < self.period) & (self.depth > 0)
+        
+        if ok.sum() < 2:
+            raise EmptyPopulationError('< 2 valid systems in population')
+
+        deps = self.depth[ok]
+        logdeps = np.log10(deps)
+        durs = self.stars['duration'][ok]
+        slopes = self.stars['slope'][ok]
+
+        if use_scipy:
+            self.scipy_kde = True
+            points = np.array([durs, logdeps, slopes])
+            self.kde = gaussian_kde(points, **kwargs)
+        else:
+            self.scipy_kde = False
+            logdeps_normed = (logdeps - logdeps.mean())/logdeps.std()
+            durs_normed = (durs - durs.mean())/durs.std()
+            slopes_normed = (slopes - slopes.mean())/slopes.std()
+
+            #use sklearn preprocessing to replace below
+
+            self.mean_logdepth = logdeps.mean()
+            self.std_logdepth = logdeps.std()
+            self.mean_dur = durs.mean()
+            self.std_dur = durs.std()
+            self.mean_slope = slopes.mean()
+            self.std_slope = slopes.std()
+
+            points = np.array([logdeps_normed, durs_normed, slopes_normed])
+
+            if bandwidth is None:
+                grid = GridSearchCV(KernelDensity(rtol=rtol), 
+                                    {'bandwidth':np.linspace(0.05,1,50)})
+                grid.fit(points)
+                self._best_bandwidth = grid.best_params_
+                self.kde = grid.best_estimator_
+            else:
+                self.kde = KernelDensity(rtol=rtol, bandwidth=bandwidth).fit(points)
+                
+    def _density(self, logd, dur, slope):
+        """
+        """
+        if self.scipy_kde:
+            return self.kde(np.array([logd, dur, slope]))
+        else:
+            pts = np.array([(logd - self.mean_logdepth)/self.std_logdepth,
+                            (dur - self.mean_dur)/self.std_dur,
+                            (slope - self.mean_slope)/self.std_slope])
+            return self.kde.score_samples(pts)
 
     @property
     def _properties(self):
@@ -641,3 +706,9 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
         return wany, df, (prob, prob*np.sqrt(nany)/n)
     else:
         return df, (prob, prob*np.sqrt(nany)/n)
+
+
+####### Exceptions
+
+class EmptyPopulationError(Exception):
+    pass
