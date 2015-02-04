@@ -9,6 +9,7 @@ import acor
 from plotutils import setfig
 
 from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC
+from .statutils import kdeconf, qstd, conf_interval
 
 class TransitSignal(object):
     """a phased transit signal with the epoch of the transit at 0, and 'continuum' set at 1
@@ -234,11 +235,11 @@ class TransitSignal(object):
             self.slopefit = (slopemed,array([slopemed-slopeconf[0],slopeconf[1]-slopemed]))
 
         else:
-            self.durfit = (nan,nan,nan)
-            self.depthfit = (nan,nan,nan)
-            self.logdepthfit = (nan,nan,nan)
-            self.logslopefit = (nan,nan,nan)
-            self.slopefit = (nan,nan,nan)
+            self.durfit = (np.nan,np.nan,np.nan)
+            self.depthfit = (np.nan,np.nan,np.nan)
+            self.logdepthfit = (np.nan,np.nan,np.nan)
+            self.logslopefit = (np.nan,np.nan,np.nan)
+            self.slopefit = (np.nan,np.nan,np.nan)
 
 
         points = array([durs,logdeps,slopes])
@@ -246,32 +247,4 @@ class TransitSignal(object):
 
         self.hasMCMC = True
 
-############################
-#   utility functions
-############################
 
-def kdeconf(kde,conf=0.683,xmin=None,xmax=None,npts=500,
-            shortest=True,conftol=0.001,return_max=False):
-    if xmin is None:
-        xmin = kde.dataset.min()
-    if xmax is None:
-        xmax = kde.dataset.max()
-    x = np.linspace(xmin,xmax,npts)
-    return conf_interval(x,kde(x),shortest=shortest,conf=conf,
-                         conftol=conftol,return_max=return_max)
-
-
-def qstd(x,quant=0.05,top=False,bottom=False):
-    """returns std, ignoring outer 'quant' pctiles
-    """
-    s = np.sort(x)
-    n = np.size(x)
-    lo = s[int(n*quant)]
-    hi = s[int(n*(1-quant))]
-    if top:
-        w = np.where(x>=lo)
-    elif bottom:
-        w = np.where(x<=hi)
-    else:
-        w = np.where((x>=lo)&(x<=hi))
-    return np.std(x[w])
