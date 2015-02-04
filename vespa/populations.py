@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from plotutils import setfig, plot2dhist
+
 from scipy.stats import gaussian_kde
 from sklearn.neighbors import KernelDensity
 from sklearn.grid_search import GridSearchCV
@@ -111,7 +113,28 @@ class EclipsePopulation(StarPopulation):
     def depth_in_band(self, band):
         pass
 
-    
+    @property
+    def prior(self):
+        prior = self.prob * self.selectfrac
+        for f in self.priorfactors:
+            prior *= self.priorfactors[f]
+        return prior
+
+    def add_priorfactor(self,**kwargs):
+        for kw in kwargs:
+            if kw in self.priorfactors:
+                logging.error('%s already in prior factors for %s.  use change_prior function instead.' % (kw,self.model))
+                continue
+            else:
+                self.priorfactors[kw] = kwargs[kw]
+                logging.info('%s added to prior factors for %s' % (kw,self.model))
+
+    def change_prior(self, **kwargs):
+        for kw in kwargs:
+            if kw in self.priorfactors:
+                self.priorfactors[kw] = kwargs[kw]
+                logging.info('{0} changed to {1} for {2} model'.format(kw,kwargs[kw],
+                                                                       self.model))
 
     def _make_kde(self, use_sklearn=False, bandwidth=None, rtol=1e-6,
                   **kwargs):
@@ -149,6 +172,7 @@ class EclipsePopulation(StarPopulation):
 
             points = np.array([logdeps_normed, durs_normed, slopes_normed])
 
+            #find best bandwidth.  For some reason this doesn't work?
             if bandwidth is None:
                 grid = GridSearchCV(KernelDensity(rtol=rtol), 
                                     {'bandwidth':np.linspace(0.05,1,50)})
@@ -173,6 +197,103 @@ class EclipsePopulation(StarPopulation):
             return self.kde.score_samples(pts)
         else:
             return self.kde(np.array([logd, dur, slope]))
+
+    def lhoodplot(self, trsig=None, fig=None, label='', plotsignal=False, 
+                  piechart=True, figsize=None, logscale=False,
+                  constraints='all', suptitle='', Ltot=None,
+                  maxdur=None, maxslope=None, inverse=False, 
+                  colordict=None, cachefile=None, nbins=20,
+                  **kwargs):
+        setfig(fig, figsize=figsize)
+
+        if trsig is not None:
+            raise NotImplementedError('trsig not implemented yet')
+
+        if constraints == 'all':
+            mask = self.distok
+        elif constraints == 'none':
+            mask = np.ones(len(self.stars)).astype(bool)
+        else:
+            mask = np.ones(len(self.stars)).astype(bool)
+            for c in constraints:
+                if c not in self.distribution_skip:
+                    mask &= self.constraints[c].ok
+
+        if inverse:
+            mask = ~mask
+
+        if maxdur is None:
+            maxdur = self.stars[mask]['duration'].max()
+        if maxslope is None:
+            maxslope = self.stars[mask]['slope'].max()
+
+
+        if piechart:
+            a_pie = plt.axes([0.07, 0.5, 0.4, 0.5])
+            self.constraint_piechart(fig=0, colordict=colordict)
+            
+        ax1 = plt.subplot(222)
+        if not self.is_ruled_out:
+            self.prophist2d('duration', 'depth', logy=True, fig=0,
+                            mask=mask, interpolation='bicubic', 
+                            logscale=logscale, nbins=nbins, **kwargs)
+        if trsig is not None:
+            #plot transit signal
+            pass
+        plt.ylabel(r'log($\delta$)')
+        plt.xlabel('')
+        yt = ax1.get_yticks()
+        plt.yticks(yt[1:])
+        xt = ax1.get_xticks()
+        plt.xticks(xt[2:-1:2])
+        plt.xlim(xmax=maxdur)
+
+        ax3 = plt.subplot(223)
+        if not self.is_ruled_out:
+            self.prophist2d('depth', 'slope', logx=True, fig=0,
+                            mask=mask, interpolation='bicubic', 
+                            logscale=logscale, nbins=nbins, **kwargs)
+        if trsig is not None:
+            #plot transit signal
+            pass
+        plt.ylabel(r'$T/\tau$')
+        plt.xlabel(r'log($\delta$)')
+        yt = ax3.get_yticks()
+        plt.yticks(yt[1:])
+        plt.ylim(ymin=2, ymax=maxslope)
+
+        ax4 = plt.subplot(224)
+        if not self.is_ruled_out:
+            self.prophist2d('duration', 'slope', fig=0,
+                            mask=mask, interpolation='bicubic', 
+                            logscale=logscale, nbins=nbins, **kwargs)
+        if trsig is not None:
+            #plot transit signal
+            pass
+        plt.ylabel('')
+        plt.xlabel(r'$T$ [days]')
+        plt.xticks(xt[2:-1:2])
+        plt.yticks(ax3.get_yticks())
+        plt.ylim(ymin=2)
+        plt.ylim(ymax=maxslope)
+        plt.xlim(xmax=maxdur)
+
+        ticklabels = ax1.get_xticklabels() + ax4.get_yticklabels()
+        plt.setp(ticklabels,visible=False)
+        
+        plt.subplots_adjust(hspace=0.001,wspace=0.001)
+
+        plt.suptitle(suptitle,fontsize=20)        
+
+        if Ltot is not None:
+            lhood = self.lhood(trsig)
+            plt.annotate('%s:\nProbability\nof scenario: %.3f' % (trsig.name,
+                                                                  self.prior*lhood/Ltot),
+                         xy=(0.5,0.5),ha='center',va='center',
+                         bbox=dict(boxstyle='round',fc='w'),
+                         xycoords='figure fraction',fontsize=15)
+           
+
 
     @property
     def _properties(self):
