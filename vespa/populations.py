@@ -105,6 +105,14 @@ class EclipsePopulation(StarPopulation):
     def depth(self):
         return self.dilution_factor * self.stars['depth']
 
+    def fluxfrac_eclipsing(self, band=None):
+        pass
+
+    def depth_in_band(self, band):
+        pass
+
+    
+
     def _make_kde(self, use_sklearn=False, bandwidth=None, rtol=1e-6,
                   **kwargs):
         """Creates KDE objects for 3-d shape parameter distribution
