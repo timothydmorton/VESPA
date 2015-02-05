@@ -652,9 +652,42 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
 
 class BGEBPopulation(EclipsePopulation, BGStarPopulation_TRILEGAL):
-    def __init__(self):
-        pass
-    
+    def __init__(self, filename=None, period=None, mags=None,
+                 ra=None, dec=None, trilegal_filename=None,
+                 maxrad=10, f_binary=0.4, model='BEBs', **kwargs):
+        """
+
+        Filename is for loading population from HDF
+
+        trilegal_filename holds BG star population
+
+        maxrad in arcsec
+        """
+
+        if filename is not None:
+            self.load_hdf(filename)
+
+        else:
+            self.generate(trilegal_filename,
+                          ra=ra, dec=dec, mags=mags,
+                          maxrad=maxrad, f_binary=f_binary, **kwargs)
+
+
+    def generate(self, trilegal_filename, ra=None, dec=None,
+                 mags=None, maxrad=None, f_binary=0.4, **kwargs)
+
+        #generate/load BG primary stars from TRILEGAL simulation
+        BGStarPopulation_TRILEGAL.__init__(self, trilegal_filename,
+                                           ra=ra, dec=dec, mags=mags,
+                                           maxrad=maxrad, **kwargs)
+
+        #generate binary companions
+        
+
+
+
+
+            
 ############ Utility Functions ##############
     
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
