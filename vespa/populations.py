@@ -20,6 +20,7 @@ from .fitebs import fitebs
 
 from starutils.populations import StarPopulation, MultipleStarPopulation
 from starutils.populations import ColormatchMultipleStarPopulation
+from starutils.populations import BGStarPopulation
 from starutils.utils import draw_eccs, semimajor, withinroche
 from starutils.utils import mult_masses
 from starutils.utils import fluxfrac, addmags
@@ -649,6 +650,13 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     #    return super(HEBPopulation,self)._properties
             
 
+
+class BGEBPopulation(EclipsePopulation, BGStarPopulation_TRILEGAL):
+    def __init__(self):
+        pass
+    
+############ Utility Functions ##############
+    
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                        u11s=None, u21s=None, u12s=None, u22s=None,
                        Ps=None, period=None, logperkde=RAGHAVAN_LOGPERKDE,
