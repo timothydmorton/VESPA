@@ -3,10 +3,12 @@ from __future__ import print_function, division
 import logging
 
 import numpy as np
+import os, os.path
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from plotutils import setfig, plot2dhist
+from hashutils import hashcombine
 
 from scipy.stats import gaussian_kde
 from sklearn.neighbors import KernelDensity
@@ -206,11 +208,22 @@ class EclipsePopulation(StarPopulation):
         """
         if cachefile is None:
             cachefile = self.lhoodcachefile
+            if cachefile is None:
+                cachefile = 'lhoodcache.dat'
 
+        lhoodcache = loadcache(cachefile)
+        key = hashcombine(self, trsig)
+        if key in lhoodcache and not recalc:
+            return lhoodcache[key] 
+            
         if self.is_ruled_out:
             return 0
 
         lh = self.kde(trsig.kde.dataset).sum()
+
+        fout = open(cachefile, 'a')
+        fout.write('%i %g\n' % (key,lh))
+        fout.close
 
         return lh
         
@@ -857,6 +870,25 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     else:
         return df, (prob, prob*np.sqrt(nany)/n)
 
+
+
+#########################
+###### Utility functions
+
+def loadcache(cachefile):
+    """  
+    """
+    cache = {}
+    if os.path.exists(cachefile):
+        for line in open(cachefile):
+            line = line.split()
+            if len(line)==2:
+                try:
+                    cache[int(line[0])] = float(line[1])
+                except:
+                    pass
+    return cache
+    
 
 ####### Exceptions
 
