@@ -21,6 +21,7 @@ from .fitebs import fitebs
 from starutils.populations import StarPopulation, MultipleStarPopulation
 from starutils.populations import ColormatchMultipleStarPopulation
 from starutils.populations import BGStarPopulation
+from starutils.populations import DARTMOUTH
 from starutils.utils import draw_eccs, semimajor, withinroche
 from starutils.utils import mult_masses
 from starutils.utils import fluxfrac, addmags
@@ -651,9 +652,11 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
             
 
 
-class BGEBPopulation(EclipsePopulation, BGStarPopulation_TRILEGAL):
+class BGEBPopulation(EclipsePopulation, BGStarPopulation_TRILEGAL,
+                     MultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None,
                  ra=None, dec=None, trilegal_filename=None,
+                 ichrone=DARTMOUTH,
                  maxrad=10, f_binary=0.4, model='BEBs', **kwargs):
         """
 
@@ -662,6 +665,8 @@ class BGEBPopulation(EclipsePopulation, BGStarPopulation_TRILEGAL):
         trilegal_filename holds BG star population
 
         maxrad in arcsec
+
+        isochrone is Dartmouth, by default (in starutils)
         """
 
         if filename is not None:
@@ -669,20 +674,22 @@ class BGEBPopulation(EclipsePopulation, BGStarPopulation_TRILEGAL):
 
         else:
             self.generate(trilegal_filename,
-                          ra=ra, dec=dec, mags=mags,
+                          ra=ra, dec=dec, mags=mags, ichrone=ichrone,
                           maxrad=maxrad, f_binary=f_binary, **kwargs)
 
 
     def generate(self, trilegal_filename, ra=None, dec=None,
+                 ichrone=DARTMOUTH,
                  mags=None, maxrad=None, f_binary=0.4, **kwargs)
 
         #generate/load BG primary stars from TRILEGAL simulation
-        BGStarPopulation_TRILEGAL.__init__(self, trilegal_filename,
-                                           ra=ra, dec=dec, mags=mags,
-                                           maxrad=maxrad, **kwargs)
+        pop = BGStarPopulation_TRILEGAL(trilegal_filename,
+                                        ra=ra, dec=dec, mags=mags,
+                                        maxrad=maxrad, **kwargs)
 
-        #generate binary companions
-        
+        #generate binary companions, first making sure that 
+        mass = 
+        MultipleStarPopulation.__init__(
 
 
 
