@@ -2,17 +2,22 @@ from __future__ import division, print_function
 
 import numpy as np
 import pandas as pd
+import os,os.path
+import matplotlib.pyplot as plt
 import numpy.random as rand
+import logging
+from scipy.stats import gaussian_kde
 
 import acor
 
 from plotutils import setfig
+from hashutils import hashcombine, hasharray
 
 from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC
 from .statutils import kdeconf, qstd, conf_interval
 
 class TransitSignal(object):
-    """a phased transit signal with the epoch of the transit at 0, and 'continuum' set at 1
+    """a phased-folded transit signal with the epoch of the transit at 0, and 'continuum' set at 1
     """
     def __init__(self,ts,fs,dfs=None,P=None,p0=None,name='',maxslope=None):
 
@@ -57,16 +62,14 @@ class TransitSignal(object):
         return hash(self) == hash(other)
 
     def __hash__(self):
-        key = 0
-        key += hash(self.ts.__str__())
-        key += hash(self.ts.sum())
-        key += hash(self.fs.__str__())
-        key += hash(self.fs.sum())
-        key += hash(self.P)
-        key += hash(self.maxslope)
+        key =  hashcombine(hasharray(self.ts),
+                           hasharray(self.fs),
+                           self.P,
+                           self.maxslope)
         if self.hasMCMC:
-            key += hash(self.slopes.sum())
-            key += hash(str(self.slopes[:100]))
+            key = hashcombine(key, hasharray(self.slopes),
+                              hasharray(self.durs),
+                              hasharray(self.logdeps))
         return key
         
     def plot(self, fig=None, plot_trap=False, name=False, trap_color='g',
@@ -141,10 +144,10 @@ class TransitSignal(object):
                 if p0[1] < 0:
                     p0[1] = 1e-5
             logging.debug('p0 for MCMC = {}'.format(p0))
-            sampler = tr.traptransit_MCMC(self.ts[wok],self.fs[wok],self.dfs[wok],
-                                          niter=niter,nburn=nburn,nwalkers=nwalkers,
-                                          threads=threads,p0=p0,return_sampler=True,
-                                          maxslope=maxslope)
+            sampler = traptransit_MCMC(self.ts[wok],self.fs[wok],self.dfs[wok],
+                                        niter=niter,nburn=nburn,nwalkers=nwalkers,
+                                        threads=threads,p0=p0,return_sampler=True,
+                                        maxslope=maxslope)
 
             Ts,ds,slopes,tcs = (sampler.flatchain[:,0],sampler.flatchain[:,1],
                                 sampler.flatchain[:,2],sampler.flatchain[:,3])
@@ -197,13 +200,13 @@ class TransitSignal(object):
                 raise MCMCError('{} points with slopes < maxslope ({})'.format((slopes < self.maxslope).sum(),self.maxslope))
 
 
-        durs,deps,logdeps,slopes,logslopes = (Ts[ok],ds[ok],np.log10(ds[ok]),
-                                              slopes[ok],log10(slopes[ok]))
+        durs,deps,logdeps,slopes = (Ts[ok],ds[ok],np.log10(ds[ok]),
+                                              slopes[ok])
         
         
         inds = (np.arange(len(durs)/thin)*thin).astype(int)
-        durs,deps,logdeps,slopes,logslopes = (durs[inds],deps[inds],logdeps[inds],
-                                              slopes[inds],logslopes[inds])
+        durs,deps,logdeps,slopes = (durs[inds],deps[inds],logdeps[inds],
+                                              slopes[inds])
 
         self.durs,self.logdeps,self.slopes = (durs,logdeps,slopes)
 
@@ -226,25 +229,44 @@ class TransitSignal(object):
             durmed = np.median(durs)
             depmed = np.median(deps)
             logdepmed = np.median(logdeps)
-            logslopemed = np.median(logslopes)
             slopemed = np.median(slopes)
 
-            self.durfit = (durmed,array([durmed-durconf[0],durconf[1]-durmed]))
-            self.depthfit = (depmed,array([depmed-depconf[0],depconf[1]-depmed]))
-            self.logdepthfit = (logdepmed,array([logdepmed-logdepconf[0],logdepconf[1]-logdepmed]))
-            self.slopefit = (slopemed,array([slopemed-slopeconf[0],slopeconf[1]-slopemed]))
+            self.durfit = (durmed,np.array([durmed-durconf[0],durconf[1]-durmed]))
+            self.depthfit = (depmed,np.array([depmed-depconf[0],depconf[1]-depmed]))
+            self.logdepthfit = (logdepmed,np.array([logdepmed-logdepconf[0],logdepconf[1]-logdepmed]))
+            self.slopefit = (slopemed,np.array([slopemed-slopeconf[0],slopeconf[1]-slopemed]))
 
         else:
             self.durfit = (np.nan,np.nan,np.nan)
             self.depthfit = (np.nan,np.nan,np.nan)
             self.logdepthfit = (np.nan,np.nan,np.nan)
-            self.logslopefit = (np.nan,np.nan,np.nan)
             self.slopefit = (np.nan,np.nan,np.nan)
 
 
-        points = array([durs,logdeps,slopes])
-        self.kde = stats.gaussian_kde(points)
+        points = np.array([durs,logdeps,slopes])
+        self.kde = gaussian_kde(points)
 
         self.hasMCMC = True
 
 
+class TransitSignal_DF(TransitSignal):
+    def __init__(self, df, columns=['t','f','e_f'], **kwargs):
+        t_col, f_col, e_f_col = columns
+        t = df[t_col]
+        f = df[f_col]
+        if e_f_col in df:
+            e_f = df[e_f_col]
+        else:
+            e_f = None
+        TransitSignal.__init__(self, t, f, e_f, **kwargs)
+
+class TransitSignal_ASCII(TransitSignal):
+    def __init__(self, filename, cols=(0,1), err_col=2, **kwargs):
+        t, f = np.loadtxt(filename, usecols=cols, unpack=True)
+        try:
+            e_f = np.loadtxt(filename, usecols=(err_col,))
+        except:
+            e_f = None
+        TransitSignal.__init__(self, t, f, e_f, **kwargs)
+        
+        

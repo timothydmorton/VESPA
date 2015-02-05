@@ -87,8 +87,7 @@ class EclipsePopulation(StarPopulation):
             if len(self.stars)==0:
                 raise EmptyPopulationError('Zero elements in {} population'.format(model))
 
-        #This will throw error if trapezoid fits not done
-        #self.make_kdes()
+        self._make_kde()
 
     def fit_trapezoids(self, MAfn=None, msg=None, **kwargs):
         if MAfn is None:
@@ -144,10 +143,14 @@ class EclipsePopulation(StarPopulation):
 
         Keyword arguments passed to gaussian_kde
         """
-        #define points that are ok to use
-        ok = (self.stars['slope'] > 0) & (self.stars['duration'] > 0) & \
-            (self.stars['duration'] < self.period) & (self.depth > 0)
-        
+
+        try:
+            #define points that are ok to use
+            ok = (self.stars['slope'] > 0) & (self.stars['duration'] > 0) & \
+                (self.stars['duration'] < self.period) & (self.depth > 0)
+        except KeyError:
+            raise NoTrapfitError('Must do trapezoid fits before making KDE.')
+                
         if ok.sum() < 2:
             raise EmptyPopulationError('< 2 valid systems in population')
 
@@ -162,7 +165,7 @@ class EclipsePopulation(StarPopulation):
             durs_normed = (durs - durs.mean())/durs.std()
             slopes_normed = (slopes - slopes.mean())/slopes.std()
 
-            #use sklearn preprocessing to replace below
+            #TODO: use sklearn preprocessing to replace below
             self.mean_logdepth = logdeps.mean()
             self.std_logdepth = logdeps.std()
             self.mean_dur = durs.mean()
@@ -190,7 +193,7 @@ class EclipsePopulation(StarPopulation):
         """
         """
         if self.sklearn_kde:
-            #fix preprocessing
+            #TODO: fix preprocessing
             pts = np.array([(logd - self.mean_logdepth)/self.std_logdepth,
                             (dur - self.mean_dur)/self.std_dur,
                             (slope - self.mean_slope)/self.std_slope])
@@ -198,6 +201,20 @@ class EclipsePopulation(StarPopulation):
         else:
             return self.kde(np.array([logd, dur, slope]))
 
+    def trsig_lhood(self, trsig, recalc=False, cachefile=None):
+        """Returns likelihood of transit signal
+        """
+        if cachefile is None:
+            cachefile = self.lhoodcachefile
+
+        if self.is_ruled_out:
+            return 0
+
+        lh = self.kde(trsig.kde.dataset).sum()
+
+        return lh
+        
+        
     def lhoodplot(self, trsig=None, fig=None, label='', plotsignal=False, 
                   piechart=True, figsize=None, logscale=False,
                   constraints='all', suptitle='', Ltot=None,
@@ -300,8 +317,12 @@ class EclipsePopulation(StarPopulation):
         return ['period','model','priorfactors','lhoodcachefile'] + \
             super(EclipsePopulation,self)._properties
 
-    #def load_hdf(self, filename): #perhaps this doesn't need to be written?
-    #    pass
+    def load_hdf(self, filename): #perhaps this doesn't need to be written?
+        StarPopulation.load_hdf(self, filename)
+        try:
+            self._make_kde()
+        except NoTrapfitError:
+            logging.warning('Trapezoid fit not done.')
 
 class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'],
@@ -840,4 +861,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
 ####### Exceptions
 
 class EmptyPopulationError(Exception):
+    pass
+
+class NoTrapfitError(Exception):
     pass
