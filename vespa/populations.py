@@ -780,8 +780,9 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
         #df_orbpop = df_orbpop.iloc[:n]
         #orbpop = OrbitPopulation_FromDF(df_orbpop)            
 
-        #stars = stars.reset_index()
-        #stars.drop('index', axis=1, inplace=True)
+        stars.drop('level_0', axis=1, inplace=True) #dunno where this came from
+        stars = stars.reset_index()
+        stars.drop('index', axis=1, inplace=True)
 
         stars['mass_1'] = stars['mass_A']
         stars['radius_1'] = stars['radius_A']

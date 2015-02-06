@@ -42,7 +42,7 @@ def fitebs(data, MAfn=None, conv=True, use_pbar=True, msg='',
         pbar = ProgressBar(widgets=widgets,maxval=n)
         pbar.start()
 
-    for i in np.arange(n):
+    for i in xrange(n):
         pri = (data['dpri'][i] > data['dsec'][i]) or np.isnan(data['dsec'][i])
         sec = not pri
         secs[i] = sec
