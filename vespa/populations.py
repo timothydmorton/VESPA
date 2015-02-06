@@ -42,7 +42,11 @@ INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 import astropy.constants as const
 AU = const.au.cgs.value
 RSUN = const.R_sun.cgs.value
+MSUN = const.M_sun.cgs.value
 G = const.G.cgs.value
+REARTH = const.R_earth.cgs.value
+MEARTH = const.M_earth.cgs.value
+
 
 class EclipsePopulation(StarPopulation):
     def __init__(self, stars=None, period=None, model='',
@@ -342,9 +346,10 @@ class EclipsePopulation(StarPopulation):
 
 class PlanetPopulation(EclipsePopulation):
     def __init__(self, filename=None, period=None, rprs=None,
-                 mass=None, radius=None,
+                 mass=None, radius=None, Teff=None, logg=None,
                  band='Kepler', model='Planets', n=2e4,
                  fp_specific=None, u1=None, u2=None,
+                 rbin_width=0.3,
                  MAfn=None, lhoodcachefile=None, **kwargs):
         """Population of Transiting Planets
 
@@ -364,6 +369,8 @@ class PlanetPopulation(EclipsePopulation):
         self.band = band
         self.lhoodcachefile = lhoodcachefile
         self.rprs = rprs
+        self.Teff = Teff
+        self.logg = logg
         
         if filename is not None:
             self.load_hdf(filename)
@@ -371,20 +378,18 @@ class PlanetPopulation(EclipsePopulation):
             # calculates eclipses 
             self.generate(rprs=rprs, mass=mass, radius=radius,
                           n=n, fp_specific=fp_specific,
+                          u1=u1, u2=u2, Teff=Teff, logg=logg,
                           MAfn=MAfn, **kwargs)
 
     def generate(self,rprs=None, mass=None, radius=None,
-                n=2e4, fp_specific=0.01,
+                n=2e4, fp_specific=0.01, u1=None, u2=None,
+                Teff=Teff, logg=logg,
                 MAfn=None, **kwargs):
         """Generates transits
         """
 
-        stars = pd.DataFrame()
-        df_orbpop = pd.DataFrame() #for orbit population
-
-        tot_prob = None; tot_dprob = None; prob_norm = None
-        n_adapt = n
-
+        n = int(n)
+        
         if type(mass) is type((1,)):
             mass = dists.Gaussian_Distribution(*mass)
         if isinstance(mass, dists.Distribution):
@@ -396,46 +401,53 @@ class PlanetPopulation(EclipsePopulation):
         if isinstance(radius, dists.Distribution):
             rdist = radius
             radius = rdist.rvs(1e5)
+
+        if u1 is None or u2 is None:
+            if Teff is None or logg is None:
+                logging.warning('Teff, logg not provided; using solar limb darkening')
+                u1 = 0.394; u2=0.296
+            else:
+                u1 = ldcoeffs(Teff, logg)
+                u2 = ldcoeffs(Teff, logg)
             
-                                
+        #use point estimate of rprs to construct planets in radius bin
+        rp = self.rprs*radius.mean()
+        rbin_min = (1-rbin_width)*rp
+        rbin_max = (1+rbin_width)*rp
+        radius_p = np.random(1e5)*(rbin_max - rbin_min) + rbin_min
+        mass_p = (radius_p*RSUN/REARTH)**2.06 * MEARTH/MSUN #hokey, but doesn't matter
+
+        stars = pd.DataFrame()
+        #df_orbpop = pd.DataFrame() #for orbit population
+
+        tot_prob = None; tot_dprob = None; prob_norm = None
+        n_adapt = n
         while len(stars) < n:
-            pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
-                                                   f_triple=0, f_binary=1,
-                                                   n=n_adapt, **pop_kwargs)
-
-            s = pop.stars.copy()
-
-            #calculate limb-darkening coefficients
-            u1A, u2A = ldcoeffs(s['Teff_A'], s['logg_A'])
-            u1B, u2B = ldcoeffs(s['Teff_B'], s['logg_B'])
-
+            inds = np.random.randint(len(mass), size=n_adapt)
+            
             #calculate eclipses.
-            inds, df, (prob,dprob) = calculate_eclipses(s['mass_A'], s['mass_B'],
-                                                        s['radius_A'], s['radius_B'],
-                                                        s['{}_mag_A'.format(self.band)], 
-                                                        s['{}_mag_B'.format(self.band)],
-                                                        u11s=u1A, u21s=u2A,
-                                                        u12s=u1B, u22s=u2B, 
+            ecl_inds, df, (prob,dprob) = calculate_eclipses(mass[inds], mass_p[inds],
+                                                        radius[inds], radius_p[inds],
+                                                        15, np.inf, 
+                                                        u11s=u1, u21s=u2,
                                                         band=self.band, 
                                                         period=self.period, 
                                                         calc_mininc=True,
                                                         return_indices=True,
                                                         MAfn=MAfn)
 
-            s = s.iloc[inds].copy()
-            s.reset_index(inplace=True)
-            for col in df.columns:
-                s[col] = df[col]
-            stars = pd.concat((stars, s))
+            df['mass_A'] = mass[inds][ecl_inds]
+            df['mass_B'] = mass_p[inds][ecl_inds]
+            df['radius_A'] = radius[inds][ecl_inds]
+            df['radius_B'] = radius[inds][ecl_inds]
+            df['u1'] = u1
+            df['u2'] = u2
+            df['P'] = self.period
+            
+            stars = pd.concat((stars, df))
 
-            new_df_orbpop = pop.orbpop.orbpop_long.dataframe.iloc[inds].copy()
-            new_df_orbpop.reset_index(inplace=True)
-
-            df_orbpop = pd.concat((df_orbpop, new_df_orbpop))
-
-            logging.info('{} Eclipsing EB systems generated (target {})'.format(len(stars),n))
+            logging.info('{} Transiting planet systems generated (target {})'.format(len(stars),n))
             logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
-            logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
 
             if tot_prob is None:
                 prob_norm = (1/dprob**2)
@@ -449,19 +461,19 @@ class PlanetPopulation(EclipsePopulation):
             n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
             n_adapt = max(n_adapt, 100)
 
-        stars = stars.iloc[:n]
-        df_orbpop = df_orbpop.iloc[:n]
-        orbpop = OrbitPopulation_FromDF(df_orbpop)            
-
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
+        stars = stars.iloc[:n]
 
         stars['mass_1'] = stars['mass_A']
         stars['radius_1'] = stars['radius_A']
         stars['mass_2'] = stars['mass_B']
         stars['radius_2'] = stars['radius_B']
 
+        #make OrbitPopulation?
 
+        #finish below.
+                
         ColormatchMultipleStarPopulation.__init__(self, stars=stars,
                                                   orbpop=orbpop, 
                                                   f_triple=0, f_binary=f_binary,
