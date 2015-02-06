@@ -20,7 +20,7 @@ from .fitebs import fitebs
 
 from starutils.populations import StarPopulation, MultipleStarPopulation
 from starutils.populations import ColormatchMultipleStarPopulation
-from starutils.populations import BGStarPopulation
+from starutils.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
 from starutils.populations import DARTMOUTH
 from starutils.utils import draw_eccs, semimajor, withinroche
 from starutils.utils import mult_masses
@@ -73,7 +73,6 @@ class EclipsePopulation(StarPopulation):
 
         
         self.is_specific = False
-        self.is_ruled_out = False
 
         try:
             self.modelshort = SHORT_MODELNAMES[model]
@@ -153,8 +152,9 @@ class EclipsePopulation(StarPopulation):
             ok = (self.stars['slope'] > 0) & (self.stars['duration'] > 0) & \
                 (self.stars['duration'] < self.period) & (self.depth > 0)
         except KeyError:
-            raise NoTrapfitError('Must do trapezoid fits before making KDE.')
-                
+            logging.warning('Must do trapezoid fits before making KDE.')
+            return
+        
         if ok.sum() < 2:
             raise EmptyPopulationError('< 2 valid systems in population')
 
@@ -687,9 +687,10 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
 
     def generate(self, trilegal_filename, ra=None, dec=None,
                  n=2e4, ichrone=DARTMOUTH, MAfn=None,
-                 mags=None, maxrad=None, f_binary=0.4, **kwargs)
+                 mags=None, maxrad=None, f_binary=0.4, **kwargs):
 
-
+        n = int(n)
+        
         #generate/load BG primary stars from TRILEGAL simulation
         bgpop = BGStarPopulation_TRILEGAL(trilegal_filename,
                                         ra=ra, dec=dec, mags=mags,
@@ -698,9 +699,9 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
         # Make sure that
         # properties of stars are within allowable range for isochrone.
         # This is a bit hacky, admitted.
-        mass = bgpop.stars['m_ini']
-        age = bgpop.stars['logAge']
-        feh = bgpop.stars['[M/H]']
+        mass = bgpop.stars['m_ini'].values
+        age = bgpop.stars['logAge'].values
+        feh = bgpop.stars['[M/H]'].values
 
         pct = 0.05 #pct distance from "edges" of ichrone interpolation
         mass[mass < ichrone.minmass*(1+pct)] = ichrone.minmass*(1+pct)
@@ -710,18 +711,27 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
         feh[feh < ichrone.minfeh+0.05] = ichrone.minfeh+0.05
         feh[feh > ichrone.maxfeh-0.05] = ichrone.maxfeh-0.05
 
-        #Generate binary populations & eclipses
+        distance = bgpop.stars['distance'].values
+
+        #Generate binary population to draw eclipses from
+        pop = MultipleStarPopulation(mA=mass, age=age, feh=feh,
+                                            f_triple=0, f_binary=1,
+                                            distance=distance,
+                                            ichrone=ichrone)
+        
+        all_stars = pop.stars.dropna(subset=['mass_A'])
+        all_stars.reset_index(inplace=True)
+        
+        #generate eclipses
         stars = pd.DataFrame()
         df_orbpop = pd.DataFrame()
-        tot_prob = None, tot_dprob=None, prob_norm=None
+        tot_prob = None; tot_dprob=None; prob_norm=None
+                
         n_adapt = n
-        while len(stars) < n
-            pop = MultipleStarPopulation.__init__(mA=mass, age=age, feh=feh,
-                                            f_triple=0, f_binary=1,
-                                            distance=bgpop.stars['distance'],
-                                            ichrone=ichrone)
-            
-            s = pop.stars.dropna(subset=['mass_A'])
+        while len(stars) < n:
+            inds = np.random.randint(len(all_stars), size=n_adapt)
+
+            s = all_stars.iloc[inds]  
             
             #calculate limb-darkening coefficients
             u1A, u2A = ldcoeffs(s['Teff_A'], s['logg_A'])
@@ -744,14 +754,14 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
                 s[col] = df[col]
             stars = pd.concat((stars, s))
 
-            new_df_orbpop = pop.orbpop.orbpop_long.dataframe.iloc[inds].copy()
-            new_df_orbpop.reset_index(inplace=True)
+            #new_df_orbpop = pop.orbpop.orbpop_long.dataframe.iloc[inds].copy()
+            #new_df_orbpop.reset_index(inplace=True)
 
-            df_orbpop = pd.concat((df_orbpop, new_df_orbpop))
+            #df_orbpop = pd.concat((df_orbpop, new_df_orbpop))
 
             logging.info('{} BGEB systems generated (target {})'.format(len(stars),n))
-            logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
-            logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
+            #logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
+            #logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
 
             if tot_prob is None:
                 prob_norm = (1/dprob**2)
@@ -762,15 +772,17 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
                 tot_prob = (tot_prob/tot_dprob**2 + prob/dprob**2)/prob_norm
                 tot_dprob = 1/np.sqrt(prob_norm)
 
-            n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
+            n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e5)
+            #logging.debug('n_adapt = {}'.format(n_adapt))
             n_adapt = max(n_adapt, 100)
+            n_adapt = int(n_adapt)
             
         stars = stars.iloc[:n]
-        df_orbpop = df_orbpop.iloc[:n]
-        orbpop = OrbitPopulation_FromDF(df_orbpop)            
+        #df_orbpop = df_orbpop.iloc[:n]
+        #orbpop = OrbitPopulation_FromDF(df_orbpop)            
 
-        stars = stars.reset_index()
-        stars.drop('index', axis=1, inplace=True)
+        #stars = stars.reset_index()
+        #stars.drop('index', axis=1, inplace=True)
 
         stars['mass_1'] = stars['mass_A']
         stars['radius_1'] = stars['radius_A']
@@ -778,15 +790,17 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
         stars['radius_2'] = stars['radius_B']
             
         MultipleStarPopulation.__init__(self, stars=stars,
-                                        orbpop=orbpop,
+                                        #orbpop=orbpop,
                                         f_triple=0, f_binary=f_binary,
                                         period_long=self.period)
 
         priorfactors = {'f_binary':f_binary}
         self.density = bgpop.density
-        self.trilegal_args = trilegal_args
+        self.trilegal_args = bgpop.trilegal_args
 
-        EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
+        #create an OrbitPopulation here?
+        
+        EclipsePopulation.__init__(self, stars=stars, #orbpop=orbpop,
                                    period=self.period, model=self.model,
                                    lhoodcachefile=self.lhoodcachefile,
                                    priorfactors=priorfactors, prob=tot_prob)
@@ -811,6 +825,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     If single period desired, pass 'period' keyword.
     """
     if MAfn is None:
+        logging.warning('MAInterpolationFunction not passed, so generating one...')
         MAfn = MAInterpolationFunction(nzs=200,nps=400,pmin=0.007,pmax=1/0.007)
 
     M1s = np.atleast_1d(M1s)
