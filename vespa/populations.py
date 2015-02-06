@@ -338,7 +338,8 @@ class EclipsePopulation(StarPopulation):
             self._make_kde()
         except NoTrapfitError:
             logging.warning('Trapezoid fit not done.')
-
+        return self
+            
 class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'],
                  mass=None, age=None, feh=None, starfield=None, colortol=0.1,
@@ -677,7 +678,8 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
         if filename is not None:
             self.load_hdf(filename)
 
-        else:
+        elif trilegal_filename is not None or (ra is not None
+                                               and dec is not None):
             self.generate(trilegal_filename,
                           ra=ra, dec=dec, mags=mags,
                           n=n, ichrone=ichrone, MAfn=MAfn,
