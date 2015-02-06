@@ -339,7 +339,145 @@ class EclipsePopulation(StarPopulation):
         except NoTrapfitError:
             logging.warning('Trapezoid fit not done.')
         return self
+
+class PlanetPopulation(EclipsePopulation):
+    def __init__(self, filename=None, period=None, rprs=None,
+                 mass=None, radius=None,
+                 band='Kepler', model='Planets', n=2e4,
+                 fp_specific=None, u1=None, u2=None,
+                 MAfn=None, lhoodcachefile=None, **kwargs):
+        """Population of Transiting Planets
+
+        Mostly a copy of EBPopulation, with small modifications.
+
+        For simplicity, primary star has only a radius and mass;
+        the real properties don't matter at all.
+
+        
+                
+        If file is passed, population is loaded from .h5 file.
+
+        """
+
+        self.period = period
+        self.model = model
+        self.band = band
+        self.lhoodcachefile = lhoodcachefile
+        self.rprs = rprs
+        
+        if filename is not None:
+            self.load_hdf(filename)
+        elif radius is not None and mass is not None:
+            # calculates eclipses 
+            self.generate(rprs=rprs, mass=mass, radius=radius,
+                          n=n, fp_specific=fp_specific,
+                          MAfn=MAfn, **kwargs)
+
+    def generate(self,rprs=None, mass=None, radius=None,
+                n=2e4, fp_specific=0.01,
+                MAfn=None, **kwargs):
+        """Generates transits
+        """
+
+        stars = pd.DataFrame()
+        df_orbpop = pd.DataFrame() #for orbit population
+
+        tot_prob = None; tot_dprob = None; prob_norm = None
+        n_adapt = n
+
+        if type(mass) is type((1,)):
+            mass = dists.Gaussian_Distribution(*mass)
+        if isinstance(mass, dists.Distribution):
+            mdist = mass
+            mass = mdist.rvs(1e5)
+
+        if type(radius) is type((1,)):
+            radius = dists.Gaussian_Distribution(*radius)
+        if isinstance(radius, dists.Distribution):
+            rdist = radius
+            radius = rdist.rvs(1e5)
             
+                                
+        while len(stars) < n:
+            pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
+                                                   f_triple=0, f_binary=1,
+                                                   n=n_adapt, **pop_kwargs)
+
+            s = pop.stars.copy()
+
+            #calculate limb-darkening coefficients
+            u1A, u2A = ldcoeffs(s['Teff_A'], s['logg_A'])
+            u1B, u2B = ldcoeffs(s['Teff_B'], s['logg_B'])
+
+            #calculate eclipses.
+            inds, df, (prob,dprob) = calculate_eclipses(s['mass_A'], s['mass_B'],
+                                                        s['radius_A'], s['radius_B'],
+                                                        s['{}_mag_A'.format(self.band)], 
+                                                        s['{}_mag_B'.format(self.band)],
+                                                        u11s=u1A, u21s=u2A,
+                                                        u12s=u1B, u22s=u2B, 
+                                                        band=self.band, 
+                                                        period=self.period, 
+                                                        calc_mininc=True,
+                                                        return_indices=True,
+                                                        MAfn=MAfn)
+
+            s = s.iloc[inds].copy()
+            s.reset_index(inplace=True)
+            for col in df.columns:
+                s[col] = df[col]
+            stars = pd.concat((stars, s))
+
+            new_df_orbpop = pop.orbpop.orbpop_long.dataframe.iloc[inds].copy()
+            new_df_orbpop.reset_index(inplace=True)
+
+            df_orbpop = pd.concat((df_orbpop, new_df_orbpop))
+
+            logging.info('{} Eclipsing EB systems generated (target {})'.format(len(stars),n))
+            logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
+            logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
+
+            if tot_prob is None:
+                prob_norm = (1/dprob**2)
+                tot_prob = prob
+                tot_dprob = dprob
+            else:
+                prob_norm = (1/tot_dprob**2 + 1/dprob**2)
+                tot_prob = (tot_prob/tot_dprob**2 + prob/dprob**2)/prob_norm
+                tot_dprob = 1/np.sqrt(prob_norm)
+
+            n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
+            n_adapt = max(n_adapt, 100)
+
+        stars = stars.iloc[:n]
+        df_orbpop = df_orbpop.iloc[:n]
+        orbpop = OrbitPopulation_FromDF(df_orbpop)            
+
+        stars = stars.reset_index()
+        stars.drop('index', axis=1, inplace=True)
+
+        stars['mass_1'] = stars['mass_A']
+        stars['radius_1'] = stars['radius_A']
+        stars['mass_2'] = stars['mass_B']
+        stars['radius_2'] = stars['radius_B']
+
+
+        ColormatchMultipleStarPopulation.__init__(self, stars=stars,
+                                                  orbpop=orbpop, 
+                                                  f_triple=0, f_binary=f_binary,
+                                                  **pop_kwargs)
+
+        #self.prob = tot_prob
+        #self.dprob = tot_dprob #not really ever using this...?
+
+        priorfactors = {'f_binary':f_binary}
+
+        EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
+                                   period=self.period, model=self.model,
+                                   lhoodcachefile=self.lhoodcachefile,
+                                   priorfactors=priorfactors, prob=tot_prob)
+
+    
 class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'],
                  mass=None, age=None, feh=None, starfield=None, colortol=0.1,
@@ -782,7 +920,8 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
         #df_orbpop = df_orbpop.iloc[:n]
         #orbpop = OrbitPopulation_FromDF(df_orbpop)            
 
-        stars.drop('level_0', axis=1, inplace=True) #dunno where this came from
+        if 'level_0' in stars:
+            stars.drop('level_0', axis=1, inplace=True) #dunno where this came from
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
 
