@@ -582,7 +582,6 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                                                         calc_mininc=True,
                                                         return_indices=True,
                                                         MAfn=MAfn)
-
             s = s.iloc[inds].copy()
             s.reset_index(inplace=True)
             for col in df.columns:
