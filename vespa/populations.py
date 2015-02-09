@@ -235,10 +235,11 @@ class EclipsePopulation(StarPopulation):
         
         
     def lhoodplot(self, trsig=None, fig=None, label='', plotsignal=False, 
-                  piechart=True, figsize=None, logscale=False,
+                  piechart=True, figsize=None, logscale=True,
                   constraints='all', suptitle='', Ltot=None,
                   maxdur=None, maxslope=None, inverse=False, 
                   colordict=None, cachefile=None, nbins=20,
+                  dur_range=None, slope_range=None, depth_range=None,
                   **kwargs):
         setfig(fig, figsize=figsize)
 
@@ -251,10 +252,10 @@ class EclipsePopulation(StarPopulation):
             ddur = ddur.reshape((2,1))
             dslope = dslope.reshape((2,1))
             
-            if maxdur is None:
-                maxdur = dur*2
-            if maxslope is None:
-                maxslope = slope*2
+            if dur_range is None:
+                dur_range = (0,dur*2)
+            if slope_range is None:
+                slope_range = (2,slope*2)
 
         if constraints == 'all':
             mask = self.distok
@@ -269,10 +270,31 @@ class EclipsePopulation(StarPopulation):
         if inverse:
             mask = ~mask
 
-        if maxdur is None:
-            maxdur = self.stars[mask]['duration'].max()
-        if maxslope is None:
-            maxslope = self.stars[mask]['slope'].max()
+        if dur_range is None:
+            dur_range = (self.stars[mask]['duration'].min(),
+                         self.stars[mask]['duration'].max())
+        if slope_range is None:
+            slope_range = (2,self.stars[mask]['slope'].max())
+        if depth_range is None:
+            depth_range = (-5,-0.1)
+
+        #This may mess with intended "inverse" behavior, probably?
+        mask &= ((self.stars['duration'] > dur_range[0]) & 
+                 (self.stars['duration'] < dur_range[1]))
+        mask &= ((self.stars['duration'] > dur_range[0]) & 
+                 (self.stars['duration'] < dur_range[1]))
+
+        mask &= ((self.stars['slope'] > slope_range[0]) & 
+                 (self.stars['slope'] < slope_range[1]))
+        mask &= ((self.stars['slope'] > slope_range[0]) & 
+                 (self.stars['slope'] < slope_range[1]))
+
+        mask &= ((np.log10(self.depth) > depth_range[0]) & 
+                 (np.log10(self.depth) < depth_range[1]))
+        mask &= ((np.log10(self.depth) > depth_range[0]) & 
+                 (np.log10(self.depth) < depth_range[1]))
+
+
 
 
         if piechart:
@@ -291,11 +313,12 @@ class EclipsePopulation(StarPopulation):
                          ms=10,mew=1.5)
         plt.ylabel(r'log($\delta$)')
         plt.xlabel('')
+        plt.xlim(dur_range)
+        plt.ylim(depth_range)
         yt = ax1.get_yticks()
         plt.yticks(yt[1:])
         xt = ax1.get_xticks()
         plt.xticks(xt[2:-1:2])
-        plt.xlim(xmax=maxdur)
 
         ax3 = plt.subplot(223)
         if not self.is_ruled_out:
@@ -309,9 +332,10 @@ class EclipsePopulation(StarPopulation):
                          ms=10,mew=1.5)               
         plt.ylabel(r'$T/\tau$')
         plt.xlabel(r'log($\delta$)')
+        plt.ylim(slope_range)
+        plt.xlim(depth_range)
         yt = ax3.get_yticks()
         plt.yticks(yt[1:])
-        plt.ylim(ymin=2, ymax=maxslope)
 
         ax4 = plt.subplot(224)
         if not self.is_ruled_out:
@@ -325,11 +349,10 @@ class EclipsePopulation(StarPopulation):
                          ms=10,mew=1.5)               
         plt.ylabel('')
         plt.xlabel(r'$T$ [days]')
+        plt.ylim(slope_range)
+        plt.xlim(dur_range)
         plt.xticks(xt[2:-1:2])
         plt.yticks(ax3.get_yticks())
-        plt.ylim(ymin=2)
-        plt.ylim(ymax=maxslope)
-        plt.xlim(xmax=maxdur)
 
         ticklabels = ax1.get_xticklabels() + ax4.get_yticklabels()
         plt.setp(ticklabels,visible=False)
