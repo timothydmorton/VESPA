@@ -107,7 +107,7 @@ class EclipsePopulation(StarPopulation):
 
     @property
     def dilution_factor(self):
-        return 1
+        return np.ones(len(self.stars))
 
     @property
     def depth(self):
@@ -243,7 +243,18 @@ class EclipsePopulation(StarPopulation):
         setfig(fig, figsize=figsize)
 
         if trsig is not None:
-            raise NotImplementedError('trsig not implemented yet')
+            dep,ddep = trsig.logdepthfit
+            dur,ddur = trsig.durfit
+            slope,dslope = trsig.slopefit
+
+            ddep = ddep.reshape((2,1))
+            ddur = ddur.reshape((2,1))
+            dslope = dslope.reshape((2,1))
+            
+            if maxdur is None:
+                maxdur = dur*2
+            if maxslope is None:
+                maxslope = slope*2
 
         if constraints == 'all':
             mask = self.distok
@@ -274,8 +285,10 @@ class EclipsePopulation(StarPopulation):
                             mask=mask, interpolation='bicubic', 
                             logscale=logscale, nbins=nbins, **kwargs)
         if trsig is not None:
-            #plot transit signal
-            pass
+            plt.errorbar(dur,dep,xerr=ddur,yerr=ddep,color='w',marker='x',
+                         ms=12,mew=3,lw=3,capsize=3,mec='w')  
+            plt.errorbar(dur,dep,xerr=ddur,yerr=ddep,color='r',marker='x',
+                         ms=10,mew=1.5)
         plt.ylabel(r'log($\delta$)')
         plt.xlabel('')
         yt = ax1.get_yticks()
@@ -290,8 +303,10 @@ class EclipsePopulation(StarPopulation):
                             mask=mask, interpolation='bicubic', 
                             logscale=logscale, nbins=nbins, **kwargs)
         if trsig is not None:
-            #plot transit signal
-            pass
+            plt.errorbar(dep,slope,xerr=ddep,yerr=dslope,color='w',marker='x',
+                         ms=12,mew=3,lw=3,capsize=3,mec='w')
+            plt.errorbar(dep,slope,xerr=ddep,yerr=dslope,color='r',marker='x',
+                         ms=10,mew=1.5)               
         plt.ylabel(r'$T/\tau$')
         plt.xlabel(r'log($\delta$)')
         yt = ax3.get_yticks()
@@ -304,8 +319,10 @@ class EclipsePopulation(StarPopulation):
                             mask=mask, interpolation='bicubic', 
                             logscale=logscale, nbins=nbins, **kwargs)
         if trsig is not None:
-            #plot transit signal
-            pass
+            plt.errorbar(dur,slope,xerr=ddur,yerr=dslope,color='w',marker='x',
+                         ms=12,mew=3,lw=3,capsize=3,mec='w')   
+            plt.errorbar(dur,slope,xerr=ddur,yerr=dslope,color='r',marker='x',
+                         ms=10,mew=1.5)               
         plt.ylabel('')
         plt.xlabel(r'$T$ [days]')
         plt.xticks(xt[2:-1:2])
@@ -383,7 +400,7 @@ class PlanetPopulation(EclipsePopulation):
 
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
-                Teff=Teff, logg=logg,
+                Teff=None, logg=None,
                 MAfn=None, **kwargs):
         """Generates transits
         """
@@ -835,6 +852,13 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
                           n=n, ichrone=ichrone, MAfn=MAfn,
                           maxrad=maxrad, f_binary=f_binary, **kwargs)
 
+    @property
+    def dilution_factor(self):
+        if self.mags is None:
+            return super(BGEBPopulation, self).dilution_factor
+        else:
+            b = self.band
+            return fluxfrac(self.stars['{}_mag'.format(b)], self.mags[b])
 
     def generate(self, trilegal_filename, ra=None, dec=None,
                  n=2e4, ichrone=DARTMOUTH, MAfn=None,
