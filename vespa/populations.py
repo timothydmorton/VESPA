@@ -477,6 +477,7 @@ class PlanetPopulation(EclipsePopulation):
         tot_prob = None; tot_dprob = None; prob_norm = None
         n_adapt = n
         while len(stars) < n:
+            n_adapt = int(n_adapt)
             inds = np.random.randint(len(mass), size=n_adapt)
             
             #calculate eclipses.
@@ -601,6 +602,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         tot_prob = None; tot_dprob = None; prob_norm = None
         n_adapt = n
         while len(stars) < n:
+            n_adapt = int(n_adapt)
             pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
                                                    f_triple=0, f_binary=1,
                                                    n=n_adapt, 
@@ -756,6 +758,8 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         tot_prob = None; tot_dprob = None; prob_norm = None
         n_adapt = n
         while len(stars) < n:
+            n_adapt = int(n_adapt)
+
             pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
                                                    f_triple=1,
                                                    n=n_adapt, **pop_kwargs)
@@ -936,6 +940,7 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
                 
         n_adapt = n
         while len(stars) < n:
+            n_adapt = int(n_adapt)
             inds = np.random.randint(len(all_stars), size=n_adapt)
 
             s = all_stars.iloc[inds]  
@@ -1043,6 +1048,13 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     M2s = np.atleast_1d(M2s)
     R1s = np.atleast_1d(R1s)
     R2s = np.atleast_1d(R2s)
+
+    nbad = (np.isnan(M1s) | np.isnan(M2s) | np.isnan(R1s) | np.isnan(R2s)).sum()
+    if nbad > 0:
+        logging.warning('{} M1s are nan'.format(np.isnan(M1s).sum()))
+        logging.warning('{} M2s are nan'.format(np.isnan(M2s).sum()))
+        logging.warning('{} R1s are nan'.format(np.isnan(R1s).sum()))
+        logging.warning('{} R2s are nan'.format(np.isnan(R2s).sum()))
 
     mag1s = mag1s * np.ones_like(M1s)
     mag2s = mag2s * np.ones_like(M1s)
