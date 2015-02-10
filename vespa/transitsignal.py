@@ -83,7 +83,7 @@ class TransitSignal(object):
             if trap_kwargs is None:
                 trap_kwargs = {}
             plt.plot(self.ts, traptransit(self.ts,self.trapfit),
-                     color=tt_color, **trap_kwargs)
+                     color=trap_color, **trap_kwargs)
 
         if name is not None:
             if type(name)==type(''):

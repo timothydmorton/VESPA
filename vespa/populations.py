@@ -27,6 +27,10 @@ from starutils.utils import mult_masses
 from starutils.utils import fluxfrac, addmags
 from starutils.utils import RAGHAVAN_LOGPERKDE
 
+from starutils.constraints import UpperLimit
+
+import simpledist.distributions as dists
+
 from orbitutils.populations import OrbitPopulation_FromDF, TripleOrbitPopulation_FromDF
 
 SHORT_MODELNAMES = {'Planets':'pl',
@@ -74,19 +78,7 @@ class EclipsePopulation(StarPopulation):
         self.priorfactors = priorfactors
         self.prob = prob #calculate this if not provided?
         self.lhoodcachefile = lhoodcachefile
-
-        
         self.is_specific = False
-
-        try:
-            self.modelshort = SHORT_MODELNAMES[model]
-            
-            #add index if specific model is indexed
-            if hasattr(self,'index'):
-                self.modelshort += '-{}'.format(self.index)
-
-        except KeyError:
-            raise KeyError('No short name for model: %s' % model)
 
         StarPopulation.__init__(self, stars=stars, orbpop=orbpop, **kwargs)
         
@@ -106,12 +98,33 @@ class EclipsePopulation(StarPopulation):
             self.stars[col] = trapfit_df[col]
 
     @property
+    def modelshort(self):
+        try:
+            name = SHORT_MODELNAMES[model]
+            
+            #add index if specific model is indexed
+            if hasattr(self,'index'):
+                name += '-{}'.format(self.index)
+
+            return name
+
+        except KeyError:
+            raise KeyError('No short name for model: %s' % model)        
+
+    @property
     def dilution_factor(self):
         return np.ones(len(self.stars))
 
     @property
     def depth(self):
         return self.dilution_factor * self.stars['depth']
+
+    @property
+    def secondary_depth(self):
+        return self.dilution_factor * self.stars['secdepth']
+
+    def constrain_secdepth(self, thresh):
+        self.apply_constraint(UpperLimit(self.secondary_depth, thresh, name='secondary depth'))
 
     def fluxfrac_eclipsing(self, band=None):
         pass
@@ -373,11 +386,12 @@ class EclipsePopulation(StarPopulation):
 
     @property
     def _properties(self):
-        return ['period','model','priorfactors','lhoodcachefile'] + \
+        return ['period','model','priorfactors','prob','lhoodcachefile',
+                'is_specific'] + \
             super(EclipsePopulation,self)._properties
 
-    def load_hdf(self, filename): #perhaps this doesn't need to be written?
-        StarPopulation.load_hdf(self, filename)
+    def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
+        StarPopulation.load_hdf(self, filename, path=path)
         try:
             self._make_kde()
         except NoTrapfitError:
@@ -388,7 +402,7 @@ class PlanetPopulation(EclipsePopulation):
     def __init__(self, filename=None, period=None, rprs=None,
                  mass=None, radius=None, Teff=None, logg=None,
                  band='Kepler', model='Planets', n=2e4,
-                 fp_specific=None, u1=None, u2=None,
+                 fp_specific=0.01, u1=None, u2=None,
                  rbin_width=0.3,
                  MAfn=None, lhoodcachefile=None, **kwargs):
         """Population of Transiting Planets
@@ -417,13 +431,14 @@ class PlanetPopulation(EclipsePopulation):
         elif radius is not None and mass is not None:
             # calculates eclipses 
             self.generate(rprs=rprs, mass=mass, radius=radius,
-                          n=n, fp_specific=fp_specific,
+                          n=n, fp_specific=fp_specific, 
+                          rbin_width=rbin_width,
                           u1=u1, u2=u2, Teff=Teff, logg=logg,
                           MAfn=MAfn, **kwargs)
 
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
-                Teff=None, logg=None,
+                Teff=None, logg=None, rbin_width=0.3,
                 MAfn=None, **kwargs):
         """Generates transits
         """
@@ -447,14 +462,13 @@ class PlanetPopulation(EclipsePopulation):
                 logging.warning('Teff, logg not provided; using solar limb darkening')
                 u1 = 0.394; u2=0.296
             else:
-                u1 = ldcoeffs(Teff, logg)
-                u2 = ldcoeffs(Teff, logg)
+                u1,u2 = ldcoeffs(Teff, logg)
             
         #use point estimate of rprs to construct planets in radius bin
         rp = self.rprs*radius.mean()
         rbin_min = (1-rbin_width)*rp
         rbin_max = (1+rbin_width)*rp
-        radius_p = np.random(1e5)*(rbin_max - rbin_min) + rbin_min
+        radius_p = np.random.random(1e5)*(rbin_max - rbin_min) + rbin_min
         mass_p = (radius_p*RSUN/REARTH)**2.06 * MEARTH/MSUN #hokey, but doesn't matter
 
         stars = pd.DataFrame()
@@ -468,7 +482,7 @@ class PlanetPopulation(EclipsePopulation):
             #calculate eclipses.
             ecl_inds, df, (prob,dprob) = calculate_eclipses(mass[inds], mass_p[inds],
                                                         radius[inds], radius_p[inds],
-                                                        15, np.inf, 
+                                                        15, np.inf, #arbitrary
                                                         u11s=u1, u21s=u2,
                                                         band=self.band, 
                                                         period=self.period, 
@@ -479,10 +493,10 @@ class PlanetPopulation(EclipsePopulation):
             df['mass_A'] = mass[inds][ecl_inds]
             df['mass_B'] = mass_p[inds][ecl_inds]
             df['radius_A'] = radius[inds][ecl_inds]
-            df['radius_B'] = radius[inds][ecl_inds]
-            df['u1'] = u1
-            df['u2'] = u2
-            df['P'] = self.period
+            df['radius_B'] = radius_p[inds][ecl_inds]
+            df['u1'] = u1 * np.ones_like(df['mass_A'])
+            df['u2'] = u2 * np.ones_like(df['mass_A'])
+            df['P'] = self.period * np.ones_like(df['mass_A'])
             
             stars = pd.concat((stars, df))
 
@@ -498,7 +512,7 @@ class PlanetPopulation(EclipsePopulation):
                 tot_prob = (tot_prob/tot_dprob**2 + prob/dprob**2)/prob_norm
                 tot_dprob = 1/np.sqrt(prob_norm)
 
-            n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(s)), 5e4)
+            n_adapt = min(int(1.2*(n-len(stars)) * n_adapt//len(df)), 5e4)
             n_adapt = max(n_adapt, 100)
 
         stars = stars.reset_index()
@@ -514,17 +528,9 @@ class PlanetPopulation(EclipsePopulation):
 
         #finish below.
                 
-        ColormatchMultipleStarPopulation.__init__(self, stars=stars,
-                                                  orbpop=orbpop, 
-                                                  f_triple=0, f_binary=f_binary,
-                                                  **pop_kwargs)
+        priorfactors = {'fp_specific':fp_specific}
 
-        #self.prob = tot_prob
-        #self.dprob = tot_dprob #not really ever using this...?
-
-        priorfactors = {'f_binary':f_binary}
-
-        EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
+        EclipsePopulation.__init__(self, stars=stars,
                                    period=self.period, model=self.model,
                                    lhoodcachefile=self.lhoodcachefile,
                                    priorfactors=priorfactors, prob=tot_prob)
@@ -597,7 +603,9 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         while len(stars) < n:
             pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
                                                    f_triple=0, f_binary=1,
-                                                   n=n_adapt, **pop_kwargs)
+                                                   n=n_adapt, 
+                                                   period_short=0,
+                                                   **pop_kwargs)
 
             s = pop.stars.copy()
 
@@ -661,6 +669,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         ColormatchMultipleStarPopulation.__init__(self, stars=stars,
                                                   orbpop=orbpop, 
                                                   f_triple=0, f_binary=f_binary,
+                                                  period_short=0,
                                                   **pop_kwargs)
 
         #self.prob = tot_prob
@@ -1014,7 +1023,7 @@ class BGEBPopulation(EclipsePopulation, MultipleStarPopulation):
 ############ Utility Functions ##############
     
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
-                       u11s=None, u21s=None, u12s=None, u22s=None,
+                       u11s=0.394, u21s=0.296, u12s=0.394, u22s=0.296,
                        Ps=None, period=None, logperkde=RAGHAVAN_LOGPERKDE,
                        incs=None, eccs=None, band='i',
                        mininc=None, maxecc=0.97, verbose=False,
@@ -1023,6 +1032,8 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     """Returns random eclipse parameters for provided inputs
 
     If single period desired, pass 'period' keyword.
+
+    M1s, M2s, R1s, R2s must be array_like
     """
     if MAfn is None:
         logging.warning('MAInterpolationFunction not passed, so generating one...')
@@ -1032,15 +1043,16 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     M2s = np.atleast_1d(M2s)
     R1s = np.atleast_1d(R1s)
     R2s = np.atleast_1d(R2s)
-    mag1s = np.atleast_1d(mag1s)
-    mag2s = np.atleast_1d(mag2s)
-    u11s = np.atleast_1d(u11s)
-    u12s = np.atleast_1d(u12s)
-    u21s = np.atleast_1d(u21s)
-    u22s = np.atleast_1d(u22s)
+
+    mag1s = mag1s * np.ones_like(M1s)
+    mag2s = mag2s * np.ones_like(M1s)
+    u11s = u11s * np.ones_like(M1s)
+    u21s = u21s * np.ones_like(M1s)
+    u12s = u12s * np.ones_like(M1s)
+    u22s = u22s * np.ones_like(M1s)
 
     n = np.size(M1s)
-    
+
     #a bit clunky here, but works.
     simPs = False
     if period:
