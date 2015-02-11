@@ -4,6 +4,7 @@ import logging
 
 import numpy as np
 import os, os.path
+import re
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -103,6 +104,9 @@ class EclipsePopulation(StarPopulation):
 
     @property
     def eclipseprob(self):
+        """
+        """
+        #TODO: incorporate eccentricity/omega for exact calculation?
         s = self.stars
         return ((s['radius_1'] + s['radius_2'])*RSUN / 
                 (semimajor(s['P'],s['mass_1'] + s['mass_2'])*AU))
@@ -1054,15 +1058,21 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
             
 class PopulationSet(object):
-    def __init__(self,poplist,constraints=None,lhoodcachefile=None):
-        self.poplist = poplist
-        if constraints is None:
-            constraints = []
-        self.constraints = constraints
-        self.hidden_constraints = []
+    def __init__(self,poplist,constraints=None):
+
+        #if string is passed, load from file
+        if type(poplist)==type(''):
+            self.load_hdf(poplist)
+        else:
+            self.poplist = poplist
+            if constraints is None:
+                constraints = []
+            self.constraints = constraints
+            self.hidden_constraints = []
+
         self.modelnames = []
         self.shortmodelnames = []
-        self.lhoodcachefile = lhoodcachefile
+
         for pop in self.poplist:
             if pop.model in self.modelnames:
                 raise ValueError('cannot have more than one model of the same name in PopulationSet')
@@ -1070,6 +1080,31 @@ class PopulationSet(object):
             self.shortmodelnames.append(pop.modelshort)
 
         #self.apply_dmaglim()  #a bit of a hack here; this should be slicker...
+
+
+    def save_hdf(self, filename, path='', overwrite=False):
+        if os.path.exists(filename) and overwrite:
+            os.remove(filename)
+
+        for pop in self.poplist:
+            name = pop.modelshort
+            pop.save_hdf(filename, path='{}/{}'.format(path,name), append=True)
+
+    def load_hdf(self, filename, path=''):
+        store = pd.HDFStore(filename)
+        models = []
+        types = []
+        for k in store.keys():
+            m = re.search('/(\S+)/stars', k)
+            if m:
+                models.append(m.group(1))
+                types.append(store.get_storer(m.group(0)).attrs.poptype)
+        poplist = []
+        for m,t in zip(models,types):
+            poplist.append(t().load_hdf(filename, path='{}/{}'.format(path,m)))
+        
+        PopulationSet.__init__(self, poplist) #how to deal with saved constraints?
+        return self
 
     def add_population(self,pop):
         if pop.model in self.modelnames:
