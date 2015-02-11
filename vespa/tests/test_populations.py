@@ -9,7 +9,7 @@ TMP = tempfile.gettempdir()
 
 from vespa.transit_basic import MAInterpolationFunction
 
-MAfn = MAInterpolationFunction(nzs=50,nps=100,pmin=0.05,pmax=1/0.05)
+MAfn = MAInterpolationFunction(nzs=100,nps=200,pmin=0.007,pmax=1/0.007)
 
 def test_heb(filename=os.path.join(TMP,'test_heb.h5')):
     mass = (0.83, 0.05)

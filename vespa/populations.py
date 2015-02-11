@@ -114,7 +114,7 @@ class EclipsePopulation(StarPopulation):
     @property
     def modelshort(self):
         try:
-            name = SHORT_MODELNAMES[model]
+            name = SHORT_MODELNAMES[self.model]
             
             #add index if specific model is indexed
             if hasattr(self,'index'):
@@ -123,7 +123,7 @@ class EclipsePopulation(StarPopulation):
             return name
 
         except KeyError:
-            raise KeyError('No short name for model: %s' % model)        
+            raise KeyError('No short name for model: %s' % self.model)        
 
     @property
     def dilution_factor(self):
