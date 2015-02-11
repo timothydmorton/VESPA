@@ -769,7 +769,7 @@ def fit_traptransit(ts,fs,p0):
     pfit,success = leastsq(tru.traptransit_resid,p0,args=(ts,fs))
     if success not in [1,2,3,4]:
         raise NoFitError
-    logging.debug('success = {}'.format(success))
+    #logging.debug('success = {}'.format(success))
     return pfit
 
 class TraptransitModel(object):

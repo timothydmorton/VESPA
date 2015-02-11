@@ -1145,9 +1145,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     else:
         prob = 1
 
-    bad_incs = np.isnan(incs) 
-    if bad_incs.sum() > 0:
-        logging.warning('{} nan inclinations. why?'.format(bad_incs.sum()))
+    logging.debug('initial probability given mininc starting at {}'.format(prob))
 
     ws = np.random.random(n)*2*np.pi
 
@@ -1272,6 +1270,8 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                         'u1_1':u11, 'u2_1':u21, 'u1_2':u12, 'u2_2':u22})
 
     df.reset_index(inplace=True)
+
+    logging.debug('final prob: {}'.format(prob))
 
     if return_indices:
         return wany, df, (prob, prob*np.sqrt(nany)/n)
