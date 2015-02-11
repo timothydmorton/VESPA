@@ -584,7 +584,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
         stars from ColormatchStellarPopulation; eclipses using calculate_eclipses
         """
-
+        n = int(n)
         #if provided, period_long (self.period) 
         #  is the observed period of the eclipse
         pop_kwargs = {'mags':mags, 'colors':colors,
@@ -739,7 +739,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
         stars from ColormatchStellarPopulation; eclipses using calculate_eclipses
         """
-
+        n = int(n)
         #if provided, period_short (self.period) 
         #  is the observed period of the eclipse
         pop_kwargs = {'mags':mags, 'colors':colors,
@@ -1081,6 +1081,13 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
             eccs = draw_eccs(n,Ps,maxecc=maxecc)
         simeccs = True
 
+    bad_Ps = np.isnan(Ps)
+    if bad_Ps.sum()>0:
+        logging.warning('{} nan periods.  why?'.format(bad_Ps.sum()))
+    bad_eccs = np.isnan(eccs)
+    if bad_eccs.sum()>0:
+        logging.warning('{} nan eccentricities.  why?'.format(bad_eccs.sum()))
+
     semimajors = semimajor(Ps, M1s+M2s)*AU #in AU
 
     #check to see if there are simulated instances that are
@@ -1102,8 +1109,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
             if ntooclose==lastntooclose:   #prevent infinite loop
                 tries += 1
                 if tries > maxtries:
-                    if verbose:
-                        logging.info('{} binaries are "too close"; gave up trying to fix.'.format(ntooclose))
+                    logging.info('{} binaries are "too close"; gave up trying to fix.'.format(ntooclose))
                     break                       
     else:
         while ntooclose > 0:
@@ -1117,8 +1123,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
             if ntooclose==lastntooclose:   #prevent infinite loop
                 tries += 1
                 if tries > maxtries:
-                    if verbose:
-                        logging.info('{} binaries are "too close"; gave up trying to fix.'.format(ntooclose))
+                    logging.info('{} binaries are "too close"; gave up trying to fix.'.format(ntooclose))
                     break                       
 
     #randomize inclinations, either full range, or within restricted range
@@ -1134,6 +1139,10 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
         prob = np.cos(mininc*np.pi/180)
     else:
         prob = 1
+
+    bad_incs = np.isnan(incs) 
+    if bad_incs.sum() > 0:
+        logging.warning('{} nan inclinations. why?'.format(bad_incs.sum()))
 
     ws = np.random.random(n)*2*np.pi
 
