@@ -1250,6 +1250,9 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     dtra[(np.isnan(dtra))] = 0
     docc[(np.isnan(docc))] = 0
 
+    if np.any(np.isnan(ecc)):
+        logging.warning('{} nans in eccentricity.  why?'.format(np.isnan(ecc).sum()))
+
     df =  pd.DataFrame({'{}_mag_tot'.format(band) : totmag,
                         'P':P, 'ecc':ecc, 'inc':inc, 'w':w,
                         'dpri':dtra, 'dsec':docc,
@@ -1262,6 +1265,8 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                         'fluxfrac_2':F2/(F1+F2),
                         'switched':switched,
                         'u1_1':u11, 'u2_1':u21, 'u1_2':u12, 'u2_2':u22})
+
+    df.reset_index(inplace=True)
 
     if return_indices:
         return wany, df, (prob, prob*np.sqrt(nany)/n)
