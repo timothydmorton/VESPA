@@ -23,7 +23,7 @@ from starutils.populations import ColormatchMultipleStarPopulation
 from starutils.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
 from starutils.populations import DARTMOUTH
 from starutils.utils import draw_eccs, semimajor, withinroche
-from starutils.utils import mult_masses
+from starutils.utils import mult_masses, randpos_in_circle
 from starutils.utils import fluxfrac, addmags
 from starutils.utils import RAGHAVAN_LOGPERKDE
 
@@ -43,6 +43,7 @@ SHORT_MODELNAMES = {'Planets':'pl',
                         
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 
+import astropy.units as u
 import astropy.constants as const
 AU = const.au.cgs.value
 RSUN = const.R_sun.cgs.value
@@ -96,6 +97,19 @@ class EclipsePopulation(StarPopulation):
         trapfit_df = fitebs(self.stars, MAfn=MAfn, msg=msg, **kwargs)
         for col in trapfit_df.columns:
             self.stars[col] = trapfit_df[col]
+
+    def apply_multicolor_transit(self, band, depth):
+        raise NotImplementedError('multicolor transit not yet implemented')
+
+    @property
+    def eclipseprob(self):
+        s = self.stars
+        return ((s['radius_1'] + s['radius_2'])*RSUN / 
+                (semimajor(s['P'],s['mass_1'] + s['mass_2'])*AU))
+
+    @property
+    def mean_eclipseprob(self):
+        return self.eclipseprob.mean()
 
     @property
     def modelshort(self):
@@ -856,7 +870,8 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
             
 
 
-class BEBPopulation(EclipsePopulation, MultipleStarPopulation):
+class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
+                    BGStarPopulation):
     def __init__(self, filename=None, period=None, mags=None,
                  ra=None, dec=None, trilegal_filename=None,
                  n=2e4, ichrone=DARTMOUTH, band='Kepler',
@@ -891,7 +906,8 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation):
 
     @property
     def prior(self):
-        prior = super(BEBPopulation, self).prior * self.density.to('arcsec^-2').value
+        return super(BEBPopulation, self).prior * self.density.to('arcsec^-2').value
+        
 
     @property
     def dilution_factor(self):
@@ -1014,8 +1030,11 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation):
                                         period_long=self.period)
 
         priorfactors = {'f_binary':f_binary}
+
+        #attributes needed for BGStarPopulation
         self.density = bgpop.density
         self.trilegal_args = bgpop.trilegal_args
+        self._maxrad = bgpop._maxrad
 
         #create an OrbitPopulation here?
         
@@ -1024,12 +1043,207 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation):
                                    lhoodcachefile=self.lhoodcachefile,
                                    priorfactors=priorfactors, prob=tot_prob)
 
+        #add Rsky property
+        self.stars['Rsky'] = randpos_in_circle(len(self.stars), 
+                                               self._maxrad, return_rad=True)
+
     @property
     def _properties(self):
         return ['density','trilegal_args','mags'] + \
           super(BEBPopulation, self)._properties
 
             
+class PopulationSet(object):
+    def __init__(self,poplist,constraints=None,lhoodcachefile=None):
+        self.poplist = poplist
+        if constraints is None:
+            constraints = []
+        self.constraints = constraints
+        self.hidden_constraints = []
+        self.modelnames = []
+        self.shortmodelnames = []
+        self.lhoodcachefile = lhoodcachefile
+        for pop in self.poplist:
+            if pop.model in self.modelnames:
+                raise ValueError('cannot have more than one model of the same name in PopulationSet')
+            self.modelnames.append(pop.model)
+            self.shortmodelnames.append(pop.modelshort)
+
+        #self.apply_dmaglim()  #a bit of a hack here; this should be slicker...
+
+    def add_population(self,pop):
+        if pop.model in self.modelnames:
+            raise ValueError('%s model already in PopulationSet.' % pop.model)
+        self.modelnames.append(pop.model)
+        self.shortmodelnames.append(pop.modelshort)
+        self.poplist.append(pop)
+        self.apply_dmaglim()
+
+    def remove_population(self,pop):
+        iremove=None
+        for i in range(len(self.poplist)):
+            if self.modelnames[i]==self.poplist[i].model:
+                iremove=i
+        if iremove is not None:
+            self.modelnames.pop(i)
+            self.shortmodelnames.pop(i)
+            self.poplist.pop(i)
+
+    def __hash__(self):
+        key = 0
+        for pop in self.poplist:
+            key = hashcombine(key,pop)
+        return key
+
+    def __getitem__(self,name):
+        name = name.lower()
+        if name in ['pl','pls']:
+            name = 'planets'
+        elif name in ['eb','ebs']:
+            name = 'ebs'
+        elif name in ['heb','hebs']:
+            name = 'hebs'
+        elif name in ['beb','bebs','bgeb','bgebs']:
+            name = 'bebs'
+        elif name in ['bpl','bgpl','bpls','bgpls']:
+            name = 'blended planets'
+        elif name in ['sbeb','sbgeb','sbebs','sbgebs']:
+            name = 'specific beb'
+        elif name in ['sheb','shebs']:
+            name = 'specific heb'
+        for pop in self.poplist:
+            if name==pop.model.lower():
+                return pop
+        raise ValueError('%s not in modelnames: %s' % (name,self.modelnames))
+
+    @property
+    def colordict(self):
+        d = {}
+        i=0
+        n = len(self.constraints)
+        for c in self.constraints:
+            #self.colordict[c] = colors[i % 6]
+            d[c] = cm.jet(1.*i/n)
+            i+=1
+        return d
+
+    @property
+    def priorfactors(self):
+        priorfactors = {}
+        for pop in self.poplist:
+            for f in pop.priorfactors:
+                if f in priorfactors:
+                    if pop.priorfactors[f] != priorfactors[f]:
+                        raise ValueError('prior factor %s is inconsistent!' % f)
+                else:
+                    priorfactors[f] = pop.priorfactors[f]
+        return priorfactors
+        
+
+    def change_prior(self,**kwargs):
+        for kw,val in kwargs.iteritems():
+            if kw=='area':
+                logging.warning('cannot change area in this way--use change_maxrad instead')
+                continue
+            for pop in self.poplist:
+                k = {kw:val}
+                pop.change_prior(**k)
+        self._get_priorfactors()
+
+    def apply_multicolor_transit(self,band,depth):
+        if '{} band transit'.format(band) not in self.constraints:
+            self.constraints.append('{} band transit'.format(band))
+        for pop in self.poplist:
+            pop.apply_multicolor_transit(band,depth)
+
+    def set_maxrad(self,newrad):
+        if 'Rsky' not in self.constraints:
+            self.constraints.append('Rsky')
+        for pop in self.poplist:
+            if hasattr(pop,'maxrad') and not pop.is_specific:
+                pop.maxrad = newrad
+
+    def apply_dmaglim(self,dmaglim=None):
+        if 'bright blend limit' not in self.constraints:
+            self.constraints.append('bright blend limit')
+        for pop in self.poplist:
+            if not hasattr(pop,'dmaglim') or pop.is_specific:
+                continue
+            if dmaglim is None:
+                dmag = pop.dmaglim
+            else:
+                dmag = dmaglim
+            pop.set_dmaglim(dmag)
+        self.dmaglim = dmaglim
+
+    def apply_trend_constraint(self,limit,dt):
+        if 'RV monitoring' not in self.constraints:
+            self.constraints.append('RV monitoring')
+        for pop in self.poplist:
+            if not hasattr(pop,'dRV'):
+                continue
+            pop.apply_trend_constraint(limit,dt)
+        self.trend_limit = limit
+        self.trend_dt = dt
+
+    def apply_secthresh(self,secthresh):
+        if 'secondary depth' not in self.constraints:
+            self.constraints.append('secondary depth')
+        for pop in self.poplist:
+            pop.apply_secthresh(secthresh)
+        self.secthresh = secthresh
+
+    def constrain_property(self,prop,**kwargs):
+        if prop not in self.constraints:
+            self.constraints.append(prop)
+        for pop in self.poplist:
+            try:
+                pop.constrain_property(prop,**kwargs)
+            except AttributeError:
+                logging.info('%s model does not have property stars.%s (constraint not applied)' % (pop.model,prop))
+
+    def replace_constraint(self,name,**kwargs):
+        for pop in self.poplist:
+            pop.replace_constraint(name,**kwargs)
+        if name not in self.constraints:
+            self.constraints.append(name)
+        self._set_constraintcolors()
+
+    def remove_constraint(self,*names):
+        for name in names:
+            for pop in self.poplist:
+                if name in pop.constraints:
+                    pop.remove_constraint(name)
+                else:
+                    logging.info('%s model does not have %s constraint' % (pop.model,name))
+            if name in self.constraints:
+                self.constraints.remove(name)
+                    
+    def apply_cc(self,cc):
+        #if '%s band' % cc.band not in self.constraints:
+        #    self.constraints.append('%s band' % cc.band)
+        if cc.name not in self.constraints:
+            self.constraints.append(cc.name)
+        for pop in self.poplist:
+            if not pop.is_specific:
+                try:
+                    pop.apply_cc(cc)
+                except AttributeError:
+                    logging.info('%s cc not applied to %s model' % (cc.name,pop.model))
+
+    def apply_vcc(self,vcc):
+        if 'secondary spectrum' not in self.constraints:
+            self.constraints.append('secondary spectrum')
+        for pop in self.poplist:
+            if not pop.is_specific:
+                try:
+                    pop.apply_vcc(vcc)
+                except:
+                    logging.info('VCC constraint not applied to %s model' % (pop.model))
+
+
+
+
 ############ Utility Functions ##############
     
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
@@ -1166,6 +1380,7 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     occ = (b_occs < Rtots)
     nany = (tra | occ).sum()
     peb = nany/float(n)
+    prob *= peb
     if return_probability_only:
         return prob,prob*np.sqrt(nany)/n
 
@@ -1278,212 +1493,6 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     else:
         return df, (prob, prob*np.sqrt(nany)/n)
 
-class PopulationSet(object):
-    def __init__(self,poplist,constraints=None,lhoodcachefile=None):
-        self.poplist = poplist
-        if constraints is None:
-            constraints = []
-        self.constraints = constraints
-        self.hidden_constraints = []
-        self.modelnames = []
-        self.shortmodelnames = []
-        self.lhoodcachefile = lhoodcachefile
-        for pop in self.poplist:
-            if pop.model in self.modelnames:
-                raise ValueError('cannot have more than one model of the same name in PopulationSet')
-            self.modelnames.append(pop.model)
-            self.shortmodelnames.append(pop.modelshort)
-
-        #self.apply_dmaglim()  #a bit of a hack here; this should be slicker...
-
-    def add_population(self,pop):
-        if pop.model in self.modelnames:
-            raise ValueError('%s model already in PopulationSet.' % pop.model)
-        self.modelnames.append(pop.model)
-        self.shortmodelnames.append(pop.modelshort)
-        self.poplist.append(pop)
-        self.apply_dmaglim()
-
-    def remove_population(self,pop):
-        iremove=None
-        for i in range(len(self.poplist)):
-            if self.modelnames[i]==self.poplist[i].model:
-                iremove=i
-        if iremove is not None:
-            self.modelnames.pop(i)
-            self.shortmodelnames.pop(i)
-            self.poplist.pop(i)
-
-    def __hash__(self):
-        key = 0
-        for pop in self.poplist:
-            key += hash(pop)
-        return key
-
-    def __getitem__(self,name):
-        name = name.lower()
-        if name in ['pl','pls']:
-            name = 'planets'
-        elif name in ['eb','ebs']:
-            name = 'ebs'
-        elif name in ['heb','hebs']:
-            name = 'hebs'
-        elif name in ['beb','bebs','bgeb','bgebs']:
-            name = 'bebs'
-        elif name in ['bpl','bgpl','bpls','bgpls']:
-            name = 'blended planets'
-        elif name in ['sbeb','sbgeb','sbebs','sbgebs']:
-            name = 'specific beb'
-        elif name in ['sheb','shebs']:
-            name = 'specific heb'
-        for pop in self.poplist:
-            if name==pop.model.lower():
-                return pop
-        raise ValueError('%s not in modelnames: %s' % (name,self.modelnames))
-
-    @property
-    def colordict(self):
-        d = {}
-        i=0
-        n = len(self.constraints)
-        for c in self.constraints:
-            #self.colordict[c] = colors[i % 6]
-            d[c] = cm.jet(1.*i/n)
-            i+=1
-        return d
-
-    @property
-    def priorfactors(self):
-        priorfactors = {}
-        for pop in self.poplist:
-            for f in pop.priorfactors:
-                if f in priorfactors:
-                    if pop.priorfactors[f] != priorfactors[f]:
-                        raise ValueError('prior factor %s is inconsistent!' % f)
-                else:
-                    priorfactors[f] = pop.priorfactors[f]
-        return priorfactors
-        
-
-    def ruleout_model(self,model,factor):
-        k = {'%s_ruledout' % model:factor}
-        self[model].add_priorfactor(**k)
-
-
-    def change_prior(self,**kwargs):
-        for kw,val in kwargs.iteritems():
-            if kw=='area':
-                logging.warning('cannot change area in this way--use change_maxrad instead')
-                continue
-            for pop in self.poplist:
-                k = {kw:val}
-                pop.change_prior(**k)
-        self._get_priorfactors()
-
-    def apply_multicolor_transit(self,band,pct):
-        if band=='K':
-            band = 'Ks'
-        if band in ('kep','kepler','Kep'):
-            band = 'Kepler'
-        if '%s band transit' not in self.constraints:
-            self.constraints.append('%s band transit' % band)
-        for pop in self.poplist:
-            pop.apply_multicolor_transit(band,pct)
-        self._set_constraintcolors()
-
-    def set_maxrad(self,newrad):
-        if 'Rsky' not in self.constraints:
-            self.constraints.append('Rsky')
-        for pop in self.poplist:
-            if hasattr(pop,'set_maxrad') and not pop.is_specific:
-                pop.set_maxrad(newrad)
-        self._set_constraintcolors()
-        self._get_priorfactors()
-
-    def apply_dmaglim(self,dmaglim=None):
-        if 'bright blend limit' not in self.constraints:
-            self.constraints.append('bright blend limit')
-        for pop in self.poplist:
-            if not hasattr(pop,'dmaglim') or pop.is_specific:
-                continue
-            if dmaglim is None:
-                dmag = pop.dmaglim
-            else:
-                dmag = dmaglim
-            pop.set_dmaglim(dmag)
-        self.dmaglim = dmaglim
-        self._set_constraintcolors()
-
-    def apply_trend_constraint(self,limit,dt):
-        if 'RV monitoring' not in self.constraints:
-            self.constraints.append('RV monitoring')
-        for pop in self.poplist:
-            if not hasattr(pop,'dRV'):
-                continue
-            pop.apply_trend_constraint(limit,dt)
-        self.trend_limit = limit
-        self.trend_dt = dt
-        self._set_constraintcolors()
-
-    def apply_secthresh(self,secthresh):
-        if 'secondary depth' not in self.constraints:
-            self.constraints.append('secondary depth')
-        for pop in self.poplist:
-            pop.apply_secthresh(secthresh)
-        self.secthresh = secthresh
-        self._set_constraintcolors()
-
-    def constrain_property(self,prop,**kwargs):
-        if prop not in self.constraints:
-            self.constraints.append(prop)
-        for pop in self.poplist:
-            try:
-                pop.constrain_property(prop,**kwargs)
-            except AttributeError:
-                logging.info('%s model does not have property stars.%s (constraint not applied)' % (pop.model,prop))
-        self._set_constraintcolors()
-
-    def replace_constraint(self,name,**kwargs):
-        for pop in self.poplist:
-            pop.replace_constraint(name,**kwargs)
-        if name not in self.constraints:
-            self.constraints.append(name)
-        self._set_constraintcolors()
-
-    def remove_constraint(self,*names):
-        for name in names:
-            for pop in self.poplist:
-                if name in pop.constraints:
-                    pop.remove_constraint(name)
-                else:
-                    logging.info('%s model does not have %s constraint' % (pop.model,name))
-            if name in self.constraints:
-                self.constraints.remove(name)
-        self._set_constraintcolors()
-                    
-    def apply_cc(self,cc):
-        #if '%s band' % cc.band not in self.constraints:
-        #    self.constraints.append('%s band' % cc.band)
-        if cc.name not in self.constraints:
-            self.constraints.append(cc.name)
-        for pop in self.poplist:
-            if not pop.is_specific:
-                try:
-                    pop.apply_cc(cc)
-                except AttributeError:
-                    logging.info('%s cc not applied to %s model' % (cc.name,pop.model))
-        self._set_constraintcolors()
-
-    def apply_vcc(self,vcc):
-        if 'secondary spectrum' not in self.constraints:
-            self.constraints.append('secondary spectrum')
-        for pop in self.poplist:
-            if not pop.is_specific:
-                try:
-                    pop.apply_vcc(vcc)
-                except:
-                    logging.info('VCC constraint not applied to %s model' % (pop.model))
-        self._set_constraintcolors()
 
 
 #########################
