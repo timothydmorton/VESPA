@@ -144,6 +144,9 @@ class EclipsePopulation(StarPopulation):
     def constrain_secdepth(self, thresh):
         self.apply_constraint(UpperLimit(self.secondary_depth, thresh, name='secondary depth'))
 
+    def apply_secthresh(self, *args, **kwargs):
+        return self.constrain_secdepth(*args, **kwargs)
+
     def fluxfrac_eclipsing(self, band=None):
         pass
 
@@ -267,7 +270,7 @@ class EclipsePopulation(StarPopulation):
         
     def lhoodplot(self, trsig=None, fig=None, label='', plotsignal=False, 
                   piechart=True, figsize=None, logscale=True,
-                  constraints='all', suptitle='', Ltot=None,
+                  constraints='all', suptitle=None, Ltot=None,
                   maxdur=None, maxslope=None, inverse=False, 
                   colordict=None, cachefile=None, nbins=20,
                   dur_range=None, slope_range=None, depth_range=None,
@@ -390,6 +393,8 @@ class EclipsePopulation(StarPopulation):
         
         plt.subplots_adjust(hspace=0.001,wspace=0.001)
 
+        if suptitle is None:
+            suptitle = self.model
         plt.suptitle(suptitle,fontsize=20)        
 
         if Ltot is not None:
@@ -1195,8 +1200,11 @@ class PopulationSet(object):
         if 'Rsky' not in self.constraints:
             self.constraints.append('Rsky')
         for pop in self.poplist:
-            if hasattr(pop,'maxrad') and not pop.is_specific:
-                pop.maxrad = newrad
+            if not pop.is_specific:
+                try: 
+                    pop.maxrad = newrad
+                except AttributeError:
+                    pass
 
     def apply_dmaglim(self,dmaglim=None):
         if 'bright blend limit' not in self.constraints:
@@ -1255,8 +1263,8 @@ class PopulationSet(object):
                 self.constraints.remove(name)
                     
     def apply_cc(self,cc):
-        #if '%s band' % cc.band not in self.constraints:
-        #    self.constraints.append('%s band' % cc.band)
+        if type(cc)==type(''):
+            pass
         if cc.name not in self.constraints:
             self.constraints.append(cc.name)
         for pop in self.poplist:
