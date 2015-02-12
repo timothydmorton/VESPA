@@ -82,7 +82,8 @@ class EclipsePopulation(StarPopulation):
         self.lhoodcachefile = lhoodcachefile
         self.is_specific = False
 
-        StarPopulation.__init__(self, stars=stars, orbpop=orbpop, **kwargs)
+        StarPopulation.__init__(self, stars=stars, orbpop=orbpop, 
+                                name=model, **kwargs)
         
         if stars is not None:
             if len(self.stars)==0:
