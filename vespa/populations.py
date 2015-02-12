@@ -142,6 +142,18 @@ class EclipsePopulation(StarPopulation):
     def secondary_depth(self):
         return self.dilution_factor * self.stars['secdepth']
 
+    def apply_constraint(self, *args, **kwargs):
+        super(EclipsePopulation,self).apply_constraint(*args,**kwargs)
+        self._make_kde()
+
+    def replace_constraint(self, *args, **kwargs):
+        super(EclipsePopulation,self).replace_constraint(*args,**kwargs)
+        self._make_kde()
+
+    def remove_constraint(self, *args, **kwargs):
+        super(EclipsePopulation,self).remove_constraint(*args,**kwargs)
+        self._make_kde()
+
     def constrain_secdepth(self, thresh):
         self.apply_constraint(UpperLimit(self.secondary_depth, thresh, name='secondary depth'))
 
@@ -188,8 +200,9 @@ class EclipsePopulation(StarPopulation):
 
         try:
             #define points that are ok to use
-            ok = (self.stars['slope'] > 0) & (self.stars['duration'] > 0) & \
-                (self.stars['duration'] < self.period) & (self.depth > 0)
+            ok = ((self.stars['slope'] > 0) & (self.stars['duration'] > 0) & 
+                  (self.stars['duration'] < self.period) & (self.depth > 0) &
+                  self.distok)
         except KeyError:
             logging.warning('Must do trapezoid fits before making KDE.')
             return
@@ -244,7 +257,7 @@ class EclipsePopulation(StarPopulation):
         else:
             return self.kde(np.array([logd, dur, slope]))
 
-    def trsig_lhood(self, trsig, recalc=False, cachefile=None):
+    def lhood(self, trsig, recalc=False, cachefile=None):
         """Returns likelihood of transit signal
         """
         if cachefile is None:
@@ -916,7 +929,9 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
     @property
     def prior(self):
-        return super(BEBPopulation, self).prior * self.density.to('arcsec^-2').value
+        return (super(BEBPopulation, self).prior * 
+                self.density.to('arcsec^-2').value * #sky density
+                np.pi*(self.maxrad.to('arcsec').value)**2) # sky area
         
 
     @property
@@ -1263,7 +1278,7 @@ class PopulationSet(object):
             if name in self.constraints:
                 self.constraints.remove(name)
                     
-    def apply_cc(self,cc):
+    def apply_cc(self, cc, **kwargs):
         if type(cc)==type(''):
             pass
         if cc.name not in self.constraints:
@@ -1271,7 +1286,7 @@ class PopulationSet(object):
         for pop in self.poplist:
             if not pop.is_specific:
                 try:
-                    pop.apply_cc(cc)
+                    pop.apply_cc(cc, **kwargs)
                 except AttributeError:
                     logging.info('%s cc not applied to %s model' % (cc.name,pop.model))
 

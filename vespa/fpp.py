@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 
 import os, os.path
+import logging
 
 from .populations import PopulationSet
 from .transitsignal import TransitSignal
@@ -15,13 +16,10 @@ class FPPCalculation(object):
         self.trsig = trsig
         self.name = trsig.name
         self.popset = popset
-        self.n = self.popset.n
         self.lhoodcachefile = lhoodcachefile
         for pop in self.popset.poplist:
             pop.lhoodcachefile = lhoodcachefile
         
-        #self.calc_lhoods()
-
     def plotsignal(self,fig=None,saveplot=True,folder='.',figformat='png',**kwargs):
         self.trsig.plot(plot_tt=True,fig=fig,**kwargs)
         if saveplot:
@@ -86,6 +84,7 @@ class FPPCalculation(object):
         plt.legend(labels,bbox_to_anchor=(1.6,0.44),loc='right',prop={'size':14},shadow=True)
         plt.annotate('Final Probability',xy=(0.5,-0.01),ha='center',xycoords='axes fraction',fontsize=18)
 
+        """
         #starpars = 'Star parameters used\nin simulations'
         starpars = ''
         if 'M' in self['heb'].stars.keywords and 'DM_P' in self.keywords:
@@ -152,6 +151,7 @@ class FPPCalculation(object):
         
             #p.annotate('${}^a$Not used for FP population simulations',xy=(0.02,0.02),
             #           xycoords='figure fraction',fontsize=9)
+        """
 
         constraints = 'Constraints:'
         for c in self.popset.constraints:
@@ -206,7 +206,7 @@ class FPPCalculation(object):
         if suptitle=='':
             suptitle = self[model].model
         self[model].lhoodplot(self.trsig,colordict=self.popset.colordict,
-                              suptitle=suptitle,cachefile=self.lhoodcachefile,**kwargs)
+                              suptitle=suptitle,**kwargs)
 
     def calc_lhoods(self,verbose=True,**kwargs):
         if verbose:
@@ -222,11 +222,6 @@ class FPPCalculation(object):
     def __getitem__(self,model):
         return self.popset[model]
 
-    def piecharts(self,suptitle=None,**kwargs):
-        if suptitle is None:
-            suptitle = self.trsig.name
-        self.popset.piecharts(suptitle=suptitle,**kwargs)
-    
     def prior(self,model):
         return self[model].prior
 
@@ -241,7 +236,6 @@ class FPPCalculation(object):
         if verbose:
             logging.info('evaluating likelihoods for %s' % self.trsig.name)
         
-        #for model in ['eb','heb','beb','bgpl']:
         for model in self.popset.modelnames:
             if model=='Planets':
                 continue
