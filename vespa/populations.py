@@ -142,18 +142,6 @@ class EclipsePopulation(StarPopulation):
     def secondary_depth(self):
         return self.dilution_factor * self.stars['secdepth']
 
-    def apply_constraint(self, *args, **kwargs):
-        super(EclipsePopulation,self).apply_constraint(*args,**kwargs)
-        self._make_kde()
-
-    def replace_constraint(self, *args, **kwargs):
-        super(EclipsePopulation,self).replace_constraint(*args,**kwargs)
-        self._make_kde()
-
-    def remove_constraint(self, *args, **kwargs):
-        super(EclipsePopulation,self).remove_constraint(*args,**kwargs)
-        self._make_kde()
-
     def constrain_secdepth(self, thresh):
         self.apply_constraint(UpperLimit(self.secondary_depth, thresh, name='secondary depth'))
 
