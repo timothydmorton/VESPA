@@ -57,7 +57,9 @@ MEARTH = const.M_earth.cgs.value
 class EclipsePopulation(StarPopulation):
     def __init__(self, stars=None, period=None, model='',
                  priorfactors=None, lhoodcachefile=None,
-                 orbpop=None, prob=None, **kwargs):
+                 orbpop=None, prob=None,
+                 cadence=0.020434028, #Kepler observing cadence, in days
+                 **kwargs):
         """Base class for populations of eclipsing things.
 
         stars DataFrame must have the following columns:
@@ -79,6 +81,7 @@ class EclipsePopulation(StarPopulation):
             priorfactors = {}
         self.priorfactors = priorfactors
         self.prob = prob #calculate this if not provided?
+        self.cadence = cadence
         self.lhoodcachefile = lhoodcachefile
         self.is_specific = False
 
@@ -96,7 +99,8 @@ class EclipsePopulation(StarPopulation):
             MAfn = MAInterpolationFunction(nzs=200,nps=400,pmin=0.007,pmax=1/0.007)
         if msg is None:
             msg = '{}: '.format(self.model)
-        trapfit_df = fitebs(self.stars, MAfn=MAfn, msg=msg, **kwargs)
+        trapfit_df = fitebs(self.stars, MAfn=MAfn, msg=msg, cadence=self.cadence,
+                            **kwargs)
         for col in trapfit_df.columns:
             self.stars[col] = trapfit_df[col]
 
@@ -412,7 +416,7 @@ class EclipsePopulation(StarPopulation):
     @property
     def _properties(self):
         return ['period','model','priorfactors','prob','lhoodcachefile',
-                'is_specific'] + \
+                'is_specific', 'cadence'] + \
             super(EclipsePopulation,self)._properties
 
     def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
