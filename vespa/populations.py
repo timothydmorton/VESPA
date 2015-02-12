@@ -1254,7 +1254,6 @@ class PopulationSet(object):
             pop.replace_constraint(name,**kwargs)
         if name not in self.constraints:
             self.constraints.append(name)
-        self._set_constraintcolors()
 
     def remove_constraint(self,*names):
         for name in names:
