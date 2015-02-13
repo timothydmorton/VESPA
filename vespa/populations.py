@@ -1071,36 +1071,119 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
             
 class PopulationSet(object):
-    def __init__(self,poplist,constraints=None):
+    def __init__(self, poplist=None, ra=None, dec=None,
+                 period=None, mags=None, n=2e4, 
+                 mass=None, age=None, feh=None, 
+                 radius=None, rprs=None,
+                 MAfn=None, colors=None,
+                 trilegal_filename=trilegal_filename,
+                 Teff=None, logg=None, savefile=None,
+                 heb_kws=None, eb_kws=None, 
+                 beb_kws=None, pl_kws=None):
+        """
+
+        Poplist can be a list of EclipsePopulations, a string (filename),
+        or nothing, in which case the populations will be generated
+
+        mass, radius, age, and feh can be two-element tuples or Distributions
+
+        rprs, Teff, logg should be single values.
+
+        """
 
         #if string is passed, load from file
-        if type(poplist)==type(''):
+        if poplist is None:
+            self.generate(ra, dec, period, mags,
+                          n=n, mass=mass, age=age, feh=feh,
+                          MAfn=MAfn, colors=colors, radius=radius,
+                          trilegal_filename=trilegal_filename,
+                          Teff=Teff, logg=logg, savefile=savefile,
+                          heb_kws=heb_kws, eb_kws=eb_kws, 
+                          beb_kws=beb_kws, pl_kws=pl_kws)
+            
+        elif type(poplist)==type(''):
             self.load_hdf(poplist)
         else:
             self.poplist = poplist
-            if constraints is None:
-                constraints = []
-            self.constraints = constraints
-            self.hidden_constraints = []
-
-        self.modelnames = []
-        self.shortmodelnames = []
-
-        for pop in self.poplist:
-            if pop.model in self.modelnames:
-                raise ValueError('cannot have more than one model of the same name in PopulationSet')
-            self.modelnames.append(pop.model)
-            self.shortmodelnames.append(pop.modelshort)
 
     def generate(self, ra, dec, period, mags,
-                 n=2e4, mass=None, age=None, feh=None,
-                 MAfn=None, colors=None, Teff=None, logg=None):
+                 n=2e4, mass=None, age=None, feh=None, radius=None,
+                 MAfn=None, colors=None, Teff=None, logg=None,
+                 heb_kws=None, eb_kws=None, 
+                 beb_kws=None, pl_kws=None, savefile=None):
         """
-        mass, age, and feh can be two-element tuples or Distributions
-
-        Teff, logg should be single values.
         """
+        if colors is None:
+            colors = ['JK','HK']
+        if MAfn is None:
+            MAfn = MAInterpolationFunction(pmin=0.007, pmax=1/0.007, nzs=200, nps=400)
 
+        if heb_kws is None:
+            heb_kws = {}
+        if eb_kws is None:
+            eb_kws = {}
+        if beb_kws is None:
+            beb_kws = {}
+        if pl_kws is None:
+            pl_kws = {}
+
+        try:
+            hebpop = HEBPopulation(mass=mass, age=age, feh=feh, 
+                                   colors=colors, period=period,
+                                   mags=mags, MAfn=MAfn, n=n, **heb_kws)
+            hebpop.fit_trapezoids(MAfn=MAfn)
+            if savefile is not None:
+                hebpop.save_hdf(savefile, 'heb')
+        except:
+            logging.error('Error generating HEB population.')
+
+        try:
+            ebpop = EBPopulation(mass=mass, age=age, feh=feh, 
+                                   colors=colors, period=period,
+                                   mags=mags, MAfn=MAfn, n=n, **eb_kws)
+            ebpop.fit_trapezoids(MAfn=MAfn)
+            if savefile is not None:
+                ebpop.save_hdf(savefile, 'eb')
+        except:
+            logging.error('Error generating EB population.')
+
+        try:
+            bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
+                                   ra=ra, dec=dec, period=period, 
+                                   mags=mags, MAfn=MAfn, n=n, **beb_kws)
+            bebpop.fit_trapezoids(MAfn=MAfn)
+            if savefile is not None:
+                bebpop.save_hdf(savefile, 'beb')
+        except:
+            logging.error('Error generating BEB population.')
+
+        try:
+            plpop = PlanetPopulation(mass=mass, radius=radius,
+                                      period=period, rprs=rprs,
+                                      Teff=Teff, logg=logg,
+                                      MAfn=MAfn, n=n, **pl_kws)
+            plpop.fit_trapezoids(MAfn=MAfn)
+            if savefile is not None:
+                plpop.save_hdf(savefile, 'pl')
+        except:
+            logging.error('Error generating Planet population.')
+
+        self.poplist = [hebpop, ebpop, bebpop, plpop]
+
+    @property
+    def constraints(self):
+        cs = []
+        for pop in self.poplist:
+            cs += [c for c in pop.constraints]
+        return list(set(cs))
+
+    @property
+    def modelnames(self):
+        return [pop.model for pop in self.poplist]
+
+    @property
+    def shortmodelnames(self):
+        return [pop.modelshort for pop in self.poplist]
 
     def save_hdf(self, filename, path='', overwrite=False):
         if os.path.exists(filename) and overwrite:
