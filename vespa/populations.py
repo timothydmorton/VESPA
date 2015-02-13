@@ -1076,10 +1076,11 @@ class PopulationSet(object):
                  mass=None, age=None, feh=None, 
                  radius=None, rprs=None,
                  MAfn=None, colors=None,
-                 trilegal_filename=trilegal_filename,
+                 trilegal_filename=None,
                  Teff=None, logg=None, savefile=None,
                  heb_kws=None, eb_kws=None, 
-                 beb_kws=None, pl_kws=None):
+                 beb_kws=None, pl_kws=None,
+                 hide_exceptions=False):
         """
 
         Poplist can be a list of EclipsePopulations, a string (filename),
@@ -1097,9 +1098,11 @@ class PopulationSet(object):
                           n=n, mass=mass, age=age, feh=feh,
                           MAfn=MAfn, colors=colors, radius=radius,
                           trilegal_filename=trilegal_filename,
-                          Teff=Teff, logg=logg, savefile=savefile,
+                          Teff=Teff, logg=logg, rprs=rprs,
+                          savefile=savefile,
                           heb_kws=heb_kws, eb_kws=eb_kws, 
-                          beb_kws=beb_kws, pl_kws=pl_kws)
+                          beb_kws=beb_kws, pl_kws=pl_kws,
+                          hide_exceptions=hide_exceptions)
             
         elif type(poplist)==type(''):
             self.load_hdf(poplist)
@@ -1109,8 +1112,10 @@ class PopulationSet(object):
     def generate(self, ra, dec, period, mags,
                  n=2e4, mass=None, age=None, feh=None, radius=None,
                  MAfn=None, colors=None, Teff=None, logg=None,
+                 rprs=None, trilegal_filename=None,
                  heb_kws=None, eb_kws=None, 
-                 beb_kws=None, pl_kws=None, savefile=None):
+                 beb_kws=None, pl_kws=None, savefile=None,
+                 hide_exceptions=False):
         """
         """
         if colors is None:
@@ -1136,6 +1141,8 @@ class PopulationSet(object):
                 hebpop.save_hdf(savefile, 'heb')
         except:
             logging.error('Error generating HEB population.')
+            if not hide_exceptions:
+                raise
 
         try:
             ebpop = EBPopulation(mass=mass, age=age, feh=feh, 
@@ -1146,6 +1153,8 @@ class PopulationSet(object):
                 ebpop.save_hdf(savefile, 'eb')
         except:
             logging.error('Error generating EB population.')
+            if not hide_exceptions:
+                raise
 
         try:
             bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
@@ -1156,6 +1165,8 @@ class PopulationSet(object):
                 bebpop.save_hdf(savefile, 'beb')
         except:
             logging.error('Error generating BEB population.')
+            if not hide_exceptions:
+                raise
 
         try:
             plpop = PlanetPopulation(mass=mass, radius=radius,
@@ -1167,6 +1178,8 @@ class PopulationSet(object):
                 plpop.save_hdf(savefile, 'pl')
         except:
             logging.error('Error generating Planet population.')
+            if not hide_exceptions:
+                raise
 
         self.poplist = [hebpop, ebpop, bebpop, plpop]
 
