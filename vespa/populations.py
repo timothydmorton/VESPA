@@ -1092,7 +1092,14 @@ class PopulationSet(object):
             self.modelnames.append(pop.model)
             self.shortmodelnames.append(pop.modelshort)
 
-        #self.apply_dmaglim()  #a bit of a hack here; this should be slicker...
+    def generate(self, ra, dec, period, mags,
+                 n=2e4, mass=None, age=None, feh=None,
+                 MAfn=None, colors=None, Teff=None, logg=None):
+        """
+        mass, age, and feh can be two-element tuples or Distributions
+
+        Teff, logg should be single values.
+        """
 
 
     def save_hdf(self, filename, path='', overwrite=False):
@@ -1196,7 +1203,6 @@ class PopulationSet(object):
             for pop in self.poplist:
                 k = {kw:val}
                 pop.change_prior(**k)
-        self._get_priorfactors()
 
     def apply_multicolor_transit(self,band,depth):
         if '{} band transit'.format(band) not in self.constraints:

@@ -1,7 +1,11 @@
 from __future__ import print_function, division
 
+import numpy as np
 import os, os.path
 import logging
+
+import matplotlib.pyplot as plt
+from matplotlib import cm
 
 from .populations import PopulationSet
 from .transitsignal import TransitSignal
@@ -26,7 +30,7 @@ class FPPCalculation(object):
             plt.savefig('%s/signal.%s' % (folder,figformat))
             plt.close()
 
-    def FPPsummary(self,fig=None,figsize=(10,8),folder='.',saveplot=True,starinfo=True,siginfo=True,
+    def FPPsummary(self,fig=None,figsize=(10,8),folder='.',saveplot=False,starinfo=True,siginfo=True,
                    priorinfo=True,constraintinfo=True,tag=None,simple=False,figformat='png'):
         if simple:
             starinfo = False
@@ -44,9 +48,9 @@ class FPPCalculation(object):
             priors.append(self.prior(model))
             lhoods.append(self.lhood(model))
             Ls.append(priors[-1]*lhoods[-1])
-        priors = array(priors)
-        lhoods = array(lhoods)
-        Ls = array(Ls)
+        priors = np.array(priors)
+        lhoods = np.array(lhoods)
+        Ls = np.array(Ls)
         logging.debug('modelnames={}'.format(self.popset.modelnames))
         logging.debug('priors={}'.format(priors))
         logging.debug('lhoods={}'.format(lhoods))
@@ -174,9 +178,9 @@ class FPPCalculation(object):
 
         plt.suptitle(self.trsig.name,fontsize=22)
 
-        if not simple:
-            plt.annotate('n = %.0e' % self.n,xy=(0.5,0.85),xycoords='figure fraction',
-                         fontsize=14,ha='center')
+        #if not simple:
+        #    plt.annotate('n = %.0e' % self.n,xy=(0.5,0.85),xycoords='figure fraction',
+        #                 fontsize=14,ha='center')
 
         if saveplot:
             if tag is not None:
