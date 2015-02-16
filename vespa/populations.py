@@ -44,6 +44,7 @@ SHORT_MODELNAMES = {'Planets':'pl',
                         
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 
+from astropy.units import Quantity
 import astropy.units as u
 import astropy.constants as const
 AU = const.au.cgs.value
@@ -1307,8 +1308,10 @@ class PopulationSet(object):
             pop.apply_multicolor_transit(band,depth)
 
     def set_maxrad(self,newrad):
-        if 'Rsky' not in self.constraints:
-            self.constraints.append('Rsky')
+        if not isinstance(newrad, Quantity):
+            newrad = newrad * u.arcsec
+        #if 'Rsky' not in self.constraints:
+        #    self.constraints.append('Rsky')
         for pop in self.poplist:
             if not pop.is_specific:
                 try: 
