@@ -24,6 +24,9 @@ class FPPCalculation(object):
         for pop in self.popset.poplist:
             pop.lhoodcachefile = lhoodcachefile
         
+    def __getattr__(self, attr):
+        return getattr(self.popset,attr)
+
     def plotsignal(self,fig=None,saveplot=True,folder='.',figformat='png',**kwargs):
         self.trsig.plot(plot_tt=True,fig=fig,**kwargs)
         if saveplot:
@@ -281,51 +284,4 @@ class FPPCalculation(object):
         if verbose:
             logging.info('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
         return 1 - Lpl/(Lpl + Lfpp)
-
-    def set_maxrad(self,*args,**kwargs):
-        self.popset.set_maxrad(*args,**kwargs)
-
-    def change_prior(self,**kwargs):
-        self.popset.change_prior(**kwargs)
-
-    def ruleout_model(self,*args,**kwargs):
-        self.popset.ruleout_model(*args,**kwargs)
-
-    def apply_multicolor_transit(self,*args,**kwargs):
-        self.popset.apply_multicolor_transit(*args,**kwargs)
-
-    def apply_dmaglim(self,*args,**kwargs):
-        self.popset.apply_dmaglim(*args,**kwargs)
-        self.dmaglim = self.popset.dmaglim
-
-    def apply_secthresh(self,*args,**kwargs):
-        self.popset.apply_secthresh(*args,**kwargs)
-        self.secthresh = self.popset.secthresh
-
-    def apply_trend_constraint(self,*args,**kwargs):
-        self.popset.apply_trend_constraint(*args,**kwargs)
-        self.trend_limit = self.popset.trend_limit
-        self.trend_dt = self.popset.trend_dt
-
-    def constrain_Teff(self,T,dT=80,**kwargs):
-        self.constrain_property('Teff',measurement=(T,dT),selectfrac_skip=True,**kwargs)
-
-    def constrain_logg(self,g,dg=0.15,**kwargs):
-        self.constrain_property('logg',measurement=(g,dg),selectfrac_skip=True,**kwargs)
-
-    def constrain_property(self,*args,**kwargs):
-        self.popset.constrain_property(*args,**kwargs)
-
-    def replace_constraint(self,*args,**kwargs):
-        self.popset.replace_constraint(*args,**kwargs)
-
-    def remove_constraint(self,*args,**kwargs):
-        self.popset.remove_constraint(*args,**kwargs)
-
-    def apply_cc(self,cc):
-        logging.info('applying %s band contrast curve to %s.' % (cc.band,self.name))
-        self.popset.apply_cc(cc)
-
-    def apply_vcc(self,*args,**kwargs):
-        self.popset.apply_vcc(*args,**kwargs)
 
