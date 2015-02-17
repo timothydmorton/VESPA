@@ -27,7 +27,8 @@ class FPPCalculation(object):
     def __getattr__(self, attr):
         return getattr(self.popset,attr)
 
-    def plotsignal(self,fig=None,saveplot=True,folder='.',figformat='png',**kwargs):
+    def plotsignal(self,fig=None,saveplot=False,
+                   folder='.',figformat='png',**kwargs):
         self.trsig.plot(plot_tt=True,fig=fig,**kwargs)
         if saveplot:
             plt.savefig('%s/signal.%s' % (folder,figformat))

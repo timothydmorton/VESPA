@@ -6,6 +6,7 @@ import os,os.path
 import matplotlib.pyplot as plt
 import numpy.random as rand
 import logging
+import pickle
 from scipy.stats import gaussian_kde
 
 import acor
@@ -15,6 +16,10 @@ from hashutils import hashcombine, hasharray
 
 from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC
 from .statutils import kdeconf, qstd, conf_interval
+
+def load_pkl(filename):
+    fin = open(filename, 'rb')
+    return pickle.load(fin)
 
 class TransitSignal(object):
     """a phased-folded transit signal with the epoch of the transit at 0, and 'continuum' set at 1
@@ -57,6 +62,11 @@ class TransitSignal(object):
         logging.debug('trapezoidal leastsq fit: {}'.format(self.trapfit))
 
         self.hasMCMC=False
+
+    def save(self, filename):
+        fout = open(filename, 'wb')
+        pickle.dump(self, fout)
+        fout.close()
 
     def __eq__(self,other):
         return hash(self) == hash(other)

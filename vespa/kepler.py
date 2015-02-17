@@ -3,14 +3,23 @@ import numpy as np
 import pandas as pd
 import os, os.path
 import logging
+import pickle
 
 from .transitsignal import TransitSignal
+from .populations import PopulationSet
+from .fpp import FPPCalculation
 from keputils.koiutils import koiname
+from keputils import koiutils as ku
+from keputils import kicutils as kicu
+
+from simpledist import distributions as dists
 
 import kplr
 
 KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
+
+KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
 
 #temporary, only local solution
 CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
@@ -19,6 +28,79 @@ import astropy.constants as const
 G = const.G.cgs.value
 DAY = 86400
 
+
+def koi_propdist(koi, prop):
+    """
+    """
+    if type(koi) != kplr.api.KOI:
+        client = kplr.API(data_root=KPLR_ROOT)
+        koi = client.koi(koiname(koi, koinum=True))
+
+    try:
+        val = getattr(koi, prop)
+        u1 = getattr(koi, prop+'_err1') #upper error bar (positive)
+        u2 = getattr(koi, prop+'_err2') #lower error bar (negative)
+        return dists.fit_doublegauss(val, -u2, u1)
+    except:
+        #try Huber table
+        val = kicu.DATA.ix[koi.kepid, prop]
+        u1 = kicu.DATA.ix[koi.kepid, prop+'_err1']
+        u2 = kicu.DATA.ix[koi.kepid, prop+'_err2']
+        return dists.fit_doublegauss(val, -u2, u1)
+
+class KOI_FPPCalculation(FPPCalculation):
+    def __init__(self, koi, recalc=False,
+                 use_JRowe=True, trsig_kws=None,
+                 **kwargs):
+
+        koi = koiname(koi)
+
+        if trsig_kws is None:
+            trsig_kws = {}
+
+        if use_JRowe:
+            sig = JRowe_KeplerTransitSignal(koi, **trsig_kws)
+        else:
+            sig = KeplerTransitSignal(koi, **trsig_kws)
+
+        #if saved popset exists, load
+        folder = os.path.join(KOI_FPPDIR,koi)
+        popsetfile = os.path.join(folder,'popset.h5')
+        if os.path.exists(popsetfile):
+            popset = PopulationSet(popsetfile, **kwargs)
+
+        else:
+            client = kplr.API(data_root=data_root)
+            koinum = koiname(koi, koinum=True)
+            k = client.koi(koinum)
+
+            if 'mass' not in kwargs:
+                mass = koi_propdist(k, 'mass')
+            if 'radius' not in kwargs:
+                radius = koi_propdist(k, 'radius')
+            if 'feh' not in kwargs:
+                feh = koi_propdist(k, 'feh')
+            if 'age' not in kwargs:
+                try:
+                    age = koi_propdist(k, 'age')
+                except:
+                    age = (9.7,0.1) #default age
+            if 'Teff' not in kwargs:
+                Teff = kicu.DATA.ix[k.kepid,'teff']
+            if 'logg' not in kwargs:
+                logg = kicu.DATA.ix[k.kepid,'logg']
+            if 'rprs' not in kwargs:
+                if use_Jrowe:
+                    rprs = sig.rowefit.ix['RD1','val']
+                else:
+                    rprs = k.koi_ror 
+                    
+            if 'mags' not in kwargs:
+                mags = ku.KICmags(koi)
+
+            ra, dec = ku.radec(koi)
+            period = k.koi_period
+            
 
 class KeplerTransitSignal(TransitSignal):
     def __init__(self, koi, data_root=KPLR_ROOT):
