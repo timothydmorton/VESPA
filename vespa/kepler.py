@@ -43,7 +43,7 @@ class KeplerTransitSignal(TransitSignal):
         
 class JRowe_KeplerTransitSignal(KeplerTransitSignal):
     def __init__(self,koi,mcmc=True,maxslope=None,refit_mcmc=False,
-                 **kwargs)
+                 **kwargs):
 
         self.folder = '%s/koi%i.n' % (JROWE_DIR,
                                       ku.koiname(koi,star=True,
