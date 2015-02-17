@@ -51,6 +51,7 @@ def koi_propdist(koi, prop):
 class KOI_FPPCalculation(FPPCalculation):
     def __init__(self, koi, recalc=False,
                  use_JRowe=True, trsig_kws=None,
+                 tag=None,
                  **kwargs):
 
         koi = koiname(koi)
@@ -65,6 +66,9 @@ class KOI_FPPCalculation(FPPCalculation):
 
         #if saved popset exists, load
         folder = os.path.join(KOI_FPPDIR,koi)
+        if tag is not None:
+            folder += '_{}'.format(tag)
+
         popsetfile = os.path.join(folder,'popset.h5')
         if os.path.exists(popsetfile):
             popset = PopulationSet(popsetfile, **kwargs)
@@ -75,31 +79,40 @@ class KOI_FPPCalculation(FPPCalculation):
             k = client.koi(koinum)
 
             if 'mass' not in kwargs:
-                mass = koi_propdist(k, 'mass')
+                kwargs['mass'] = koi_propdist(k, 'mass')
             if 'radius' not in kwargs:
-                radius = koi_propdist(k, 'radius')
+                kwargs['radius'] = koi_propdist(k, 'radius')
             if 'feh' not in kwargs:
-                feh = koi_propdist(k, 'feh')
+                kwargs['feh'] = koi_propdist(k, 'feh')
             if 'age' not in kwargs:
                 try:
-                    age = koi_propdist(k, 'age')
+                    kwargs['age'] = koi_propdist(k, 'age')
                 except:
-                    age = (9.7,0.1) #default age
+                    kwargs['age'] = (9.7,0.1) #default age
             if 'Teff' not in kwargs:
-                Teff = kicu.DATA.ix[k.kepid,'teff']
+                kwargs['Teff'] = kicu.DATA.ix[k.kepid,'teff']
             if 'logg' not in kwargs:
-                logg = kicu.DATA.ix[k.kepid,'logg']
+                kwargs['logg'] = kicu.DATA.ix[k.kepid,'logg']
             if 'rprs' not in kwargs:
                 if use_Jrowe:
-                    rprs = sig.rowefit.ix['RD1','val']
+                    kwargs['rprs'] = sig.rowefit.ix['RD1','val']
                 else:
-                    rprs = k.koi_ror 
+                    kwargs['rprs'] = k.koi_ror 
                     
             if 'mags' not in kwargs:
-                mags = ku.KICmags(koi)
+                kwargs['mags'] = ku.KICmags(koi)
+            if 'ra' not in kwargs:
+                kwargs['ra'], kwargs['dec'] = ku.radec(koi)
+            if 'period' not in kwargs:
+                kwargs['period'] = k.koi_period
 
-            ra, dec = ku.radec(koi)
-            period = k.koi_period
+            popset = PopulationSet(**kwargs)
+
+        self.folder = folder
+        lhoodcachefile = os.path.join(self.folder,'lhoodcache.dat')
+
+        FPPCalculation.__init__(self, sig, popset,
+                                lhoodcachefile=lhoodcachefile)
             
 
 class KeplerTransitSignal(TransitSignal):
