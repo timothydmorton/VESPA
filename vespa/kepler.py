@@ -2,6 +2,7 @@ from __future__  import print_function, division
 import numpy as np
 import pandas as pd
 import os, os.path
+import logging
 
 from .transitsignal import TransitSignal
 from keputils.koiutils import koiname
@@ -10,6 +11,14 @@ import kplr
 
 KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
+
+#temporary, only local solution
+CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
+
+import astropy.constants as const
+G = const.G.cgs.value
+DAY = 86400
+
 
 class KeplerTransitSignal(TransitSignal):
     def __init__(self, koi, data_root=KPLR_ROOT):
@@ -46,9 +55,9 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
                  **kwargs):
 
         self.folder = '%s/koi%i.n' % (JROWE_DIR,
-                                      ku.koiname(koi,star=True,
+                                      koiname(koi,star=True,
                                                  koinum=True))
-        num = np.round(ku.koiname(koi,koinum=True) % 1 * 100)
+        num = np.round(koiname(koi,koinum=True) % 1 * 100)
 
         self.lcfile = '%s/tremove.%i.dat' % (self.folder,num)
         if not os.path.exists(self.lcfile):
@@ -57,17 +66,17 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
 
         #break if photometry file is empty
         if os.stat(self.lcfile)[6]==0:
-            raise EmptyPhotometryError('{} photometry file ({}) is empty'.format(ku.koiname(koi),
+            raise EmptyPhotometryError('{} photometry file ({}) is empty'.format(koiname(koi),
                                                                                   self.lcfile))
 
         lc = pd.read_table(self.lcfile,names=['t','f','df'],
                                                   delimiter='\s+')
-        self.ttfile = '%s/koi%07.2f.tt' % (self.folder,ku.koiname(koi,koinum=True))
+        self.ttfile = '%s/koi%07.2f.tt' % (self.folder,koiname(koi,koinum=True))
         self.has_ttvs = os.path.exists(self.ttfile)
         if self.has_ttvs:            
             if os.stat(self.ttfile)[6]==0:
                 self.has_ttvs = False
-                logging.warning('TTV file exists for {}, but is empty.  No TTVs applied.'.format(ku.koiname(koi)))
+                logging.warning('TTV file exists for {}, but is empty.  No TTVs applied.'.format(koiname(koi)))
             else:
                 logging.debug('Reading transit times from {}'.format(self.ttfile))
                 tts = pd.read_table(self.ttfile,names=['tc','foo1','foo2'],delimiter='\s+')
@@ -95,11 +104,11 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
             raise BadRoweFitError('best-fit impact parameter ({:.2f}) inconsistent with best-fit radius ratio ({}).'.format(self.rowefit.ix['BB1','val'],RR))
 
         if RR < 0:
-            raise BadRoweFitError('{0} has negative RoR ({1}) from JRowe MCMC fit'.format(ku.koiname(koi),RR))
+            raise BadRoweFitError('{0} has negative RoR ({1}) from JRowe MCMC fit'.format(koiname(koi),RR))
         if RR > 1:
-            raise BadRoweFitError('{0} has RoR > 1 ({1}) from JRowe MCMC fit'.format(ku.koiname(koi),RR))            
+            raise BadRoweFitError('{0} has RoR > 1 ({1}) from JRowe MCMC fit'.format(koiname(koi),RR))            
         if aR < 1:
-            raise BadRoweFitError('{} has a/Rstar < 1 ({}) from JRowe MCMC fit'.format(ku.koiname(koi),aR))
+            raise BadRoweFitError('{} has a/Rstar < 1 ({}) from JRowe MCMC fit'.format(koiname(koi),aR))
 
 
         self.P = P
@@ -149,9 +158,10 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         p0 = [Tdur,RR**2,3,0]
         self.p0 = p0
         logging.debug('initial trapezoid parameters guess: {}'.format(p0))
-        fpp.Transitsignal.__init__(self,np.array(ts),np.array(fs),np.array(dfs),p0=p0,
-                                   name=ku.koiname(koi),
-                                   P=P,maxslope=maxslope)
+        TransitSignal.__init__(self,np.array(ts),np.array(fs),
+                               np.array(dfs),p0=p0,
+                               name=koiname(koi),
+                               P=P,maxslope=maxslope)
         
         if mcmc:
             self.MCMC(refit=refit_mcmc)
@@ -164,4 +174,22 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         folder = '%s/%s' % (CHAINSDIR,self.name)
         if not os.path.exists(folder):
             os.mkdir(folder)
-        fpp.Transitsignal.MCMC(self,savedir=folder,**kwargs)
+        super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
+
+
+###############Exceptions################
+
+class BadPhotometryError(Exception):
+    pass
+
+class MissingKOIError(Exception):
+    pass
+
+class BadRoweFitError(Exception):
+    pass
+
+class EmptyPhotometryError(Exception):
+    pass
+
+class NoWeakSecondaryError(Exception):
+    pass
