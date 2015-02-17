@@ -8,10 +8,10 @@ from keputils.koiutils import koiname
 
 import kplr
 
-KPLR_DATAROOT = os.getenv('KPLR_DATAROOT',os.path.expanduser('~/.kplr'))
+KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 
 class KeplerTransitSignal(TransitSignal):
-    def __init__(self, koi, data_root=KPLR_DATAROOT):
+    def __init__(self, koi, data_root=KPLR_ROOT):
         self.koi = koiname(koi)
         
         client = kplr.API(data_root=data_root)
