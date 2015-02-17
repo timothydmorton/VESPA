@@ -1,6 +1,29 @@
 from __future__  import print_function, division
 import numpy as np
 import pandas as pd
+import os, os.path
+
+from .transitsignal import TransitSignal
+from keputils.koiutils import koiname
+
+import kplr
+
+KPLR_DATAROOT = os.getenv('KPLR_DATAROOT',
+                          os.path.join(os.path.expanduser,'.kplr'))
+
+class KeplerTransitSignal(TransitSignal):
+    def __init__(self, koi, dataroot=KPLR_DATAROOT):
+        self.koi = koiname(koi)
+        
+        client = kplr.API(dataroot=dataroot)
+        koinum = koiname(koi, koinum=True)
+        k = client.koi(koinum)
+        
+        df = k.all_LCdata
+
+        
+        
+
 
 
 def get_rowefit(koi):
@@ -14,7 +37,7 @@ def get_rowefit(koi):
     except IOError:
         raise MissingKOIError('{} does not exist.'.format(rowefitfile))
 
-class KeplerTransitsignal(fpp.Transitsignal):
+class KeplerTransitsignal_old(fpp.Transitsignal):
     def __init__(self,koi,mcmc=True,maxslope=None,refit_mcmc=False,
                  photfile=None,photcols=(0,1),Tdur=None,ror=None,P=None,**kwargs):
         self.folder = '%s/koi%i.n' % (ROWEFOLDER,ku.koiname(koi,star=True,koinum=True))
