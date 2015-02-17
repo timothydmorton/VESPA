@@ -35,7 +35,6 @@ def koi_propdist(koi, prop):
     if type(koi) != kplr.api.KOI:
         client = kplr.API(data_root=KPLR_ROOT)
         koi = client.koi(koiname(koi, koinum=True))
-
     try:
         val = getattr(koi, prop)
         u1 = getattr(koi, prop+'_err1') #upper error bar (positive)
@@ -46,6 +45,7 @@ def koi_propdist(koi, prop):
         val = kicu.DATA.ix[koi.kepid, prop]
         u1 = kicu.DATA.ix[koi.kepid, prop+'_err1']
         u2 = kicu.DATA.ix[koi.kepid, prop+'_err2']
+        logging.debug('{} {} {}'.format(val,u1,u2))
         return dists.fit_doublegauss(val, -u2, u1)
 
 class KOI_FPPCalculation(FPPCalculation):
@@ -74,7 +74,7 @@ class KOI_FPPCalculation(FPPCalculation):
             popset = PopulationSet(popsetfile, **kwargs)
 
         else:
-            client = kplr.API(data_root=data_root)
+            client = kplr.API(data_root=KPLR_ROOT)
             koinum = koiname(koi, koinum=True)
             k = client.koi(koinum)
 
