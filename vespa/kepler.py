@@ -54,7 +54,7 @@ def koi_propdist(koi, prop):
 class KOI_FPPCalculation(FPPCalculation):
     def __init__(self, koi, recalc=False,
                  use_JRowe=True, trsig_kws=None,
-                 tag=None, starmodel_mcmc_kws=None
+                 tag=None, starmodel_mcmc_kws=None,
                  **kwargs):
 
         koi = koiname(koi)
@@ -123,7 +123,7 @@ class KOI_FPPCalculation(FPPCalculation):
                                           feh=(feh, e_feh))
                     if starmodel_mcmc_kws is None:
                         starmodel_mcmc_kws = {}
-                    starmodel.mcmc(**starmodel_mcmc_kws)
+                    starmodel.fit_mcmc(**starmodel_mcmc_kws)
                     kwargs['starmodel'] = starmodel
                 
 

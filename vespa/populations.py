@@ -22,6 +22,7 @@ from .fitebs import fitebs
 
 from starutils.populations import StarPopulation, MultipleStarPopulation
 from starutils.populations import ColormatchMultipleStarPopulation
+from starutils.populations import Spectroscopic_MultipleStarPopulation
 from starutils.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
 from starutils.populations import DARTMOUTH
 from starutils.utils import draw_eccs, semimajor, withinroche
@@ -630,6 +631,12 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                       'starfield':starfield,
                       'period_long':self.period}
 
+        if starmodel is not None:
+            del pop_kwargs['colors']
+            del pop_kwargs['colortol']
+            del pop_kwargs['starfield']
+            
+
         #insert additional arguments
         for kw,val in kwargs.iteritems():
             pop_kwargs[kw] = val
@@ -795,6 +802,12 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                       'colortol':colortol,
                       'starfield':starfield,
                       'period_short':self.period}
+
+        if starmodel is not None:
+            del pop_kwargs['colors']
+            del pop_kwargs['colortol']
+            del pop_kwargs['starfield']
+
 
         #insert additionl arguments
         for kw,val in kwargs.iteritems():
