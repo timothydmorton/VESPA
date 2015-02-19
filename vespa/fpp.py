@@ -25,7 +25,8 @@ class FPPCalculation(object):
             pop.lhoodcachefile = lhoodcachefile
         
     def __getattr__(self, attr):
-        return getattr(self.popset,attr)
+        if attr != 'popset':
+            return getattr(self.popset,attr)
 
     def plotsignal(self,fig=None,saveplot=False,
                    folder='.',figformat='png',**kwargs):
@@ -34,8 +35,10 @@ class FPPCalculation(object):
             plt.savefig('%s/signal.%s' % (folder,figformat))
             plt.close()
 
-    def FPPsummary(self,fig=None,figsize=(10,8),folder='.',saveplot=False,starinfo=True,siginfo=True,
-                   priorinfo=True,constraintinfo=True,tag=None,simple=False,figformat='png'):
+    def FPPsummary(self,fig=None,figsize=(10,8),folder='.',saveplot=False,
+                   starinfo=True,siginfo=True,
+                   priorinfo=True,constraintinfo=True,
+                   tag=None,simple=False,figformat='png'):
         if simple:
             starinfo = False
             siginfo = False

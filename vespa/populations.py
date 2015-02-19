@@ -7,6 +7,7 @@ import os, os.path
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
 from plotutils import setfig, plot2dhist
 from hashutils import hashcombine
@@ -93,7 +94,8 @@ class EclipsePopulation(StarPopulation):
             if len(self.stars)==0:
                 raise EmptyPopulationError('Zero elements in {} population'.format(model))
 
-        self._make_kde()
+        if 'slope' in self.stars:
+            self._make_kde()
 
     def fit_trapezoids(self, MAfn=None, msg=None, **kwargs):
         if MAfn is None:
@@ -104,6 +106,9 @@ class EclipsePopulation(StarPopulation):
                             **kwargs)
         for col in trapfit_df.columns:
             self.stars[col] = trapfit_df[col]
+
+        self._make_kde()
+
 
     def apply_multicolor_transit(self, band, depth):
         raise NotImplementedError('multicolor transit not yet implemented')
@@ -571,7 +576,8 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'],
                  mass=None, age=None, feh=None, starfield=None, colortol=0.1,
                  band='Kepler', model='EBs', f_binary=0.4, n=2e4,
-                 MAfn=None, lhoodcachefile=None, **kwargs):
+                 MAfn=None, lhoodcachefile=None, starmodel=None,
+                 **kwargs):
         """Population of EBs
 
         Mostly a copy of HEBPopulation, with small modifications.
@@ -605,11 +611,13 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
             self.generate(mags=mags, colors=colors, colortol=colortol,
                           starfield=starfield, mass=mass,
                           age=age, feh=feh, n=n, MAfn=MAfn,
-                          f_binary=f_binary, **kwargs)
+                          f_binary=f_binary, starmodel=starmodel,
+                          **kwargs)
 
     def generate(self, mags, colors, starfield=None, colortol=0.1,
                  mass=None, age=None, feh=None, n=2e4,
-                 MAfn=None, f_binary=0.4, **kwargs):
+                 MAfn=None, f_binary=0.4, starmodel=None,
+                 **kwargs):
         """Generates stars and eclipses
 
         stars from ColormatchStellarPopulation; eclipses using calculate_eclipses
@@ -622,7 +630,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                       'starfield':starfield,
                       'period_long':self.period}
 
-        #insert additionl arguments
+        #insert additional arguments
         for kw,val in kwargs.iteritems():
             pop_kwargs[kw] = val
 
@@ -633,11 +641,19 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         n_adapt = n
         while len(stars) < n:
             n_adapt = int(n_adapt)
-            pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
-                                                   f_triple=0, f_binary=1,
-                                                   n=n_adapt, 
-                                                   period_short=0,
-                                                   **pop_kwargs)
+
+            if starmodel is not None:
+                pop = Spectroscopic_MultipleStarPopulation(starmodel=starmodel,
+                                                           f_triple=0,
+                                                           f_binary=1,
+                                                           n=n_adapt,
+                                                           **pop_kwargs)
+            else:
+                pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
+                                                       f_triple=0, f_binary=1,
+                                                       n=n_adapt, 
+                                                       period_short=0,
+                                                       **pop_kwargs)
 
             s = pop.stars.copy()
 
@@ -720,7 +736,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
                  mass=None, age=None, feh=None, starfield=None, colortol=0.1,
                  band='Kepler', model='HEBs', f_triple=0.12, n=2e4,
-                 MAfn=None, lhoodcachefile=None, **kwargs):
+                 MAfn=None, lhoodcachefile=None, starmodel=None, **kwargs):
         """Population of HEBs
 
         If file is passed, population is loaded from .h5 file.
@@ -752,7 +768,8 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
             self.generate(mags=mags, colors=colors, colortol=colortol,
                           starfield=starfield, mass=mass,
                           age=age, feh=feh, n=n, MAfn=MAfn,
-                          f_triple=f_triple, **kwargs)
+                          f_triple=f_triple, starmodel=starmodel,
+                          **kwargs)
             
 
     @property
@@ -765,7 +782,8 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
     def generate(self, mags, colors, starfield=None, colortol=0.1,
                  mass=None, age=None, feh=None, n=2e4,
-                 MAfn=None, f_triple=0.12, **kwargs):
+                 MAfn=None, f_triple=0.12, starmodel=None,
+                 **kwargs):
         """Generates stars and eclipses
 
         stars from ColormatchStellarPopulation; eclipses using calculate_eclipses
@@ -791,9 +809,15 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         while len(stars) < n:
             n_adapt = int(n_adapt)
 
-            pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
-                                                   f_triple=1,
-                                                   n=n_adapt, **pop_kwargs)
+            if starmodel is not None:
+                pop = Spectroscopic_MultipleStarPopulation(starmodel=starmodel,
+                                                           f_triple=1,
+                                                           n=n_adapt,
+                                                           **pop_kwargs)
+            else:
+                pop = ColormatchMultipleStarPopulation(mA=mass, age=age, feh=feh,
+                                                       f_triple=1,
+                                                       n=n_adapt, **pop_kwargs)
 
             s = pop.stars.copy()
 
@@ -1124,14 +1148,26 @@ class PopulationSet(object):
         if MAfn is None:
             MAfn = MAInterpolationFunction(pmin=0.007, pmax=1/0.007, nzs=200, nps=400)
 
+        if beb_kws is None:
+            beb_kws = {}
         if heb_kws is None:
             heb_kws = {}
         if eb_kws is None:
             eb_kws = {}
-        if beb_kws is None:
-            beb_kws = {}
         if pl_kws is None:
             pl_kws = {}
+
+        try:
+            bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
+                                   ra=ra, dec=dec, period=period, 
+                                   mags=mags, MAfn=MAfn, n=n, **beb_kws)
+            bebpop.fit_trapezoids(MAfn=MAfn)
+            if savefile is not None:
+                bebpop.save_hdf(savefile, 'beb')
+        except:
+            logging.error('Error generating BEB population.')
+            if not hide_exceptions:
+                raise
 
         try:
             hebpop = HEBPopulation(mass=mass, age=age, feh=feh, 
@@ -1154,18 +1190,6 @@ class PopulationSet(object):
                 ebpop.save_hdf(savefile, 'eb')
         except:
             logging.error('Error generating EB population.')
-            if not hide_exceptions:
-                raise
-
-        try:
-            bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
-                                   ra=ra, dec=dec, period=period, 
-                                   mags=mags, MAfn=MAfn, n=n, **beb_kws)
-            bebpop.fit_trapezoids(MAfn=MAfn)
-            if savefile is not None:
-                bebpop.save_hdf(savefile, 'beb')
-        except:
-            logging.error('Error generating BEB population.')
             if not hide_exceptions:
                 raise
 

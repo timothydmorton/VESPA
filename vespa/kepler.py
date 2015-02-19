@@ -45,7 +45,6 @@ def koi_propdist(koi, prop):
         val = kicu.DATA.ix[koi.kepid, prop]
         u1 = kicu.DATA.ix[koi.kepid, prop+'_err1']
         u2 = kicu.DATA.ix[koi.kepid, prop+'_err2']
-        logging.debug('{} {} {}'.format(val,u1,u2))
         return dists.fit_doublegauss(val, -u2, u1)
 
 class KOI_FPPCalculation(FPPCalculation):
@@ -69,8 +68,11 @@ class KOI_FPPCalculation(FPPCalculation):
         if tag is not None:
             folder += '_{}'.format(tag)
 
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
         popsetfile = os.path.join(folder,'popset.h5')
-        if os.path.exists(popsetfile):
+        if os.path.exists(popsetfile) and not recalc:
             popset = PopulationSet(popsetfile, **kwargs)
 
         else:
@@ -94,7 +96,7 @@ class KOI_FPPCalculation(FPPCalculation):
             if 'logg' not in kwargs:
                 kwargs['logg'] = kicu.DATA.ix[k.kepid,'logg']
             if 'rprs' not in kwargs:
-                if use_Jrowe:
+                if use_JRowe:
                     kwargs['rprs'] = sig.rowefit.ix['RD1','val']
                 else:
                     kwargs['rprs'] = k.koi_ror 
@@ -106,7 +108,10 @@ class KOI_FPPCalculation(FPPCalculation):
             if 'period' not in kwargs:
                 kwargs['period'] = k.koi_period
 
-            popset = PopulationSet(**kwargs)
+            trilegal_filename = os.path.join(folder,'starfield.h5')
+            popset = PopulationSet(trilegal_filename=trilegal_filename,
+                                   **kwargs)
+            popset.save_hdf('{}/popset.h5'.format(folder), overwrite=True)
 
         self.folder = folder
         lhoodcachefile = os.path.join(self.folder,'lhoodcache.dat')
