@@ -1103,6 +1103,7 @@ class PopulationSet(object):
                  MAfn=None, colors=None,
                  trilegal_filename=None,
                  Teff=None, logg=None, savefile=None,
+                 starmodel=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None,
                  hide_exceptions=False):
@@ -1124,7 +1125,7 @@ class PopulationSet(object):
                           MAfn=MAfn, colors=colors, radius=radius,
                           trilegal_filename=trilegal_filename,
                           Teff=Teff, logg=logg, rprs=rprs,
-                          savefile=savefile,
+                          savefile=savefile, starmodel=starmodel,
                           heb_kws=heb_kws, eb_kws=eb_kws, 
                           beb_kws=beb_kws, pl_kws=pl_kws,
                           hide_exceptions=hide_exceptions)
@@ -1137,7 +1138,7 @@ class PopulationSet(object):
     def generate(self, ra, dec, period, mags,
                  n=2e4, mass=None, age=None, feh=None, radius=None,
                  MAfn=None, colors=None, Teff=None, logg=None,
-                 rprs=None, trilegal_filename=None,
+                 rprs=None, trilegal_filename=None, starmodel=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None, savefile=None,
                  hide_exceptions=False):
@@ -1172,6 +1173,7 @@ class PopulationSet(object):
         try:
             hebpop = HEBPopulation(mass=mass, age=age, feh=feh, 
                                    colors=colors, period=period,
+                                   starmodel=starmodel,
                                    mags=mags, MAfn=MAfn, n=n, **heb_kws)
             hebpop.fit_trapezoids(MAfn=MAfn)
             if savefile is not None:
@@ -1183,8 +1185,9 @@ class PopulationSet(object):
 
         try:
             ebpop = EBPopulation(mass=mass, age=age, feh=feh, 
-                                   colors=colors, period=period,
-                                   mags=mags, MAfn=MAfn, n=n, **eb_kws)
+                                 colors=colors, period=period,
+                                 starmodel=starmodel,
+                                 mags=mags, MAfn=MAfn, n=n, **eb_kws)
             ebpop.fit_trapezoids(MAfn=MAfn)
             if savefile is not None:
                 ebpop.save_hdf(savefile, 'eb')

@@ -2,8 +2,12 @@ from __future__  import print_function, division
 import numpy as np
 import pandas as pd
 import os, os.path
+import re
 import logging
 import pickle
+
+from isochrones.starmodel import StarModel
+from isochrones.dartmouth import Dartmouth_Isochrone
 
 from .transitsignal import TransitSignal
 from .populations import PopulationSet
@@ -50,7 +54,7 @@ def koi_propdist(koi, prop):
 class KOI_FPPCalculation(FPPCalculation):
     def __init__(self, koi, recalc=False,
                  use_JRowe=True, trsig_kws=None,
-                 tag=None,
+                 tag=None, starmodel_mcmc_kws=None
                  **kwargs):
 
         koi = koiname(koi)
@@ -101,6 +105,29 @@ class KOI_FPPCalculation(FPPCalculation):
                 else:
                     kwargs['rprs'] = k.koi_ror 
                     
+            #if stellar properties are determined spectroscopically,
+            # fit stellar model
+            if 'starmodel' not in kwargs:
+                if re.match('SPE', kicu.DATA.ix[k.kepid, 'teff_prov']):
+                    logging.info('Spectroscopically determined stellar properties, fitting StarModel...')
+                    Teff = kicu.DATA.ix[k.kepid, 'teff']
+                    e_Teff = kicu.DATA.ix[k.kepid, 'teff_err1']
+                    logg = kicu.DATA.ix[k.kepid, 'logg']
+                    e_logg = kicu.DATA.ix[k.kepid, 'logg_err1']
+                    feh = kicu.DATA.ix[k.kepid, 'feh']
+                    e_feh = kicu.DATA.ix[k.kepid, 'feh_err1']
+
+                    dar = Dartmouth_Isochrone()
+                    starmodel = StarModel(dar, Teff=(Teff, e_Teff),
+                                          logg=(logg, e_logg),
+                                          feh=(feh, e_feh))
+                    if starmodel_mcmc_kws is None:
+                        starmodel_mcmc_kws = {}
+                    starmodel.mcmc(**starmodel_mcmc_kws)
+                    kwargs['starmodel'] = starmodel
+                
+
+
             if 'mags' not in kwargs:
                 kwargs['mags'] = ku.KICmags(koi)
             if 'ra' not in kwargs:
