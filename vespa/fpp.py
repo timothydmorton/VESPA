@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import numpy as np
 import os, os.path
 import logging
+import cPickle as pickle
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -16,30 +17,48 @@ from hashutils import hashcombine
 
 
 class FPPCalculation(object):
-    def __init__(self, trsig, popset, lhoodcachefile=None,
-                 folder='.'):
+    def __init__(self, trsig, popset, folder='.'):
         self.trsig = trsig
         self.name = trsig.name
         self.popset = popset
         self.folder = folder
-        if lhoodcachefile is None:
-            lhoodcachefile = os.path.join(self.folder,'lhoodcache.dat')
+        if not os.path.exists(self.folder):
+            os.makedirs(self.folder)
+
+        lhoodcachefile = os.path.join(self.folder,'lhoodcache.dat')
 
         self.lhoodcachefile = lhoodcachefile
         for pop in self.popset.poplist:
             pop.lhoodcachefile = lhoodcachefile
 
-
-
     def __getattr__(self, attr):
         if attr != 'popset':
             return getattr(self.popset,attr)
+
+    def save(self, overwrite=True):
+        self.save_popset(overwrite=overwrite)
+        self.save_signal()
+
+    @classmethod
+    def load(cls, folder):
+        popset = PopulationSet(os.path.join(folder,'popset.h5'))
+        sigfile = os.path.join(folder,'trsig.pkl')
+        trsig = pickle.load(open(sigfile, 'rb'))
+        return cls(trsig, popset, folder=folder)
 
     def FPPplots(self):
         pass
 
     def write_results(self):
         pass
+
+    def save_popset(self,filename='popset.h5',**kwargs):
+        self.popset.save_hdf(os.path.join(self.folder,filename))
+
+    def save_signal(self,filename='trsig.pkl'):
+        f = open(os.path.join(self.folder,filename), 'wb')
+        pickle.dump(self.trsig, f)
+        f.close()
 
     def plotsignal(self,fig=None,saveplot=False,
                    folder='.',figformat='png',**kwargs):

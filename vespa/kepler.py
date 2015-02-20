@@ -4,7 +4,7 @@ import pandas as pd
 import os, os.path
 import re
 import logging
-import pickle
+import cPickle as pickle
 
 from scipy.integrate import quad
 
@@ -81,14 +81,6 @@ class KOI_FPPCalculation(FPPCalculation):
 
         koi = koiname(koi)
 
-        if trsig_kws is None:
-            trsig_kws = {}
-
-        if use_JRowe:
-            sig = JRowe_KeplerTransitSignal(koi, **trsig_kws)
-        else:
-            sig = KeplerTransitSignal(koi, **trsig_kws)
-
         #if saved popset exists, load
         folder = os.path.join(KOI_FPPDIR,koi)
         if tag is not None:
@@ -96,6 +88,19 @@ class KOI_FPPCalculation(FPPCalculation):
 
         if not os.path.exists(folder):
             os.makedirs(folder)
+
+        if trsig_kws is None:
+            trsig_kws = {}
+
+        #first check if pickled signal is there to be loaded
+        trsigfile = os.path.join(folder,'trsig.pkl')
+        if os.path.exists(trsigfile):
+            trsig = pickle.load(open(trsigfile,'rb'))
+        else:
+            if use_JRowe:
+                trsig = JRowe_KeplerTransitSignal(koi, **trsig_kws)
+            else:
+                trsig = KeplerTransitSignal(koi, **trsig_kws)
 
         popsetfile = os.path.join(folder,'popset.h5')
         if os.path.exists(popsetfile) and not recalc:
@@ -123,7 +128,7 @@ class KOI_FPPCalculation(FPPCalculation):
                 kwargs['logg'] = kicu.DATA.ix[k.kepid,'logg']
             if 'rprs' not in kwargs:
                 if use_JRowe:
-                    kwargs['rprs'] = sig.rowefit.ix['RD1','val']
+                    kwargs['rprs'] = trsig.rowefit.ix['RD1','val']
                 else:
                     kwargs['rprs'] = k.koi_ror 
                     
@@ -171,13 +176,13 @@ class KOI_FPPCalculation(FPPCalculation):
             trilegal_filename = os.path.join(folder,'starfield.h5')
             popset = PopulationSet(trilegal_filename=trilegal_filename,
                                    **kwargs)
-            popset.save_hdf('{}/popset.h5'.format(folder), overwrite=True)
+            #popset.save_hdf('{}/popset.h5'.format(folder), overwrite=True)
 
         lhoodcachefile = os.path.join(folder,'lhoodcache.dat')
 
-        FPPCalculation.__init__(self, sig, popset,
+        FPPCalculation.__init__(self, trsig, popset,
                                 folder=folder)
-            
+        self.save()
 
 class KeplerTransitSignal(TransitSignal):
     def __init__(self, koi, data_root=KPLR_ROOT):
