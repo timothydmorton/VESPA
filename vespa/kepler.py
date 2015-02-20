@@ -30,6 +30,7 @@ KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
 #temporary, only local solution
 CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
 
+
 import astropy.constants as const
 G = const.G.cgs.value
 DAY = 86400
