@@ -11,12 +11,12 @@ from pkg_resources import resource_filename
 FPPCALCDIR = '%s/fpp-calculations' % os.environ['KEPLERDIR']
 CALCFPP_PATH = '/u/tdm/anaconda/bin/koifpp'
 
-ALLKOIS = 
+ALLKOIS = resource_filename('vespa','data/kois_q1q16.list')
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Start parallelized FPP calculations to run using Condor.')
 
-    parser.add_argument('koilist',type=str)
+    parser.add_argument('-f','--file',type=str,default=ALLKOIS)
     parser.add_argument('--ngroups',type=int, default=100)
     parser.add_argument('--rootfolder',default=FPPCALCDIR)
     parser.add_argument('--resume',action='store_true')
@@ -28,9 +28,9 @@ if __name__=='__main__':
     if args.fixnan:
         args.resume = True
 
-    print args
+    print(args)
 
-    basename = os.path.splitext(os.path.basename(args.koilist))[0]
+    basename = os.path.splitext(os.path.basename(args.file))[0]
     folder = '%s/%s' % (args.rootfolder,basename)
     
     if not args.resume:
@@ -40,9 +40,9 @@ if __name__=='__main__':
 
         
     try:
-        allkois = np.loadtxt(args.koilist)
+        allkois = np.loadtxt(args.file)
     except ValueError:
-        allkois = np.loadtxt(args.koilist,dtype=str)
+        allkois = np.loadtxt(args.file,dtype=str)
 
         
 
@@ -57,7 +57,7 @@ if __name__=='__main__':
         np.savetxt('%s/kois.list' % ifolder,subset,fmt='%s')
             
     #write the condor script file
-    fpparg_str = ''
+    fpparg_str = '--plotfolder .'
     for arg in args.fppargs:
         fpparg_str += arg + ' '
 

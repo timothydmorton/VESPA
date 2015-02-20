@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function, division
 
+import numpy as np
 import os, os.path
 import pandas as pd
 import argparse
@@ -29,6 +30,7 @@ parser.add_argument('-n','--n',type=int,default=2e4)
 parser.add_argument('-o','--overwrite',action='store_true')
 parser.add_argument('--noJRowefit',action='store_true')
 parser.add_argument('-f','--file', default='kois.list')
+parser.add_argument('--plotfolder', default=None)
 
 args = parser.parse_args()
 
@@ -37,7 +39,10 @@ client = kplr.API()
 KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
 
 if len(args.kois)==0:
-    kois = np.loadtxt(args.file)
+    try:
+        kois = np.loadtxt(args.file)
+    except ValueError:
+        kois = np.loadtxt(args.file, dtype=str)
 else:
     kois = args.kois
 
@@ -74,9 +79,17 @@ for koi in args.kois:
         fpp.apply_secthresh(secthresh)
         fpp.set_maxrad(r_excl)
 
-        fpp.FPPplots()
+        if args.plotfolder is None:
+            plotfolder = fpp.folder
+        else:
+            plotfolder = os.path.join(args.plotfolder,ku.koiname(koi))
 
-        logging.info('FPP calculation for {} successful.'.format(ku.koiname(koi)))
+        if not os.path.exists(plotfolder):
+            os.makedirs(plotfolder)
+
+        fpp.FPPplots(folder=plotfolder)
+
+        logging.info('FPP calculation for {} successful. Results/plots written to {}.'.format(ku.koiname(koi),os.path.abspath(plotfolder)))
 
     except Exception, e:
         logging.error('FPP calculation failed for {}'.format(koi), exc_info=True)
