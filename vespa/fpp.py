@@ -16,14 +16,21 @@ from hashutils import hashcombine
 
 
 class FPPCalculation(object):
-    def __init__(self, trsig, popset, lhoodcachefile=None):
+    def __init__(self, trsig, popset, lhoodcachefile=None,
+                 folder='.'):
         self.trsig = trsig
         self.name = trsig.name
         self.popset = popset
+        self.folder = folder
+        if lhoodcachefile is None:
+            lhoodcachefile = os.path.join(self.folder,'lhoodcache.dat')
+
         self.lhoodcachefile = lhoodcachefile
         for pop in self.popset.poplist:
             pop.lhoodcachefile = lhoodcachefile
-        
+
+
+
     def __getattr__(self, attr):
         if attr != 'popset':
             return getattr(self.popset,attr)

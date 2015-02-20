@@ -173,11 +173,10 @@ class KOI_FPPCalculation(FPPCalculation):
                                    **kwargs)
             popset.save_hdf('{}/popset.h5'.format(folder), overwrite=True)
 
-        self.folder = folder
-        lhoodcachefile = os.path.join(self.folder,'lhoodcache.dat')
+        lhoodcachefile = os.path.join(folder,'lhoodcache.dat')
 
         FPPCalculation.__init__(self, sig, popset,
-                                lhoodcachefile=lhoodcachefile)
+                                folder=folder)
             
 
 class KeplerTransitSignal(TransitSignal):
