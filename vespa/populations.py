@@ -437,6 +437,7 @@ class EclipsePopulation(StarPopulation):
 class PlanetPopulation(EclipsePopulation):
     def __init__(self, filename=None, period=None, rprs=None,
                  mass=None, radius=None, Teff=None, logg=None,
+                 starmodel=None,
                  band='Kepler', model='Planets', n=2e4,
                  fp_specific=0.01, u1=None, u2=None,
                  rbin_width=0.3,
@@ -461,6 +462,7 @@ class PlanetPopulation(EclipsePopulation):
         self.rprs = rprs
         self.Teff = Teff
         self.logg = logg
+        self.starmodel = starmodel
         
         if filename is not None:
             self.load_hdf(filename)
@@ -468,12 +470,14 @@ class PlanetPopulation(EclipsePopulation):
             # calculates eclipses 
             self.generate(rprs=rprs, mass=mass, radius=radius,
                           n=n, fp_specific=fp_specific, 
+                          starmodel=starmodel,
                           rbin_width=rbin_width,
                           u1=u1, u2=u2, Teff=Teff, logg=logg,
                           MAfn=MAfn, **kwargs)
 
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
+                 starmodel=None,
                 Teff=None, logg=None, rbin_width=0.3,
                 MAfn=None, **kwargs):
         """Generates transits
@@ -481,17 +485,24 @@ class PlanetPopulation(EclipsePopulation):
 
         n = int(n)
         
-        if type(mass) is type((1,)):
-            mass = dists.Gaussian_Distribution(*mass)
-        if isinstance(mass, dists.Distribution):
-            mdist = mass
-            mass = mdist.rvs(1e5)
+        if starmodel is None:
+            if type(mass) is type((1,)):
+                mass = dists.Gaussian_Distribution(*mass)
+            if isinstance(mass, dists.Distribution):
+                mdist = mass
+                mass = mdist.rvs(1e5)
 
-        if type(radius) is type((1,)):
-            radius = dists.Gaussian_Distribution(*radius)
-        if isinstance(radius, dists.Distribution):
-            rdist = radius
-            radius = rdist.rvs(1e5)
+            if type(radius) is type((1,)):
+                radius = dists.Gaussian_Distribution(*radius)
+            if isinstance(radius, dists.Distribution):
+                rdist = radius
+                radius = rdist.rvs(1e5)
+        else:
+            samples = starmodel.random_samples(1e5)
+            mass = samples['mass'].values
+            radius = samples['radius'].values
+            Teff = samples['Teff'].mean()
+            logg = samples['logg'].mean()
 
         if u1 is None or u2 is None:
             if Teff is None or logg is None:
@@ -1211,9 +1222,10 @@ class PopulationSet(object):
 
         try:
             plpop = PlanetPopulation(mass=mass, radius=radius,
-                                      period=period, rprs=rprs,
-                                      Teff=Teff, logg=logg,
-                                      MAfn=MAfn, n=n, **pl_kws)
+                                     period=period, rprs=rprs,
+                                     Teff=Teff, logg=logg,
+                                     starmodel=starmodel,
+                                     MAfn=MAfn, n=n, **pl_kws)
             plpop.fit_trapezoids(MAfn=MAfn)
             if savefile is not None:
                 plpop.save_hdf(savefile, 'pl')

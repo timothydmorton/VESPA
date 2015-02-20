@@ -109,7 +109,11 @@ class KOI_FPPCalculation(FPPCalculation):
             # fit stellar model
             if 'starmodel' not in kwargs:
                 if re.match('SPE', kicu.DATA.ix[k.kepid, 'teff_prov']):
-                    logging.info('Spectroscopically determined stellar properties, fitting StarModel...')
+                    logging.info('Spectroscopically determined stellar properties.')
+                    #first, see if there already is a starmodel to load
+
+                    #fit star model
+                    logging.info('Fitting StarModel...')
                     Teff = kicu.DATA.ix[k.kepid, 'teff']
                     e_Teff = kicu.DATA.ix[k.kepid, 'teff_err1']
                     logg = kicu.DATA.ix[k.kepid, 'logg']
