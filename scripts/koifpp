@@ -28,12 +28,18 @@ parser.add_argument('kois',metavar='KOI',nargs='*',help='a KOI (or list of kois)
 parser.add_argument('-n','--n',type=int,default=2e4)
 parser.add_argument('-o','--overwrite',action='store_true')
 parser.add_argument('--noJRowefit',action='store_true')
+parser.add_argument('-f','--file', default='kois.list')
 
 args = parser.parse_args()
 
 client = kplr.API()
 
 KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
+
+if len(args.kois)==0:
+    kois = np.loadtxt(args.file)
+else:
+    kois = args.kois
 
 for koi in args.kois:
     logfile = os.path.join(KOI_FPPDIR,ku.koiname(koi),'run.log')

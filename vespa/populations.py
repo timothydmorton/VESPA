@@ -99,6 +99,7 @@ class EclipsePopulation(StarPopulation):
             self._make_kde()
 
     def fit_trapezoids(self, MAfn=None, msg=None, **kwargs):
+        logging.info('Fitting trapezoid models for {}...'.format(self.model))
         if MAfn is None:
             MAfn = MAInterpolationFunction(nzs=200,nps=400,pmin=0.007,pmax=1/0.007)
         if msg is None:
@@ -108,6 +109,7 @@ class EclipsePopulation(StarPopulation):
         for col in trapfit_df.columns:
             self.stars[col] = trapfit_df[col]
 
+        logging.info('Done.')
         self._make_kde()
 
 

@@ -147,7 +147,6 @@ class KOI_FPPCalculation(FPPCalculation):
                     e_logg = kicu.DATA.ix[k.kepid, 'logg_err1']
                     feh = kicu.DATA.ix[k.kepid, 'feh']
                     e_feh = kicu.DATA.ix[k.kepid, 'feh_err1']
-                    logging.info('Spectroscopically determined stellar properties.')
                     logging.info('fitting StarModel (Teff=({},{}), logg=({},{}), feh=({},{}))...'.format(Teff, e_Teff, logg, e_logg, feh, e_feh))
 
                     dar = Dartmouth_Isochrone()
