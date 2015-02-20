@@ -44,6 +44,5 @@ for koi in args.kois:
 
 
     fpp.FPPplots()
-    fpp.write_results()
 
 koi_dicco_msky_err

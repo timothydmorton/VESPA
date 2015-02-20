@@ -20,8 +20,7 @@ setup(name = "VESPA",
       packages = find_packages(),
       package_data = {'vespa': ['data/*']},
       ext_modules = transit_utils,
-      #scripts = ['scripts/write_cosi_dist',
-      #           'scripts/calc_kappa_posterior'],
+      scripts = ['scripts/koifpp']
       cmdclass = {'build_ext': build_ext},
       classifiers=[
         'Development Status :: 3 - Alpha',

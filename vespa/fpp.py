@@ -46,11 +46,44 @@ class FPPCalculation(object):
         trsig = pickle.load(open(sigfile, 'rb'))
         return cls(trsig, popset, folder=folder)
 
-    def FPPplots(self):
-        pass
+    def FPPplots(self, folder=None, format='png', tag=None, **kwargs):
+        if folder is None:
+            folder = self.folder
 
-    def write_results(self):
-        pass
+        self.lhoodplots(folder=folder,figformat=format,tag=tag,**kwargs)
+        self.FPPsummary(folder=folder,saveplot=True,figformat=format,tag=tag)
+        self.plotsignal(folder=folder,saveplot=True,figformat=format)
+        self.write_results(folder=folder)
+
+    def plotsignal(self,fig=None,saveplot=True,folder=None,figformat='png',**kwargs):
+        if folder is None:
+            folder = self.folder
+
+        self.trsig.plot(plot_trap=True,fig=fig,**kwargs)
+        if saveplot:
+            plt.savefig('%s/signal.%s' % (folder,figformat))
+            plt.close()
+
+    def write_results(self,folder=None):
+        if folder is None:
+            folder = self.folder
+        fout = open(folder+'/'+'results.txt','w')
+        for m in self.popset.shortmodelnames:
+            fout.write('%s ' % m)
+        fout.write('fpV fp FPP\n')
+        Ls = {}
+        Ltot = 0
+        for model in self.popset.modelnames:
+            Ls[model] = self.prior(model)*self.lhood(model)
+            Ltot += Ls[model]
+
+        line = ''
+        for model in self.popset.modelnames:
+            line += '%.2e ' % (Ls[model]/Ltot)
+        line += '%.3g %.3f %.2e\n' % (self.fpV(),self.priorfactors['fp_specific'],self.FPP())
+
+        fout.write(line)
+        fout.close()
 
     def save_popset(self,filename='popset.h5',**kwargs):
         self.popset.save_hdf(os.path.join(self.folder,filename))
@@ -60,12 +93,6 @@ class FPPCalculation(object):
         pickle.dump(self.trsig, f)
         f.close()
 
-    def plotsignal(self,fig=None,saveplot=False,
-                   folder='.',figformat='png',**kwargs):
-        self.trsig.plot(plot_tt=True,fig=fig,**kwargs)
-        if saveplot:
-            plt.savefig('%s/signal.%s' % (folder,figformat))
-            plt.close()
 
     def FPPsummary(self,fig=None,figsize=(10,8),folder='.',saveplot=False,
                    starinfo=True,siginfo=True,
@@ -77,12 +104,9 @@ class FPPCalculation(object):
             priorinfo = False
             constraintinfo = False
 
-        #print('backend being used for summary plot: %s' % matplotlib.rcParams['backend'])
-
         setfig(fig,figsize=figsize)
         # three pie charts
         priors = []; lhoods = []; Ls = []
-        #for model in ['eb','heb','bgeb','bgpl','pl']:
         for model in self.popset.modelnames:
             priors.append(self.prior(model))
             lhoods.append(self.lhood(model))
