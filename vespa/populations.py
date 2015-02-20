@@ -1273,7 +1273,8 @@ class PopulationSet(object):
         poplist = []
         for m,t in zip(models,types):
             poplist.append(t().load_hdf(filename, path='{}/{}'.format(path,m)))
-        
+        store.close()
+
         PopulationSet.__init__(self, poplist) #how to deal with saved constraints?
         return self
 

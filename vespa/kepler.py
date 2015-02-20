@@ -141,13 +141,14 @@ class KOI_FPPCalculation(FPPCalculation):
                     #first, see if there already is a starmodel to load
 
                     #fit star model
-                    logging.info('Fitting StarModel...')
                     Teff = kicu.DATA.ix[k.kepid, 'teff']
                     e_Teff = kicu.DATA.ix[k.kepid, 'teff_err1']
                     logg = kicu.DATA.ix[k.kepid, 'logg']
                     e_logg = kicu.DATA.ix[k.kepid, 'logg_err1']
                     feh = kicu.DATA.ix[k.kepid, 'feh']
                     e_feh = kicu.DATA.ix[k.kepid, 'feh_err1']
+                    logging.info('Spectroscopically determined stellar properties.')
+                    logging.info('fitting StarModel (Teff=({},{}), logg=({},{}), feh=({},{}))...'.format(Teff, e_Teff, logg, e_logg, feh, e_feh))
 
                     dar = Dartmouth_Isochrone()
                     starmodel = StarModel(dar, Teff=(Teff, e_Teff),
@@ -156,6 +157,7 @@ class KOI_FPPCalculation(FPPCalculation):
                     if starmodel_mcmc_kws is None:
                         starmodel_mcmc_kws = {}
                     starmodel.fit_mcmc(**starmodel_mcmc_kws)
+                    logging.info('Done.')
                     kwargs['starmodel'] = starmodel
                 
 
