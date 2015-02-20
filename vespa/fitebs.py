@@ -88,6 +88,8 @@ def fitebs(data, MAfn=None, conv=True, use_pbar=True, msg='',
         except NoFitError:
             logging.error('Fit did not converge for index {}'.format(i))
             continue
+        except KeyboardInterrupt:
+            raise
         except:
             logging.error('unknown error for index {}'.format(i))
             raise

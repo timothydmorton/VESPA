@@ -18,7 +18,7 @@ if __name__=='__main__':
 
     parser.add_argument('-f','--file',type=str,default=ALLKOIS)
     parser.add_argument('--ngroups',type=int, default=100)
-    parser.add_argument('--rootfolder',default=FPPCALCDIR)
+    parser.add_argument('--rootfolder',type=str,default=FPPCALCDIR)
     parser.add_argument('--resume',action='store_true')
     parser.add_argument('--fixnan',action='store_true')
     parser.add_argument('fppargs',nargs=argparse.REMAINDER)
@@ -57,7 +57,7 @@ if __name__=='__main__':
         np.savetxt('%s/kois.list' % ifolder,subset,fmt='%s')
             
     #write the condor script file
-    fpparg_str = '--plotfolder .'
+    fpparg_str = ' --plotfolder . '
     for arg in args.fppargs:
         fpparg_str += arg + ' '
 

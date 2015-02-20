@@ -40,14 +40,18 @@ KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
 
 if len(args.kois)==0:
     try:
-        kois = np.loadtxt(args.file)
+        kois = np.atleast_1d(np.loadtxt(args.file))
     except ValueError:
-        kois = np.loadtxt(args.file, dtype=str)
+        kois = np.atleast_1d(np.loadtxt(args.file, dtype=str))
 else:
     kois = args.kois
 
-for koi in args.kois:
-    logfile = os.path.join(KOI_FPPDIR,ku.koiname(koi),'run.log')
+for koi in kois:
+    koifolder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
+    if not os.path.exists(koifolder):
+        os.makedirs(koifolder)
+
+    logfile = os.path.join(koifolder,'run.log')
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s',
                         filename=logfile)
     logger = logging.getLogger(__name__)
