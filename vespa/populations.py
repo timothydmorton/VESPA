@@ -546,7 +546,9 @@ class PlanetPopulation(EclipsePopulation):
             df['u2'] = u2 * np.ones_like(df['mass_A'])
             df['P'] = self.period * np.ones_like(df['mass_A'])
             
-            stars = pd.concat((stars, df))
+            ok = df['dpri']>0
+            
+            stars = pd.concat((stars, df[ok]))
 
             logging.info('{} Transiting planet systems generated (target {})'.format(len(stars),n))
             logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))

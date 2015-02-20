@@ -6,6 +6,8 @@ import re
 import logging
 import pickle
 
+from scipy.integrate import quad
+
 from isochrones.starmodel import StarModel
 from isochrones.dartmouth import Dartmouth_Isochrone
 
@@ -31,7 +33,27 @@ CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
 import astropy.constants as const
 G = const.G.cgs.value
 DAY = 86400
+RSUN = const.G.cgs.value
+REARTH = const.G.cgs.value
 
+
+def fp_fressin(rp,dr=None):
+    if dr is None:
+        dr = rp*0.3
+    return quad(fressin_occurrence,rp-dr,rp+dr)[0]
+
+def fressin_occurrence(rp):
+    """Occurrence rates per bin from Fressin+ (2013)
+    """
+    rp = np.atleast_1d(rp)
+
+    sq2 = np.sqrt(2)
+    bins = np.array([1/sq2,1,sq2,2,2*sq2,
+                     4,4*sq2,8,8*sq2,
+                     16,16*sq2])
+    rates = np.array([0,0.155,0.155,0.165,0.17,0.065,0.02,0.01,0.012,0.01,0.002,0])
+
+    return rates[np.digitize(rp,bins)]
 
 def koi_propdist(koi, prop):
     """
@@ -138,6 +160,13 @@ class KOI_FPPCalculation(FPPCalculation):
                 kwargs['ra'], kwargs['dec'] = ku.radec(koi)
             if 'period' not in kwargs:
                 kwargs['period'] = k.koi_period
+
+            if 'pl_kws' not in kwargs:
+                kwargs['pl_kws'] = {}
+
+            if 'fp_specific' not in kwargs['pl_kws']:
+                rp = kwargs['radius'].mu * kwargs['rprs'] * RSUN/REARTH
+                kwargs['pl_kws']['fp_specific'] = fp_fressin(rp)
 
             trilegal_filename = os.path.join(folder,'starfield.h5')
             popset = PopulationSet(trilegal_filename=trilegal_filename,
