@@ -28,6 +28,12 @@ class FPPCalculation(object):
         if attr != 'popset':
             return getattr(self.popset,attr)
 
+    def FPPplots(self):
+        pass
+
+    def write_results(self):
+        pass
+
     def plotsignal(self,fig=None,saveplot=False,
                    folder='.',figformat='png',**kwargs):
         self.trsig.plot(plot_tt=True,fig=fig,**kwargs)

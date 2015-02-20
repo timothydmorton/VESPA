@@ -33,8 +33,8 @@ CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
 import astropy.constants as const
 G = const.G.cgs.value
 DAY = 86400
-RSUN = const.G.cgs.value
-REARTH = const.G.cgs.value
+RSUN = const.R_sun.cgs.value
+REARTH = const.R_earth.cgs.value
 
 
 def fp_fressin(rp,dr=None):
