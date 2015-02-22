@@ -6,6 +6,8 @@ import re
 import logging
 import cPickle as pickle
 
+from pkg_resources import resource_filename
+
 from scipy.integrate import quad
 
 from isochrones.starmodel import StarModel
@@ -26,6 +28,9 @@ KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
 
 KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
+STARFIELD_DIR = os.path.join(KOI_FPPDIR, 'starfields')
+
+CHIPLOC_FILE = resource_filename('vespa','data/kepler_chiplocs.txt')
 
 #temporary, only local solution
 CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
@@ -36,6 +41,21 @@ G = const.G.cgs.value
 DAY = 86400
 RSUN = const.R_sun.cgs.value
 REARTH = const.R_earth.cgs.value
+
+def _get_starfields(**kwargs):
+    if not os.path.exists(STARFIELD_DIR):
+        os.makedirs(STARFIELD_DIR)
+    
+
+def koi_starfield_file(koi):
+    """
+    """
+    ra,dec = ku.radec(koi)
+    c = FK5Coordinates(ra,dec)
+    chips,ras,decs = loadtxt('%s/chiplocs.txt' % KEPLERDIR,unpack=True)
+    ds = ((c.ra.d-ras)**2 + (c.dec.d-decs)**2)
+    chip = chips[argmin(ds)]
+    return 'kepfield%i' % chip
 
 
 def fp_fressin(rp,dr=None):
