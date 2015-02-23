@@ -3,6 +3,8 @@ from __future__ import print_function, division
 from vespa.populations import HEBPopulation
 from vespa.populations import EBPopulation
 
+from pkg_resources import resource_filename
+
 import os, os.path
 import tempfile
 TMP = tempfile.gettempdir()
@@ -39,4 +41,18 @@ def test_eb(filename=os.path.join(TMP,'test_eb.h5')):
 
     pop.save_hdf(filename, overwrite=True)
     pop2 = EBPopulation().load_hdf(filename)
+    os.remove(filename)
+
+def test_beb(filename=os.path.join(TMP,'test_beb.h5')):
+    trilegal_filename = resource_filename('vespa','data/kep22field.h5')
+    mags = {'H': 10.211,
+            'J': 10.523,
+            'K': 10.152000000000001}
+    period = 289.8622
+    pop = BEBPopulation(period=period, mags=mags,
+                        trilegal_filename=trilegal_filename,
+                        n=100, MAfn=MAfn)
+
+    pop.save_hdf(filename, overwrite=True)
+    pop2 = BEBPopulation().load_hdf(filename)
     os.remove(filename)
