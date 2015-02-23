@@ -208,8 +208,8 @@ class EclipsePopulation(StarPopulation):
             logging.warning('Must do trapezoid fits before making KDE.')
             return
         
-        if ok.sum() < 2:
-            raise EmptyPopulationError('< 2 valid systems in population')
+        if ok.sum() < 4:
+            raise EmptyPopulationError('< 4 valid systems in population')
 
         deps = self.depth[ok]
         logdeps = np.log10(deps)

@@ -46,6 +46,8 @@ if len(args.kois)==0:
 else:
     kois = args.kois
 
+logger = None
+
 for koi in kois:
     koi = ku.koiname(koi)
     koifolder = os.path.join(KOI_FPPDIR, koi)
@@ -53,14 +55,22 @@ for koi in kois:
         os.makedirs(koifolder)
 
     logfile = os.path.join(koifolder,'run.log')
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s',
-                        filename=logfile)
-    logger = logging.getLogger(__name__)
+    file_handler = logging.FileHandler(logfile)
+    formatter = logging.Formatter('%(asctime)s %(message)s')
+    file_handler.setFormatter(formatter)
+    if logger is None:
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+    else:
+        logger.removeHandler(logger.handlers[0])
+        logger.addHandler(file_handler)
+    
+
 
     logging.info('Starting FPP calculation for {}...'.format(ku.koiname(koi)))
 
     try:
-        k = client.koi(ku.koiname(koi,koinum=True))
+        #k = client.koi(ku.koiname(koi,koinum=True))
 
         fpp = KOI_FPPCalculation(koi, n=args.n, recalc=args.overwrite)
 
