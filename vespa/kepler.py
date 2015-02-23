@@ -87,19 +87,19 @@ def fressin_occurrence(rp):
 def koi_propdist(koi, prop):
     """
     """
-    if type(koi) != kplr.api.KOI:
-        client = kplr.API(data_root=KPLR_ROOT)
-        koi = client.koi(koiname(koi, koinum=True))
+    koi = ku.koiname(koi)
+    kepid = ku.DATA.ix[koi, 'kepid']
     try:
-        val = getattr(koi, prop)
-        u1 = getattr(koi, prop+'_err1') #upper error bar (positive)
-        u2 = getattr(koi, prop+'_err2') #lower error bar (negative)
+        #first try cumulative table
+        val = ku.DATA.ix[koi, prop]
+        u1 = ku.DATA.ix[koi, prop+'_err1']
+        u2 = ku.DATA.ix[koi, prop+'_err2']
         return dists.fit_doublegauss(val, -u2, u1)
     except:
         #try Huber table
-        val = kicu.DATA.ix[koi.kepid, prop]
-        u1 = kicu.DATA.ix[koi.kepid, prop+'_err1']
-        u2 = kicu.DATA.ix[koi.kepid, prop+'_err2']
+        val = kicu.DATA.ix[kepid, prop]
+        u1 = kicu.DATA.ix[kepid, prop+'_err1']
+        u2 = kicu.DATA.ix[kepid, prop+'_err2']
         return dists.fit_doublegauss(val, -u2, u1)
 
 class KOI_FPPCalculation(FPPCalculation):
@@ -136,45 +136,44 @@ class KOI_FPPCalculation(FPPCalculation):
             popset = PopulationSet(popsetfile, **kwargs)
 
         else:
-            client = kplr.API(data_root=KPLR_ROOT)
             koinum = koiname(koi, koinum=True)
-            k = client.koi(koinum)
+            kepid = ku.DATA.ix[koi,'kepid']
 
             if 'mass' not in kwargs:
-                kwargs['mass'] = koi_propdist(k, 'mass')
+                kwargs['mass'] = koi_propdist(koi, 'mass')
             if 'radius' not in kwargs:
-                kwargs['radius'] = koi_propdist(k, 'radius')
+                kwargs['radius'] = koi_propdist(koi, 'radius')
             if 'feh' not in kwargs:
-                kwargs['feh'] = koi_propdist(k, 'feh')
+                kwargs['feh'] = koi_propdist(koi, 'feh')
             if 'age' not in kwargs:
                 try:
-                    kwargs['age'] = koi_propdist(k, 'age')
+                    kwargs['age'] = koi_propdist(koi, 'age')
                 except:
                     kwargs['age'] = (9.7,0.1) #default age
             if 'Teff' not in kwargs:
-                kwargs['Teff'] = kicu.DATA.ix[k.kepid,'teff']
+                kwargs['Teff'] = kicu.DATA.ix[kepid,'teff']
             if 'logg' not in kwargs:
-                kwargs['logg'] = kicu.DATA.ix[k.kepid,'logg']
+                kwargs['logg'] = kicu.DATA.ix[kepid,'logg']
             if 'rprs' not in kwargs:
                 if use_JRowe:
                     kwargs['rprs'] = trsig.rowefit.ix['RD1','val']
                 else:
-                    kwargs['rprs'] = k.koi_ror 
+                    kwargs['rprs'] = ku.DATA.ix[koi,'koi_ror']
                     
             #if stellar properties are determined spectroscopically,
             # fit stellar model
             if 'starmodel' not in kwargs:
-                if re.match('SPE', kicu.DATA.ix[k.kepid, 'teff_prov']):
+                if re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov']):
                     logging.info('Spectroscopically determined stellar properties.')
                     #first, see if there already is a starmodel to load
 
                     #fit star model
-                    Teff = kicu.DATA.ix[k.kepid, 'teff']
-                    e_Teff = kicu.DATA.ix[k.kepid, 'teff_err1']
-                    logg = kicu.DATA.ix[k.kepid, 'logg']
-                    e_logg = kicu.DATA.ix[k.kepid, 'logg_err1']
-                    feh = kicu.DATA.ix[k.kepid, 'feh']
-                    e_feh = kicu.DATA.ix[k.kepid, 'feh_err1']
+                    Teff = kicu.DATA.ix[kepid, 'teff']
+                    e_Teff = kicu.DATA.ix[kepid, 'teff_err1']
+                    logg = kicu.DATA.ix[kepid, 'logg']
+                    e_logg = kicu.DATA.ix[kepid, 'logg_err1']
+                    feh = kicu.DATA.ix[kepid, 'feh']
+                    e_feh = kicu.DATA.ix[kepid, 'feh_err1']
                     logging.info('fitting StarModel (Teff=({},{}), logg=({},{}), feh=({},{}))...'.format(Teff, e_Teff, logg, e_logg, feh, e_feh))
 
                     dar = Dartmouth_Isochrone()
@@ -194,7 +193,7 @@ class KOI_FPPCalculation(FPPCalculation):
             if 'ra' not in kwargs:
                 kwargs['ra'], kwargs['dec'] = ku.radec(koi)
             if 'period' not in kwargs:
-                kwargs['period'] = k.koi_period
+                kwargs['period'] = ku.DATA.ix[koi,'koi_period']
 
             if 'pl_kws' not in kwargs:
                 kwargs['pl_kws'] = {}
