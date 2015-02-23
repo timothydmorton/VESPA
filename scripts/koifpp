@@ -2,7 +2,7 @@
 from __future__ import print_function, division
 
 import numpy as np
-import os, os.path
+import os, os.path, sys
 import pandas as pd
 import argparse
 
@@ -46,8 +46,26 @@ if len(args.kois)==0:
 else:
     kois = args.kois
 
-logger = None
 
+def initLogging(filename, logger):
+    if logger == None:
+        logger = logging.getLogger()
+    else:  # wish there was a logger.close()
+        for handler in logger.handlers[:]:  # make a copy of the list
+            logger.removeHandler(handler)
+
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(fmt='%(asctime)s: %(message)s')
+
+    fh = logging.FileHandler(filename)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    sh = logging.StreamHandler(sys.stdout)
+    logger.addHandler(sh)
+    return logger
+
+logger = None
 
 for koi in kois:
     koi = ku.koiname(koi)
@@ -56,21 +74,24 @@ for koi in kois:
         os.makedirs(koifolder)
 
     logfile = os.path.join(koifolder,'run.log')
+    
+    logger = initLogging(logfile, logger)
 
-    file_handler = logging.FileHandler(logfile)
-    formatter = logging.Formatter('%(asctime)s %(message)s')
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.INFO)
-    if logger is None:
-        logger = logging.getLogger()
-    else:
-        logger.handlers[0].stream.close()
-        logger.removeHandler(logger.handlers[0])
-    logger.addHandler(file_handler)
+    #file_handler = logging.FileHandler(logfile)
+    #formatter = logging.Formatter('%(asctime)s %(message)s')
+    #file_handler.setFormatter(formatter)
+    #file_handler.setLevel(logging.INFO)
+    #if logger is None:
+    #    logger = logging.getLogger()
+    #else:
+    #    logger.handlers[0].stream.close()
+    #    logger.removeHandler(logger.handlers[0])
+    #logger.addHandler(file_handler)
+    #print(logger.handlers[0].__dict__)
     
 
 
-    logging.info('Starting FPP calculation for {}...'.format(ku.koiname(koi)))
+    logger.info('Starting FPP calculation for {}...'.format(ku.koiname(koi)))
 
     try:
         #k = client.koi(ku.koiname(koi,koinum=True))
@@ -85,14 +106,14 @@ for koi in kois:
 
         except KeyError:
             secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
-            logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+            logger.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
 
         try:
             r_excl = ku.DATA.ix[koi,'koi_dicco_msky_err'] * 3
             r_excl = max(r_excl, 0.5) #minimum 0.5 arcsec
         except:
             r_excl = 4
-            logging.warning('No weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+            logger.warning('No weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
 
         fpp.apply_secthresh(secthresh)
         fpp.set_maxrad(r_excl)
@@ -107,9 +128,9 @@ for koi in kois:
 
         fpp.FPPplots(folder=plotfolder)
 
-        logging.info('FPP calculation for {} successful. Results/plots written to {}.'.format(ku.koiname(koi),os.path.abspath(plotfolder)))
+        logger.info('FPP calculation for {} successful. Results/plots written to {}.'.format(ku.koiname(koi),os.path.abspath(plotfolder)))
 
     except Exception, e:
-        logging.error('FPP calculation failed for {}'.format(koi), exc_info=True)
+        logger.error('FPP calculation failed for {}'.format(koi), exc_info=True)
 
 
