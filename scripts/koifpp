@@ -34,7 +34,7 @@ parser.add_argument('--plotfolder', default=None)
 
 args = parser.parse_args()
 
-client = kplr.API()
+#client = kplr.API()
 
 KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
 
@@ -47,7 +47,8 @@ else:
     kois = args.kois
 
 for koi in kois:
-    koifolder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
+    koi = ku.koiname(koi)
+    koifolder = os.path.join(KOI_FPPDIR, koi)
     if not os.path.exists(koifolder):
         os.makedirs(koifolder)
 
@@ -70,11 +71,11 @@ for koi in kois:
                 raise KeyError
 
         except KeyError:
-            secthresh = 10*k.koi_depth_err1 * 1e-6
+            secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
             logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
 
         try:
-            r_excl = k.koi_dicco_msky_err * 3
+            r_excl = ku.DATA.ix[koi,'koi_dicco_msky_err'] * 3
             r_excl = max(r_excl, 0.5) #minimum 0.5 arcsec
         except:
             r_excl = 4
