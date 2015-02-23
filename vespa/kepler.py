@@ -10,6 +10,8 @@ from pkg_resources import resource_filename
 
 from scipy.integrate import quad
 
+from astropy.coordinates import SkyCoord
+
 from isochrones.starmodel import StarModel
 from isochrones.dartmouth import Dartmouth_Isochrone
 
@@ -43,19 +45,25 @@ RSUN = const.R_sun.cgs.value
 REARTH = const.R_earth.cgs.value
 
 def _get_starfields(**kwargs):
+    from starutils.trilegal import get_trilegal
     if not os.path.exists(STARFIELD_DIR):
         os.makedirs(STARFIELD_DIR)
-    
+    chips, ras, decs = np.loadtxt(CHIPLOC_FILE, unpack=True)
+    for i,ra,dec in zip(chips, ras, decs):
+        print('field {} of {}'.format(i,chips[-1]))
+        filename = '{}/kepler_starfield_{}'.format(STARFIELD_DIR,i)
+        if not os.path.exists('{}.h5'.format(filename)):
+            get_trilegal(filename, ra, dec, **kwargs)
 
-def koi_starfield_file(koi):
+def kepler_starfield_file(koi):
     """
     """
     ra,dec = ku.radec(koi)
-    c = FK5Coordinates(ra,dec)
-    chips,ras,decs = loadtxt('%s/chiplocs.txt' % KEPLERDIR,unpack=True)
-    ds = ((c.ra.d-ras)**2 + (c.dec.d-decs)**2)
-    chip = chips[argmin(ds)]
-    return 'kepfield%i' % chip
+    c = SkyCoord(ra,dec, unit='deg')
+    chips,ras,decs = np.loadtxt(CHIPLOC_FILE,unpack=True)
+    ds = ((c.ra.deg-ras)**2 + (c.dec.deg-decs)**2)
+    chip = chips[np.argmin(ds)]
+    return '{}/kepler_starfield_{}'.format(STARFIELD_DIR,chip)
 
 
 def fp_fressin(rp,dr=None):
@@ -195,7 +203,8 @@ class KOI_FPPCalculation(FPPCalculation):
                 rp = kwargs['radius'].mu * kwargs['rprs'] * RSUN/REARTH
                 kwargs['pl_kws']['fp_specific'] = fp_fressin(rp)
 
-            trilegal_filename = os.path.join(folder,'starfield.h5')
+            #trilegal_filename = os.path.join(folder,'starfield.h5')
+            trilegal_filename = kepler_starfield_file(koi)
             popset = PopulationSet(trilegal_filename=trilegal_filename,
                                    **kwargs)
             #popset.save_hdf('{}/popset.h5'.format(folder), overwrite=True)
