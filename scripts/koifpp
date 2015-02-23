@@ -48,6 +48,7 @@ else:
 
 logger = None
 
+
 for koi in kois:
     koi = ku.koiname(koi)
     koifolder = os.path.join(KOI_FPPDIR, koi)
@@ -55,15 +56,17 @@ for koi in kois:
         os.makedirs(koifolder)
 
     logfile = os.path.join(koifolder,'run.log')
+
     file_handler = logging.FileHandler(logfile)
     formatter = logging.Formatter('%(asctime)s %(message)s')
     file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
     if logger is None:
-        logging.basicConfig(level=logging.INFO)
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
     else:
+        logger.handlers[0].stream.close()
         logger.removeHandler(logger.handlers[0])
-        logger.addHandler(file_handler)
+    logger.addHandler(file_handler)
     
 
 
