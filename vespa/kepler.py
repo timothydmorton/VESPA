@@ -92,7 +92,7 @@ def default_r_exclusion(koi,rmin=0.5):
             raise ValueError
     except:
         r_excl = 4
-        logging.warning('No koi_dicco_msky_err info for {}. Defaulting to 4 arcsec'.format(koi))
+        logging.warning('No koi_dicco_msky_err info for {}. Defaulting to 4 arcsec.'.format(koi))
         
     return r_excl
 
