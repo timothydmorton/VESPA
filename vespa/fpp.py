@@ -110,6 +110,9 @@ class FPPCalculation(object):
         for model in self.popset.modelnames:
             priors.append(self.prior(model))
             lhoods.append(self.lhood(model))
+            if np.isnan(priors[-1]):
+                raise ValueError('{} prior is nan; priorfactors={}'.format(model,
+                                                                           self.priorfactors))
             Ls.append(priors[-1]*lhoods[-1])
         priors = np.array(priors)
         lhoods = np.array(lhoods)
@@ -124,7 +127,10 @@ class FPPCalculation(object):
         legendprop = {'size':11}
 
         ax1 = plt.axes([0.15,0.45,0.35,0.43])
-        plt.pie(priors/priors.sum(),colors=colors)
+        try:
+            plt.pie(priors/priors.sum(),colors=colors)
+        except ValueError:
+            raise
         labels = []
         #for i,model in enumerate(['eb','heb','bgeb','bgpl','pl']):
         for i,model in enumerate(self.popset.modelnames):

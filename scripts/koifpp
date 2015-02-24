@@ -80,20 +80,6 @@ for koi in kois:
     
     logger = initLogging(logfile, logger)
 
-    #file_handler = logging.FileHandler(logfile)
-    #formatter = logging.Formatter('%(asctime)s %(message)s')
-    #file_handler.setFormatter(formatter)
-    #file_handler.setLevel(logging.INFO)
-    #if logger is None:
-    #    logger = logging.getLogger()
-    #else:
-    #    logger.handlers[0].stream.close()
-    #    logger.removeHandler(logger.handlers[0])
-    #logger.addHandler(file_handler)
-    #print(logger.handlers[0].__dict__)
-    
-
-
     logger.info('Starting FPP calculation for {}...'.format(ku.koiname(koi)))
 
     try:

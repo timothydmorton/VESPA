@@ -214,6 +214,9 @@ class KOI_FPPCalculation(FPPCalculation):
                                 folder=folder)
         self.save()
 
+    
+
+
 class KeplerTransitSignal(TransitSignal):
     def __init__(self, koi, data_root=KPLR_ROOT):
         self.koi = koiname(koi)
