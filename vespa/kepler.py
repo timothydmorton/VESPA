@@ -88,9 +88,11 @@ def default_r_exclusion(koi,rmin=0.5):
     try:
         r_excl = ku.DATA.ix[koi,'koi_dicco_msky_err'] * 3
         r_excl = max(r_excl, rmin) 
+        if np.isnan(r_excl):
+            raise ValueError
     except:
         r_excl = 4
-        logging.warning('No weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+        logging.warning('No koi_dicco_msky_err info for {}. Defaulting to 4 arcsec'.format(koi))
         
     return r_excl
 
