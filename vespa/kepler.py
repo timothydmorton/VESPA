@@ -80,7 +80,7 @@ def pipeline_weaksec(koi):
 
     except KeyError:
         secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
-        logger.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+        logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
 
     return secthresh
 
@@ -90,7 +90,7 @@ def default_r_exclusion(koi,rmin=0.5):
         r_excl = max(r_excl, rmin) 
     except:
         r_excl = 4
-        logger.warning('No weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+        logging.warning('No weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
         
     return r_excl
 
