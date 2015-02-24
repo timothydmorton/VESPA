@@ -37,6 +37,11 @@ CHIPLOC_FILE = resource_filename('vespa','data/kepler_chiplocs.txt')
 #temporary, only local solution
 CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
 
+DATAFOLDER = resource_filename('vespa','data')
+WEAKSECFILE = os.path.join(DATAFOLDER, 'weakSecondary_socv9p2vv.csv')
+WEAKSECDATA = pd.read_csv(WEAKSECFILE,skiprows=8)
+WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
+
 
 import astropy.constants as const
 G = const.G.cgs.value
@@ -65,6 +70,29 @@ def kepler_starfield_file(koi):
     chip = chips[np.argmin(ds)]
     return '{}/kepler_starfield_{}'.format(STARFIELD_DIR,chip)
 
+
+def pipeline_weaksec(koi):
+    try:
+        weaksec = WEAKSECDATA.ix[ku.koiname(koi)]
+        secthresh = (weaksec['depth'] + 3*weaksec['e_depth'])*1e-6
+        if weaksec['depth'] <= 0:
+            raise KeyError
+
+    except KeyError:
+        secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
+        logger.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+
+    return secthresh
+
+def default_r_exclusion(koi,rmin=0.5):
+    try:
+        r_excl = ku.DATA.ix[koi,'koi_dicco_msky_err'] * 3
+        r_excl = max(r_excl, rmin) 
+    except:
+        r_excl = 4
+        logger.warning('No weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+        
+    return r_excl
 
 def fp_fressin(rp,dr=None):
     if dr is None:
@@ -208,13 +236,19 @@ class KOI_FPPCalculation(FPPCalculation):
                                    **kwargs)
             #popset.save_hdf('{}/popset.h5'.format(folder), overwrite=True)
 
-        lhoodcachefile = os.path.join(folder,'lhoodcache.dat')
 
+        lhoodcachefile = os.path.join(folder,'lhoodcache.dat')
+        self.koi = koi
         FPPCalculation.__init__(self, trsig, popset,
                                 folder=folder)
         self.save()
+        self.apply_default_constraints()
 
-    
+    def apply_default_constraints(self):
+        """Applies default secthresh & exclusion radius constraints
+        """
+        self.apply_secthresh(pipeline_weaksec(self.koi))
+        self.set_maxrad(default_r_exclusion(self.koi))
 
 
 class KeplerTransitSignal(TransitSignal):

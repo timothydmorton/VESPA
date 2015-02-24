@@ -10,6 +10,7 @@ import pandas as pd
 import argparse
 
 from vespa.kepler import KOI_FPPCalculation
+from vespa.kepler import pipeline_weaksec, default_r_exclusion
 from keputils import koiutils as ku
 import kplr
 
@@ -86,26 +87,6 @@ for koi in kois:
         #k = client.koi(ku.koiname(koi,koinum=True))
 
         fpp = KOI_FPPCalculation(koi, n=args.n, recalc=args.overwrite)
-
-        try:
-            weaksec = WEAKSECDATA.ix[ku.koiname(koi)]
-            secthresh = (weaksec['depth'] + 3*weaksec['e_depth'])*1e-6
-            if weaksec['depth'] <= 0:
-                raise KeyError
-
-        except KeyError:
-            secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
-            logger.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
-
-        try:
-            r_excl = ku.DATA.ix[koi,'koi_dicco_msky_err'] * 3
-            r_excl = max(r_excl, 0.5) #minimum 0.5 arcsec
-        except:
-            r_excl = 4
-            logger.warning('No weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
-
-        fpp.apply_secthresh(secthresh)
-        fpp.set_maxrad(r_excl)
 
         if args.plotfolder is None:
             plotfolder = fpp.folder
