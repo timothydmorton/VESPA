@@ -80,7 +80,14 @@ def pipeline_weaksec(koi):
 
     except KeyError:
         secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
-        logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+        if np.isnan(secthresh):
+            secthresh = ku.DATA.ix[koi,'koi_depth'] / 2 * 1e-6
+            logging.warning('No (or bad) weak secondary info for {}, and no reported depth error. Defaulting to 1/2 reported depth = {}'.format(koi, secthresh))
+        else:
+            logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+
+    if np.isnan(secthresh):
+        raise NoWeakSecondaryError(koi)
 
     return secthresh
 
@@ -125,7 +132,7 @@ def koi_propdist(koi, prop):
         val = ku.DATA.ix[koi, prop]
         u1 = ku.DATA.ix[koi, prop+'_err1']
         u2 = ku.DATA.ix[koi, prop+'_err2']
-    except:
+    except KeyError:
         try:
             #try Huber table
             val = kicu.DATA.ix[kepid, prop]
@@ -137,7 +144,12 @@ def koi_propdist(koi, prop):
         raise MissingStellarPropError('{}: {} = ({},{},{})'.format(koi,
                                                                    prop,
                                                                    val,u1,u2))
-    return dists.fit_doublegauss(val, -u2, u1)
+    try:
+        return dists.fit_doublegauss(val, -u2, u1)
+    except:
+        raise StellarPropError('{}: {} = ({},{},{})'.format(koi,
+                                                            prop,
+                                                            val,u1,u2))
 
 class KOI_FPPCalculation(FPPCalculation):
     def __init__(self, koi, recalc=False,
@@ -256,7 +268,10 @@ class KOI_FPPCalculation(FPPCalculation):
     def apply_default_constraints(self):
         """Applies default secthresh & exclusion radius constraints
         """
-        self.apply_secthresh(pipeline_weaksec(self.koi))
+        try:
+            self.apply_secthresh(pipeline_weaksec(self.koi))
+        except NoWeakSecondaryError:
+            logging.warning('No secondary eclipse threshold set for {}'.format(self.koi))
         self.set_maxrad(default_r_exclusion(self.koi))
 
 
@@ -438,4 +453,7 @@ class NoStellarPropError(Exception):
     pass
 
 class MissingStellarPropError(Exception):
+    pass
+
+class StellarPropError(Exception):
     pass
