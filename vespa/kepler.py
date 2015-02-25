@@ -99,7 +99,8 @@ def default_r_exclusion(koi,rmin=0.5):
 def fp_fressin(rp,dr=None):
     if dr is None:
         dr = rp*0.3
-    return quad(fressin_occurrence,rp-dr,rp+dr)[0]
+    fp = quad(fressin_occurrence,rp-dr,rp+dr)[0]
+    return max(fp, 0.001) #to avoid zero
 
 def fressin_occurrence(rp):
     """Occurrence rates per bin from Fressin+ (2013)
