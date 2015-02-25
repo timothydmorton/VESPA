@@ -125,13 +125,19 @@ def koi_propdist(koi, prop):
         val = ku.DATA.ix[koi, prop]
         u1 = ku.DATA.ix[koi, prop+'_err1']
         u2 = ku.DATA.ix[koi, prop+'_err2']
-        return dists.fit_doublegauss(val, -u2, u1)
     except:
-        #try Huber table
-        val = kicu.DATA.ix[kepid, prop]
-        u1 = kicu.DATA.ix[kepid, prop+'_err1']
-        u2 = kicu.DATA.ix[kepid, prop+'_err2']
-        return dists.fit_doublegauss(val, -u2, u1)
+        try:
+            #try Huber table
+            val = kicu.DATA.ix[kepid, prop]
+            u1 = kicu.DATA.ix[kepid, prop+'_err1']
+            u2 = kicu.DATA.ix[kepid, prop+'_err2']
+        except KeyError:
+            raise NoStellarPropError(koi)
+    if np.isnan(val) or np.isnan(u2) or np.isnan(u1):
+        raise MissingStellarPropError('{}: {} = ({},{},{})'.format(koi,
+                                                                   prop,
+                                                                   val,u1,u2))
+    return dists.fit_doublegauss(val, -u2, u1)
 
 class KOI_FPPCalculation(FPPCalculation):
     def __init__(self, koi, recalc=False,
@@ -426,4 +432,10 @@ class EmptyPhotometryError(Exception):
     pass
 
 class NoWeakSecondaryError(Exception):
+    pass
+
+class NoStellarPropError(Exception):
+    pass
+
+class MissingStellarPropError(Exception):
     pass

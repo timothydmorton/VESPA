@@ -266,11 +266,11 @@ def minimum_inclination(P,M1,M2,R1,R2):
     rads = ((R1+R2)*RSUN/(semimajors*AU))
     ok = (~np.isnan(rads) & ~withinroche(semimajors,M1,R1,M2,R2))
     if ok.sum() == 0:
-        logging.error('P: '+P)
-        logging.error('M1: '+M1)
-        logging.error('M2: '+M2)
-        logging.error('R1: '+R1)
-        logging.error('R2: '+R2)
+        logging.error('P: {}'.format(P))
+        logging.error('M1: {}'.format(M1))
+        logging.error('M2: {}'.format(M2))
+        logging.error('R1: {}'.format(R1))
+        logging.error('R2: {}'.format(R2))
         if np.all(withinroche(semimajors,M1,R1,M2,R2)):
             raise AllWithinRocheError('All simulated systems within Roche lobe')
         else:

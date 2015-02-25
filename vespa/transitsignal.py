@@ -283,3 +283,7 @@ class TransitSignal_ASCII(TransitSignal):
         TransitSignal.__init__(self, t, f, e_f, **kwargs)
         
         
+############# Exceptions ##############3
+
+class MCMCError(Exception):
+    pass
