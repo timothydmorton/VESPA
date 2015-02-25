@@ -58,8 +58,9 @@ if __name__=='__main__':
             
     #write the condor script file
     fpparg_str = ' --plotfolder . '
-    for arg in args.fppargs:
-        fpparg_str += arg + ' '
+    if args.fppargs is not None:
+        for arg in args.fppargs:
+            fpparg_str += arg + ' '
 
     condorfile = '%s/%s.submit' % (folder,basename)
     fout = open(condorfile,'w')
