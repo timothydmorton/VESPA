@@ -586,6 +586,10 @@ class PlanetPopulation(EclipsePopulation):
                                    period=self.period, model=self.model,
                                    lhoodcachefile=self.lhoodcachefile,
                                    priorfactors=priorfactors, prob=tot_prob)
+    @property
+    def _properties(self):
+        return ['rprs', 'Teff', 'logg'] + \
+            super(PlanetPopulation, self)._properties
 
     
 class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
