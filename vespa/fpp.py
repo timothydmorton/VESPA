@@ -116,6 +116,7 @@ class FPPCalculation(object):
             Ls.append(priors[-1]*lhoods[-1])
         priors = np.array(priors)
         lhoods = np.array(lhoods)
+
         Ls = np.array(Ls)
         logging.debug('modelnames={}'.format(self.popset.modelnames))
         logging.debug('priors={}'.format(priors))
@@ -129,24 +130,31 @@ class FPPCalculation(object):
         ax1 = plt.axes([0.15,0.45,0.35,0.43])
         try:
             plt.pie(priors/priors.sum(),colors=colors)
-        except ValueError:
-            raise
-        labels = []
-        #for i,model in enumerate(['eb','heb','bgeb','bgpl','pl']):
-        for i,model in enumerate(self.popset.modelnames):
-            labels.append('%s: %.1e' % (model,priors[i]))
-        plt.legend(labels,bbox_to_anchor=(-0.25,-0.1),loc='lower left',prop=legendprop)
-        plt.title('Priors')
-        #p.annotate('*',xy=(0.05,0.41),xycoords='figure fraction')
+            labels = []
+            for i,model in enumerate(self.popset.modelnames):
+                labels.append('%s: %.1e' % (model,priors[i]))
+            plt.legend(labels,bbox_to_anchor=(-0.25,-0.1),loc='lower left',prop=legendprop)
+            plt.title('Priors')
+        except:
+            msg = 'Error calculating priors.\n'
+            for i,mod in enumerate(self.popset.shortmodelnames):
+                msg += '%s: %.1e' % (model,priors[i])
+            plt.annotate(msg, xy=(0.5,0.5), xy_coords='axes fraction')
+            
 
         ax2 = plt.axes([0.5,0.45,0.35,0.43])
-        plt.pie(lhoods/lhoods.sum(),colors=colors)
-        labels = []
-        #for i,model in enumerate(['eb','heb','bgeb','bgpl','pl']):
-        for i,model in enumerate(self.popset.modelnames):
-            labels.append('%s: %.1e' % (model,lhoods[i]))
-        plt.legend(labels,bbox_to_anchor=(1.25,-0.1),loc='lower right',prop=legendprop)
-        plt.title('Likelihoods')
+        try:
+            plt.pie(lhoods/lhoods.sum(),colors=colors)            
+            labels = []
+            for i,model in enumerate(self.popset.modelnames):
+                labels.append('%s: %.1e' % (model,lhoods[i]))
+            plt.legend(labels,bbox_to_anchor=(1.25,-0.1),loc='lower right',prop=legendprop)
+            plt.title('Likelihoods')
+        except:
+            msg = 'Error calculating lhoods.\n'
+            for i,mod in enumerate(self.popset.shortmodelnames):
+                msg += '%s: %.1e' % (model,lhoods[i])
+            plt.annotate(msg, xy=(0.5,0.5), xy_coords='axes fraction')
 
         ax3 = plt.axes([0.3,0.03,0.4,0.5])
         plt.pie(Ls/Ls.sum(),colors=colors)
