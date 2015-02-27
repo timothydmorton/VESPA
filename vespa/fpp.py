@@ -139,7 +139,7 @@ class FPPCalculation(object):
             msg = 'Error calculating priors.\n'
             for i,mod in enumerate(self.popset.shortmodelnames):
                 msg += '%s: %.1e' % (model,priors[i])
-            plt.annotate(msg, xy=(0.5,0.5), xy_coords='axes fraction')
+            plt.annotate(msg, xy=(0.5,0.5), xycoords='axes fraction')
             
 
         ax2 = plt.axes([0.5,0.45,0.35,0.43])
@@ -154,16 +154,21 @@ class FPPCalculation(object):
             msg = 'Error calculating lhoods.\n'
             for i,mod in enumerate(self.popset.shortmodelnames):
                 msg += '%s: %.1e' % (model,lhoods[i])
-            plt.annotate(msg, xy=(0.5,0.5), xy_coords='axes fraction')
+            plt.annotate(msg, xy=(0.5,0.5), xycoords='axes fraction')
 
         ax3 = plt.axes([0.3,0.03,0.4,0.5])
-        plt.pie(Ls/Ls.sum(),colors=colors)
-        labels = []
-        #for i,model in enumerate(['eb','heb','bgeb','bgpl','pl']):
-        for i,model in enumerate(self.popset.modelnames):
-            labels.append('%s: %.3f' % (model,Ls[i]/Ls.sum()))
-        plt.legend(labels,bbox_to_anchor=(1.6,0.44),loc='right',prop={'size':14},shadow=True)
-        plt.annotate('Final Probability',xy=(0.5,-0.01),ha='center',xycoords='axes fraction',fontsize=18)
+        try:
+            plt.pie(Ls/Ls.sum(),colors=colors)
+            labels = []
+            #for i,model in enumerate(['eb','heb','bgeb','bgpl','pl']):
+            for i,model in enumerate(self.popset.modelnames):
+                labels.append('%s: %.3f' % (model,Ls[i]/Ls.sum()))
+            plt.legend(labels,bbox_to_anchor=(1.6,0.44),loc='right',prop={'size':14},shadow=True)
+            plt.annotate('Final Probability',xy=(0.5,-0.01),ha='center',xycoords='axes fraction',fontsize=18)
+        except:
+            msg = 'Error calculating final probabilities.\n'
+            plt.annotate(msg, xy=(0.5,0.5), xycoords='axes fraction')
+            
 
         """
         #starpars = 'Star parameters used\nin simulations'
@@ -245,11 +250,14 @@ class FPPCalculation(object):
                          va='top',color='red')
             
         odds = 1./self.FPP()
+
         if odds > 1e6:
             fppstr = 'FPP: < 1 in 1e6' 
-        else:
+        elif np.isfinite(odds):
             fppstr = 'FPP: 1 in %i' % odds
-            
+        else:
+            fppstr = 'FPP calculation failed.'
+
         plt.annotate('$f_{pl,V} = %.3f$\n%s' % (self.fpV(),fppstr),xy=(0.7,0.02),
                      xycoords='figure fraction',fontsize=16,va='bottom')
 

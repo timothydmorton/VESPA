@@ -223,10 +223,16 @@ class TransitSignal(object):
 
         self.durs,self.logdeps,self.slopes = (durs,logdeps,slopes)
 
-        self.durkde = gaussian_kde(durs)
-        self.depthkde = gaussian_kde(deps)
-        self.slopekde = gaussian_kde(slopes)
-        self.logdepthkde = gaussian_kde(logdeps)
+        self._make_kde(conf=conf)
+
+        self.hasMCMC = True
+
+    def _make_kde(self, conf=0.95):
+
+        self.durkde = gaussian_kde(self.durs)
+        self.depthkde = gaussian_kde(self.deps)
+        self.slopekde = gaussian_kde(self.slopes)
+        self.logdepthkde = gaussian_kde(self.logdeps)
 
 
         if self.fit_converged:
@@ -239,10 +245,10 @@ class TransitSignal(object):
                 raise
                 raise MCMCError('Error generating confidence intervals...fit must not have worked.')
 
-            durmed = np.median(durs)
-            depmed = np.median(deps)
-            logdepmed = np.median(logdeps)
-            slopemed = np.median(slopes)
+            durmed = np.median(self.durs)
+            depmed = np.median(self.deps)
+            logdepmed = np.median(self.logdeps)
+            slopemed = np.median(self.slopes)
 
             self.durfit = (durmed,np.array([durmed-durconf[0],durconf[1]-durmed]))
             self.depthfit = (depmed,np.array([depmed-depconf[0],depconf[1]-depmed]))
@@ -256,11 +262,32 @@ class TransitSignal(object):
             self.slopefit = (np.nan,np.nan,np.nan)
 
 
-        points = np.array([durs,logdeps,slopes])
+        points = np.array([self.durs,self.logdeps,self.slopes])
         self.kde = gaussian_kde(points)
+        
 
+class TransitSignal_FromSamples(TransitSignal):
+    """Use this if all you have is the trapezoid-fit samples
+    """
+    def __init__(self, period, durs, depths, slopes, **kwargs):
+        self.period = period
+        self.durs = durs
+        self.deps = depths
+        self.logdeps = np.log10(depths)
+        self.slopes = slopes
         self.hasMCMC = True
+        self._make_kde()
 
+    def MCMC(self, *args, **kwargs):
+        pass
+
+    def plot(self, *args, **kwargs):
+        pass
+
+    def __hash__(self):
+        return hashcombine(period, hasharray(self,durs),
+                           hasharray(self.deps),
+                           hasharray(self.slopes))
 
 class TransitSignal_DF(TransitSignal):
     def __init__(self, df, columns=['t','f','e_f'], **kwargs):
