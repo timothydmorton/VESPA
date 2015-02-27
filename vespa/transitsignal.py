@@ -276,6 +276,7 @@ class TransitSignal_FromSamples(TransitSignal):
         self.logdeps = np.log10(depths)
         self.slopes = slopes
         self.hasMCMC = True
+        self.fit_converged = True #better be
         self._make_kde()
 
     def MCMC(self, *args, **kwargs):
