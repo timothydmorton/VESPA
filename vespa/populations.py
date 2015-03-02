@@ -467,9 +467,11 @@ class PlanetPopulation(EclipsePopulation):
         self.starmodel = starmodel
         
         if filename is not None:
+            logging.debug('loading planet population from {}'.format(filename))
             self.load_hdf(filename)
-        elif radius is not None and mass is not None:
+        elif radius is not None and mass is not None or starmodel is not None:
             # calculates eclipses 
+            logging.debug('generating planet population...')
             self.generate(rprs=rprs, mass=mass, radius=radius,
                           n=n, fp_specific=fp_specific, 
                           starmodel=starmodel,
@@ -506,6 +508,11 @@ class PlanetPopulation(EclipsePopulation):
             Teff = samples['Teff'].mean()
             logg = samples['logg'].mean()
 
+        logging.debug('star mass: {}'.format(mass))
+        logging.debug('star radius: {}'.format(radius))
+        logging.debug('Teff: {}'.format(Teff))
+        logging.debug('logg: {}'.format(logg))
+
         if u1 is None or u2 is None:
             if Teff is None or logg is None:
                 logging.warning('Teff, logg not provided; using solar limb darkening')
@@ -519,6 +526,8 @@ class PlanetPopulation(EclipsePopulation):
         rbin_max = (1+rbin_width)*rp
         radius_p = np.random.random(1e5)*(rbin_max - rbin_min) + rbin_min
         mass_p = (radius_p*RSUN/REARTH)**2.06 * MEARTH/MSUN #hokey, but doesn't matter
+
+        logging.debug('planet radius: {}'.format(radius_p))
 
         stars = pd.DataFrame()
         #df_orbpop = pd.DataFrame() #for orbit population
@@ -1138,7 +1147,8 @@ class PopulationSet(object):
                  starmodel=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None,
-                 hide_exceptions=False):
+                 hide_exceptions=False, recalc=False,
+                 fit_trap=True):
         """
 
         Poplist can be a list of EclipsePopulations, a string (filename),
@@ -1160,7 +1170,8 @@ class PopulationSet(object):
                           savefile=savefile, starmodel=starmodel,
                           heb_kws=heb_kws, eb_kws=eb_kws, 
                           beb_kws=beb_kws, pl_kws=pl_kws,
-                          hide_exceptions=hide_exceptions)
+                          hide_exceptions=hide_exceptions,
+                          recalc=recalc, fit_trap=fit_trap)
             
         elif type(poplist)==type(''):
             self.load_hdf(poplist)
@@ -1173,7 +1184,7 @@ class PopulationSet(object):
                  rprs=None, trilegal_filename=None, starmodel=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None, savefile=None,
-                 hide_exceptions=False):
+                 hide_exceptions=False, recalc=False, fit_trap=True):
         """
         """
         if colors is None:
@@ -1194,7 +1205,8 @@ class PopulationSet(object):
             bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
                                    ra=ra, dec=dec, period=period, 
                                    mags=mags, MAfn=MAfn, n=n, **beb_kws)
-            bebpop.fit_trapezoids(MAfn=MAfn)
+            if fit_trap:
+                bebpop.fit_trapezoids(MAfn=MAfn)
             if savefile is not None:
                 bebpop.save_hdf(savefile, 'beb')
         except:
@@ -1207,7 +1219,8 @@ class PopulationSet(object):
                                    colors=colors, period=period,
                                    starmodel=starmodel,
                                    mags=mags, MAfn=MAfn, n=n, **heb_kws)
-            hebpop.fit_trapezoids(MAfn=MAfn)
+            if fit_trap:
+                hebpop.fit_trapezoids(MAfn=MAfn)
             if savefile is not None:
                 hebpop.save_hdf(savefile, 'heb')
         except:
@@ -1220,7 +1233,8 @@ class PopulationSet(object):
                                  colors=colors, period=period,
                                  starmodel=starmodel,
                                  mags=mags, MAfn=MAfn, n=n, **eb_kws)
-            ebpop.fit_trapezoids(MAfn=MAfn)
+            if fit_trap:
+                ebpop.fit_trapezoids(MAfn=MAfn)
             if savefile is not None:
                 ebpop.save_hdf(savefile, 'eb')
         except:
@@ -1234,7 +1248,9 @@ class PopulationSet(object):
                                      Teff=Teff, logg=logg,
                                      starmodel=starmodel,
                                      MAfn=MAfn, n=n, **pl_kws)
-            plpop.fit_trapezoids(MAfn=MAfn)
+            
+            if fit_trap:
+                plpop.fit_trapezoids(MAfn=MAfn)
             if savefile is not None:
                 plpop.save_hdf(savefile, 'pl')
         except:

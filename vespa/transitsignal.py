@@ -269,7 +269,8 @@ class TransitSignal(object):
 class TransitSignal_FromSamples(TransitSignal):
     """Use this if all you have is the trapezoid-fit samples
     """
-    def __init__(self, period, durs, depths, slopes, **kwargs):
+    def __init__(self, period, durs, depths, slopes, 
+                 name='', **kwargs):
         self.period = period
         self.durs = durs
         self.deps = depths
@@ -278,6 +279,7 @@ class TransitSignal_FromSamples(TransitSignal):
         self.hasMCMC = True
         self.fit_converged = True #better be
         self._make_kde()
+        self.name = name
 
     def MCMC(self, *args, **kwargs):
         pass
