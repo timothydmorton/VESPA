@@ -288,7 +288,7 @@ class TransitSignal_FromSamples(TransitSignal):
         pass
 
     def __hash__(self):
-        return hashcombine(period, hasharray(self,durs),
+        return hashcombine(self.period, hasharray(self.durs),
                            hasharray(self.deps),
                            hasharray(self.slopes))
 
