@@ -261,6 +261,9 @@ class EclipsePopulation(StarPopulation):
     def lhood(self, trsig, recalc=False, cachefile=None):
         """Returns likelihood of transit signal
         """
+        if not hasattr(self,'kde'):
+            self._make_kde()
+
         if cachefile is None:
             cachefile = self.lhoodcachefile
             if cachefile is None:
@@ -771,7 +774,8 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
                  mass=None, age=None, feh=None, starfield=None, colortol=0.1,
                  band='Kepler', model='HEBs', f_triple=0.12, n=2e4,
-                 MAfn=None, lhoodcachefile=None, starmodel=None, **kwargs):
+                 MAfn=None, lhoodcachefile=None, starmodel=None, 
+                 **kwargs):
         """Population of HEBs
 
         If file is passed, population is loaded from .h5 file.
@@ -980,6 +984,9 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
         elif trilegal_filename is not None or (ra is not None
                                                and dec is not None):
+            if self.band not in self.mags:
+                raise ValueError('{} band must be in mags.'.format(self.band))
+
             self.generate(trilegal_filename,
                           ra=ra, dec=dec, mags=mags,
                           n=n, ichrone=ichrone, MAfn=MAfn,
@@ -999,6 +1006,7 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
         else:
             b = self.band
             return fluxfrac(self.stars['{}_mag'.format(b)], self.mags[b])
+
 
     def generate(self, trilegal_filename, ra=None, dec=None,
                  n=2e4, ichrone=DARTMOUTH, MAfn=None,
@@ -1148,7 +1156,7 @@ class PopulationSet(object):
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None,
                  hide_exceptions=False, recalc=False,
-                 fit_trap=True):
+                 fit_trap=True, do_only=None):
         """
 
         Poplist can be a list of EclipsePopulations, a string (filename),
@@ -1171,7 +1179,8 @@ class PopulationSet(object):
                           heb_kws=heb_kws, eb_kws=eb_kws, 
                           beb_kws=beb_kws, pl_kws=pl_kws,
                           hide_exceptions=hide_exceptions,
-                          recalc=recalc, fit_trap=fit_trap)
+                          recalc=recalc, fit_trap=fit_trap,
+                          do_only=do_only)
             
         elif type(poplist)==type(''):
             self.load_hdf(poplist)
@@ -1184,9 +1193,13 @@ class PopulationSet(object):
                  rprs=None, trilegal_filename=None, starmodel=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None, savefile=None,
-                 hide_exceptions=False, recalc=False, fit_trap=True):
+                 hide_exceptions=False, recalc=False, fit_trap=True,
+                 do_only=None):
         """
         """
+        if do_only is None:
+            do_only = ['beb','heb','eb','pl']
+
         if colors is None:
             colors = ['JK','HK']
         if MAfn is None:
@@ -1201,62 +1214,66 @@ class PopulationSet(object):
         if pl_kws is None:
             pl_kws = {}
 
-        try:
-            bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
-                                   ra=ra, dec=dec, period=period, 
-                                   mags=mags, MAfn=MAfn, n=n, **beb_kws)
-            if fit_trap:
-                bebpop.fit_trapezoids(MAfn=MAfn)
-            if savefile is not None:
-                bebpop.save_hdf(savefile, 'beb')
-        except:
-            logging.error('Error generating BEB population.')
-            if not hide_exceptions:
-                raise
+        if 'beb' in do_only:
+            try:
+                bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
+                                       ra=ra, dec=dec, period=period, 
+                                       mags=mags, MAfn=MAfn, n=n, **beb_kws)
+                if fit_trap:
+                    bebpop.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    bebpop.save_hdf(savefile, 'beb', overwrite=True)
+            except:
+                logging.error('Error generating BEB population.')
+                if not hide_exceptions:
+                    raise
+                
+        if 'heb' in do_only:
+            try:
+                hebpop = HEBPopulation(mass=mass, age=age, feh=feh, 
+                                       colors=colors, period=period,
+                                       starmodel=starmodel,
+                                       mags=mags, MAfn=MAfn, n=n, **heb_kws)
+                if fit_trap:
+                    hebpop.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    hebpop.save_hdf(savefile, 'heb', append=True)
+            except:
+                logging.error('Error generating HEB population.')
+                if not hide_exceptions:
+                    raise
 
-        try:
-            hebpop = HEBPopulation(mass=mass, age=age, feh=feh, 
-                                   colors=colors, period=period,
-                                   starmodel=starmodel,
-                                   mags=mags, MAfn=MAfn, n=n, **heb_kws)
-            if fit_trap:
-                hebpop.fit_trapezoids(MAfn=MAfn)
-            if savefile is not None:
-                hebpop.save_hdf(savefile, 'heb')
-        except:
-            logging.error('Error generating HEB population.')
-            if not hide_exceptions:
-                raise
-
-        try:
-            ebpop = EBPopulation(mass=mass, age=age, feh=feh, 
-                                 colors=colors, period=period,
-                                 starmodel=starmodel,
-                                 mags=mags, MAfn=MAfn, n=n, **eb_kws)
-            if fit_trap:
-                ebpop.fit_trapezoids(MAfn=MAfn)
-            if savefile is not None:
-                ebpop.save_hdf(savefile, 'eb')
-        except:
-            logging.error('Error generating EB population.')
-            if not hide_exceptions:
-                raise
-
-        try:
-            plpop = PlanetPopulation(mass=mass, radius=radius,
-                                     period=period, rprs=rprs,
-                                     Teff=Teff, logg=logg,
+        if 'eb' in do_only:
+            try:
+                ebpop = EBPopulation(mass=mass, age=age, feh=feh, 
+                                     colors=colors, period=period,
                                      starmodel=starmodel,
-                                     MAfn=MAfn, n=n, **pl_kws)
-            
-            if fit_trap:
-                plpop.fit_trapezoids(MAfn=MAfn)
-            if savefile is not None:
-                plpop.save_hdf(savefile, 'pl')
-        except:
-            logging.error('Error generating Planet population.')
-            if not hide_exceptions:
-                raise
+                                     mags=mags, MAfn=MAfn, n=n, **eb_kws)
+                if fit_trap:
+                    ebpop.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    ebpop.save_hdf(savefile, 'eb', append=True)
+            except:
+                logging.error('Error generating EB population.')
+                if not hide_exceptions:
+                    raise
+
+        if 'pl' in do_only:
+            try:
+                plpop = PlanetPopulation(mass=mass, radius=radius,
+                                         period=period, rprs=rprs,
+                                         Teff=Teff, logg=logg,
+                                         starmodel=starmodel,
+                                         MAfn=MAfn, n=n, **pl_kws)
+
+                if fit_trap:
+                    plpop.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    plpop.save_hdf(savefile, 'pl', append=True)
+            except:
+                logging.error('Error generating Planet population.')
+                if not hide_exceptions:
+                    raise
 
         self.poplist = [hebpop, ebpop, bebpop, plpop]
 
