@@ -2,6 +2,7 @@ from setuptools import setup, Extension, find_packages
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
 import numpy
+import os
 
 def readme():
     with open('README.rst') as f:
@@ -54,6 +55,6 @@ setup(name = "VESPA",
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Astronomy'
         ],
-      install_requires=['cython','pandas>=0.13','simpledist>=0.1.11','starutils>=0.3','orbitutils', 'emcee', 'hashutils>=0.0.3'],
+      install_requires=['cython','pandas>=0.13','simpledist>=0.1.11','starutils>=0.3','orbitutils>=0.1.5', 'emcee', 'hashutils>=0.0.3'],
       zip_safe=False
 ) 
