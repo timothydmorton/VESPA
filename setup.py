@@ -35,7 +35,7 @@ transit_utils = [Extension('transit_utils',['vespa/transit_utils.pyx'],
                                 include_dirs=[numpy.get_include()])]
 
 setup(name = "VESPA",
-      version = "0.0",
+      version = version,
       description = "Calculate astrophysical false positive probabilities for transiting exoplanet signals",
       long_description = readme(),
       author = "Timothy D. Morton",
