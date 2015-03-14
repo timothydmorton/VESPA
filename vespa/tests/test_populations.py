@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 from vespa.populations import HEBPopulation
 from vespa.populations import EBPopulation
+from vespa.populations import BEBPopulation
 
 from pkg_resources import resource_filename
 
@@ -47,7 +48,8 @@ def test_beb(filename=os.path.join(TMP,'test_beb.h5')):
     trilegal_filename = resource_filename('vespa','data/kep22field.h5')
     mags = {'H': 10.211,
             'J': 10.523,
-            'K': 10.152000000000001}
+            'K': 10.152000000000001,
+            'Kepler':12.0}
     period = 289.8622
     pop = BEBPopulation(period=period, mags=mags,
                         trilegal_filename=trilegal_filename,

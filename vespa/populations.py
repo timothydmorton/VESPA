@@ -20,17 +20,17 @@ from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .fitebs import fitebs
 
-from starutils.populations import StarPopulation, MultipleStarPopulation
-from starutils.populations import ColormatchMultipleStarPopulation
-from starutils.populations import Spectroscopic_MultipleStarPopulation
-from starutils.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
-from starutils.populations import DARTMOUTH
-from starutils.utils import draw_eccs, semimajor, withinroche
-from starutils.utils import mult_masses, randpos_in_circle
-from starutils.utils import fluxfrac, addmags
-from starutils.utils import RAGHAVAN_LOGPERKDE
+from .stars.populations import StarPopulation, MultipleStarPopulation
+from .stars.populations import ColormatchMultipleStarPopulation
+from .stars.populations import Spectroscopic_MultipleStarPopulation
+from .stars.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
+from .stars.populations import DARTMOUTH
+from .stars.utils import draw_eccs, semimajor, withinroche
+from .stars.utils import mult_masses, randpos_in_circle
+from .stars.utils import fluxfrac, addmags
+from .stars.utils import RAGHAVAN_LOGPERKDE
 
-from starutils.constraints import UpperLimit
+from .stars.constraints import UpperLimit
 
 import simpledist.distributions as dists
 

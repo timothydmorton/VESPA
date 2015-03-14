@@ -8,20 +8,17 @@ import logging
 
 import pkg_resources
 
-from orbitutils.kepler import Efn
 
 from scipy.optimize import leastsq
 from scipy.ndimage import convolve1d
 
 from scipy.interpolate import LinearNDInterpolator as interpnd
 
-from starutils.utils import rochelobe, withinroche, semimajor
-import transit_utils as tru
+from .orbits.kepler import Efn
+from .stars.utils import rochelobe, withinroche, semimajor
 
-try:
-    import transit_utils as tru
-except ImportError:
-    logging.warning('transit_basic: did not import transit_utils.')
+from vespa_transitutils import find_eclipse
+from vespa_transitutils import traptransit, traptransit_resid
 
 import emcee
 
@@ -302,7 +299,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
             Es = Efn(Ms,ecc) #eccentric anomalies
         else:
             Es = Ms
-        zs,in_eclipse = tru.find_eclipse(Es,b,aR,ecc,w,width,sec)
+        zs,in_eclipse = find_eclipse(Es,b,aR,ecc,w,width,sec)
 
         if in_eclipse.sum() < 2:
             raise NoEclipseError
@@ -329,7 +326,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         else:
             Es = Ms
 
-        zs,in_eclipse = tru.find_eclipse(Es,b,aR,ecc,w,width,sec)
+        zs,in_eclipse = find_eclipse(Es,b,aR,ecc,w,width,sec)
 
         Mcenter = Ms[zs.argmin()]
         phs = (Ms - Mcenter) / (2*np.pi)
@@ -763,10 +760,10 @@ def ellpic_bulirsch(n,k):
 
 
 def traptransit(ts,p):
-    return tru.traptransit(ts,p)
+    return traptransit(ts,p)
 
 def fit_traptransit(ts,fs,p0):
-    pfit,success = leastsq(tru.traptransit_resid,p0,args=(ts,fs))
+    pfit,success = leastsq(traptransit_resid,p0,args=(ts,fs))
     if success not in [1,2,3,4]:
         raise NoFitError
     #logging.debug('success = {}'.format(success))
@@ -789,7 +786,7 @@ class TraptransitModel(object):
 def traptransit_lhood(pars,ts,fs,sigs,maxslope=30):
     if pars[0] < 0 or pars[1] < 0 or pars[2] < 2 or pars[2] > maxslope:
         return -np.inf
-    resid = tru.traptransit_resid(pars,ts,fs)
+    resid = traptransit_resid(pars,ts,fs)
     return (-0.5*resid**2/sigs**2).sum()
 
 def traptransit_MCMC(ts,fs,dfs=1e-5,nwalkers=200,nburn=300,niter=1000,

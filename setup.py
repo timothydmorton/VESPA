@@ -31,7 +31,7 @@ if "tag" in sys.argv:
     os.system("git push --tags")
     sys.exit()
 
-transit_utils = [Extension('transit_utils',['vespa/transit_utils.pyx'],
+transit_utils = [Extension('vespa_transitutils',['vespa/vespa_transitutils.pyx'],
                                 include_dirs=[numpy.get_include()])]
 
 setup(name = "VESPA",
@@ -41,8 +41,11 @@ setup(name = "VESPA",
       author = "Timothy D. Morton",
       author_email = "tim.morton@gmail.com",
       url = "https://github.com/timothydmorton/VESPA",
-      packages = find_packages(),
-      package_data = {'vespa': ['data/*']},
+      packages = ['vespa', 'vespa/stars',
+                  'vespa/orbits'],
+      package_data = {'vespa': ['data/*'],
+                      'vespa.stars': ['data/*'],
+                      'vespa.orbits':['data/*']},
       ext_modules = transit_utils,
       scripts = ['scripts/koifpp',
                  'scripts/batch_koifpp_condor'],
@@ -55,6 +58,6 @@ setup(name = "VESPA",
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Astronomy'
         ],
-      install_requires=['cython','pandas>=0.13','simpledist>=0.1.11','starutils>=0.3','orbitutils>=0.1.5', 'emcee', 'hashutils>=0.0.3', 'isochrones>=0.6-beta'],
+      install_requires=['cython','pandas>=0.13','simpledist>=0.1.11', 'emcee', 'hashutils>=0.0.3', 'isochrones>=0.7.1'],
       zip_safe=False
 ) 
