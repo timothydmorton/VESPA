@@ -12,10 +12,8 @@ from astropy import units as u
 from astropy.units import Quantity
 from astropy.coordinates import SkyCoord
 
-from ..orbits import OrbitPopulation,OrbitPopulation_FromH5
-from ..orbits import OrbitPopulation_FromDF
-from ..orbits import TripleOrbitPopulation, TripleOrbitPopulation_FromH5
-from ..orbits import TripleOrbitPopulation_FromDF
+from ..orbits import OrbitPopulation
+from ..orbits import TripleOrbitPopulation
 from plotutils import setfig,plot2dhist
 
 from isochrones import StarModel
@@ -789,9 +787,9 @@ class StarPopulation(object):
         #load orbpop if there
         orbpop = None
         if has_orbpop:
-            orbpop = OrbitPopulation_FromH5(filename, path=path+'/orbpop')
+            orbpop = OrbitPopulation.load_hdf(filename, path=path+'/orbpop')
         elif has_triple_orbpop:
-            orbpop = TripleOrbitPopulation_FromH5(filename, path=path+'/orbpop')
+            orbpop = TripleOrbitPopulation.load_hdf(filename, path=path+'/orbpop')
 
         self.stars = stars
         self.orbpop = orbpop
@@ -1512,7 +1510,7 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
         stars = stars.iloc[:n]
         df_long = df_long.iloc[:n]
         df_short = df_short.iloc[:n]
-        orbpop = TripleOrbitPopulation_FromDF(df_long, df_short)
+        orbpop = TripleOrbitPopulation.from_df(df_long, df_short)
         
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
