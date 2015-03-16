@@ -27,7 +27,7 @@ from .constraints import ConstraintDict,MeasurementConstraint,RangeConstraint
 from .contrastcurve import ContrastCurveConstraint,VelocityContrastCurveConstraint 
 from .contrastcurve import ContrastCurveFromFile
 
-from .utils import randpos_in_circle, draw_raghavan_periods, 
+from .utils import randpos_in_circle, draw_raghavan_periods 
 from .utils import draw_msc_periods, draw_eccs
 from .utils import flat_massratio, mult_masses
 from .utils import distancemodulus, addmags, dfromdm

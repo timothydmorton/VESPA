@@ -432,13 +432,13 @@ class EclipsePopulation(StarPopulation):
                 'is_specific', 'cadence'] + \
             super(EclipsePopulation,self)._properties
 
-    def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
-        StarPopulation.load_hdf(self, filename, path=path)
-        try:
-            self._make_kde()
-        except NoTrapfitError:
-            logging.warning('Trapezoid fit not done.')
-        return self
+    #def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
+    #    StarPopulation.load_hdf(self, filename, path=path)
+    #    try:
+    #        self._make_kde()
+    #    except NoTrapfitError:
+    #        logging.warning('Trapezoid fit not done.')
+    #    return self
 
 class PlanetPopulation(EclipsePopulation):
     def __init__(self, filename=None, period=None, rprs=None,
@@ -1182,7 +1182,7 @@ class PopulationSet(object):
                           do_only=do_only)
             
         elif type(poplist)==type(''):
-            self.load_hdf(poplist)
+            return PopulationSet.load_hdf(poplist)
         else:
             self.poplist = poplist
 
@@ -1299,7 +1299,8 @@ class PopulationSet(object):
             name = pop.modelshort
             pop.save_hdf(filename, path='{}/{}'.format(path,name), append=True)
 
-    def load_hdf(self, filename, path=''):
+    @classmethod
+    def load_hdf(cls, filename, path=''):
         store = pd.HDFStore(filename)
         models = []
         types = []
@@ -1313,8 +1314,9 @@ class PopulationSet(object):
             poplist.append(t().load_hdf(filename, path='{}/{}'.format(path,m)))
         store.close()
 
-        PopulationSet.__init__(self, poplist) #how to deal with saved constraints?
-        return self
+        return cls(poplist) #how to deal with saved constraints?
+        #PopulationSet.__init__(self, poplist) #how to deal with saved constraints?
+        #return self
 
     def add_population(self,pop):
         if pop.model in self.modelnames:
