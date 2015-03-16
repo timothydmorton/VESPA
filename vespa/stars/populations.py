@@ -14,20 +14,21 @@ from astropy.coordinates import SkyCoord
 
 from ..orbits import OrbitPopulation
 from ..orbits import TripleOrbitPopulation
-from plotutils import setfig,plot2dhist
+from ..plotutils import setfig,plot2dhist
 
 from isochrones import StarModel
 
 from simpledist import distributions as dists
 
-from hashutils import hashcombine, hashdict, hashdf
+from ..hashutils import hashcombine, hashdict, hashdf
 
 from .constraints import Constraint,UpperLimit,LowerLimit,JointConstraintOr
 from .constraints import ConstraintDict,MeasurementConstraint,RangeConstraint
 from .contrastcurve import ContrastCurveConstraint,VelocityContrastCurveConstraint 
 from .contrastcurve import ContrastCurveFromFile
 
-from .utils import randpos_in_circle, draw_raghavan_periods, draw_msc_periods, draw_eccs
+from .utils import randpos_in_circle, draw_raghavan_periods, 
+from .utils import draw_msc_periods, draw_eccs
 from .utils import flat_massratio, mult_masses
 from .utils import distancemodulus, addmags, dfromdm
 
@@ -48,6 +49,37 @@ class StarPopulation(object):
                  max_distance=1000*u.pc,convert_absmags=True,
                  name='', orbpop=None, mags=None):
         """A population of stars.  
+
+        This object contains information of a simulated population
+        of stars.  It has a flexible purpose-- it could represent
+        many random realizations of a single system, or it could 
+        also represent many different random systems.  This is the general 
+        base class; subclasses include, e.g., :class:`MultipleStarPopulation`
+        and :class:`BGStarPopulation_TRILEGAL`.  
+
+        The :attr:`StarPopulation.stars` attribute is a 
+        :class:`pandas.DataFrame` containing
+        all the information about all the random realizations, such
+        as the physical star properties (mass, radius, etc.) and
+        observational characteristics (magnitudes in different bands).
+        
+        The :attr:`StarPopulation.orbpop` attribute stores information
+        about the orbits of the random stars, if such a thing is 
+        relevant for the population in question (such as, e.g., a
+        :class:`MultipleStarPopulation`).  If orbits are relevant,
+        then attributes such as :attr:`StarPopulation.Rsky`, 
+        :attr:`StarPopulation.RV`, and :func:`StarPopulation.dmag`
+        are defined as well.
+
+        Importantly, you can apply constraints to a :class:`StarPopulation`,
+        implemented via the :class:`Constraint` class.  You can 
+        constrain properties of the stars to be within a given range,
+        you can apply a :class:`ContrastCurveConstraint`, simulating
+        the exclusion curve of an imaging observation, and many others.
+
+        You can save and re-load :class:`StarPopulation` objects
+        using :func:`StarPopulation.save_hdf` and 
+        :func:`StarPopulation.load_hdf`.
 
         :param stars: (:class:`pandas.DataFrame`, optional)
             Table containing properties of stars.
@@ -651,7 +683,15 @@ class StarPopulation(object):
         #self._apply_all_constraints()
 
     def replace_constraint(self,name,selectfrac_skip=False,distribution_skip=False):
-        """Re-apply constraint that had been removed
+        """
+        Re-apply constraint that had been removed
+
+        :param name:
+            Name of constraint to replace
+
+        :param selectfrac_skip, distribution_skip: (optional)
+            Same as :func:`StarPopulation.apply_constraint`
+
         """
         hidden_constraints = self.hidden_constraints
         if name in hidden_constraints:
@@ -665,7 +705,11 @@ class StarPopulation(object):
         self.hidden_constraints = hidden_constraints
 
     def remove_constraint(self,name):
-        """Remove a constraint (make it "hidden")
+        """
+        Remove a constraint (make it "hidden")
+
+        :param name:
+            Name of constraint.
         """
         constraints = self.constraints
         hidden_constraints = self.hidden_constraints
@@ -693,20 +737,25 @@ class StarPopulation(object):
                            selectfrac_skip=False,distribution_skip=False):
         """Apply constraint that constrains property.
 
-        prop : string
+        :param prop:
             Name of property.  Must be column in ``self.stars``.
+        :type prop: 
+            ``str``
 
-        lo,hi : float, optional
-            Low and high allowed values for ``prop``.
+        :param lo,hi: (optional)
+            Low and high allowed values for ``prop``.  Defaults
+            to ``-np.inf`` and ``np.inf`` to allow for defining
+            only lower or upper limits if desired.
 
-        measurement : (value,err)
-            Value and error of measurement. 
+        :param measurement: (optional)
+            Value and error of measurement in form ``(value, error)``.
 
-        thresh : float
-            Number of "sigma" to allow.
+        :param thresh: (optional)
+            Number of "sigma" to allow for measurement constraint.
 
-        selectfrac_skip, distribution_skip : bool
-            Passed to ``self.apply_constraint``
+        :param selectfrac_skip, distribution_skip:
+            Passed to :func:`StarPopulation.apply_constraint`.
+
         """
         if prop in self.constraints:
             logging.info('re-doing {} constraint'.format(prop))
@@ -724,13 +773,29 @@ class StarPopulation(object):
                                   distribution_skip=distribution_skip)
 
     def apply_trend_constraint(self,limit,dt, distribution_skip=True, **kwargs):
-        """Only works if object has dRV method and plong attribute; limit in km/s
+        """
+        Constrains change in RV to be less than limit over time dt.
 
-        limit : ``Quantity``
-            Radial velocity limit on trend
+        Only works if ``dRV`` and ``plong`` attributes are defined
+        for population.
+        
+        :param limit:
+            Radial velocity limit on trend.  Must be 
+            :class:`astropy.units.Quantity` object.
 
-        dt : ``Quantity``
-            Time baseline of RV observations.
+        :param dt:
+            Time baseline of RV observations.  Must be 
+            :class:`astropy.units.Quantity` object.
+
+        :param distribution_skip:
+            This is by default ``True``.  *To be honest, I'm not
+            exactly sure why.  Might be important, might not
+            (don't remember).*
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`StarPopulation.apply_constraint`.
+            
         """
         dRVs = np.absolute(self.dRV(dt))
         c1 = UpperLimit(dRVs, limit)
@@ -742,7 +807,25 @@ class StarPopulation(object):
 
     def apply_cc(self, cc, distribution_skip=True,
                  **kwargs):
-        """Only works if object has Rsky, dmag attributes
+        """
+        Apply contrast-curve constraint to population.
+
+        Only works if object has Rsky, dmag attributes
+
+        :param cc:
+            Contrast curve.
+        :type cc:
+            :class:`ContrastCurveConstraint`
+
+        :param distribution_skip:
+            This is by default ``True``.  *To be honest, I'm not
+            exactly sure why.  Might be important, might not
+            (don't remember).*
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`StarPopulation.apply_constraint`.
+        
         """
         rs = self.Rsky.to('arcsec').value
         dmags = self.dmag(cc.band)

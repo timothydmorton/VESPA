@@ -9,8 +9,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-from plotutils import setfig, plot2dhist
-from hashutils import hashcombine
 
 from scipy.stats import gaussian_kde
 from sklearn.neighbors import KernelDensity
@@ -19,6 +17,9 @@ from sklearn.grid_search import GridSearchCV
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .fitebs import fitebs
+
+from .plotutils import setfig, plot2dhist
+from .hashutils import hashcombine
 
 from .stars.populations import StarPopulation, MultipleStarPopulation
 from .stars.populations import ColormatchMultipleStarPopulation
@@ -34,7 +35,7 @@ from .stars.constraints import UpperLimit
 
 import simpledist.distributions as dists
 
-from orbitutils.populations import OrbitPopulation_FromDF, TripleOrbitPopulation_FromDF
+from .orbits.populations import OrbitPopulation, TripleOrbitPopulation
 
 SHORT_MODELNAMES = {'Planets':'pl',
                     'EBs':'eb',
@@ -742,7 +743,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
         stars = stars.iloc[:n]
         df_orbpop = df_orbpop.iloc[:n]
-        orbpop = OrbitPopulation_FromDF(df_orbpop)            
+        orbpop = OrbitPopulation.from_df(df_orbpop)            
 
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
@@ -919,7 +920,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         stars = stars.iloc[:n]
         df_long = df_long.iloc[:n]
         df_short = df_short.iloc[:n]
-        orbpop = TripleOrbitPopulation_FromDF(df_long, df_short)            
+        orbpop = TripleOrbitPopulation.from_df(df_long, df_short)            
 
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
@@ -1102,8 +1103,6 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
             n_adapt = int(n_adapt)
             
         stars = stars.iloc[:n]
-        #df_orbpop = df_orbpop.iloc[:n]
-        #orbpop = OrbitPopulation_FromDF(df_orbpop)            
 
         if 'level_0' in stars:
             stars.drop('level_0', axis=1, inplace=True) #dunno where this came from
