@@ -79,7 +79,8 @@ class StarPopulation(object):
 
         You can save and re-load :class:`StarPopulation` objects
         using :func:`StarPopulation.save_hdf` and 
-        :func:`StarPopulation.load_hdf`.
+        :func:`StarPopulation.load_hdf`.  **Support for saving 
+        constraints is planned and partially implemented but untested.**
 
         :param stars: (:class:`pandas.DataFrame`, optional)
             Table containing properties of stars.
@@ -810,7 +811,7 @@ class StarPopulation(object):
         """
         Apply contrast-curve constraint to population.
 
-        Only works if object has Rsky, dmag attributes
+        Only works if object has ``Rsky``, ``dmag`` attributes
 
         :param cc:
             Contrast curve.
@@ -834,7 +835,29 @@ class StarPopulation(object):
 
     def apply_vcc(self, vcc, distribution_skip=True,
                   **kwargs):
-        """only works if has dmag and RV attributes"""
+        """
+        Applies "velocity contrast curve" to population.
+
+        That is, the constraint that comes from not seeing two sets
+        of spectral lines in a high resolution spectrum. 
+
+        Only works if population has ``dmag`` and ``RV`` attributes.
+
+        :param vcc:
+            Velocity contrast curve; dmag vs. delta-RV.
+        :type cc:
+            :class:`VelocityContrastCurveConstraint`
+
+        :param distribution_skip:
+            This is by default ``True``.  *To be honest, I'm not
+            exactly sure why.  Might be important, might not
+            (don't remember).*
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`StarPopulation.apply_constraint`.
+
+        """
         rvs = self.RV.value
         dmags = self.dmag(vcc.band)
         self.apply_constraint(VelocityContrastCurveConstraint(rvs,dmags,vcc,
@@ -842,14 +865,21 @@ class StarPopulation(object):
                               distribution_skip=distribution_skip, **kwargs)
         
     def set_maxrad(self,maxrad, distribution_skip=True):
-        """Adds a constraint that rejects everything with Rsky > maxrad
+        """
+        Adds a constraint that rejects everything with Rsky > maxrad
 
-        Requires Rsky attribute, which should always have units.
+        Requires ``Rsky`` attribute, which should always have units.
 
-        Parameters
-        ----------
-        maxrad : ``Quantity``
+        :param maxrad:
             The maximum angular value of Rsky.
+        :type maxrad:
+            :class:`astropy.units.Quantity`
+
+        :param distribution_skip:
+            This is by default ``True``.  *To be honest, I'm not
+            exactly sure why.  Might be important, might not
+            (don't remember).*
+
         """
         self.maxrad = maxrad
         self.apply_constraint(UpperLimit(self.Rsky,maxrad,
@@ -861,7 +891,8 @@ class StarPopulation(object):
 
     @property
     def constraint_df(self):
-        """A ``DataFrame`` representing all constraints, hidden or not
+        """
+        A DataFrame representing all constraints, hidden or not
         """
         df = pd.DataFrame()
         for name,c in self.constraints.iteritems():
@@ -913,7 +944,8 @@ class StarPopulation(object):
         attrs.properties = properties
         store.close()
 
-    def load_hdf(self, filename, path=''):
+    @classmethod
+    def load_hdf(cls, filename, path=''):
         """Loads data from .h5 file
 
         Correct properties should be restored to object.
@@ -926,10 +958,11 @@ class StarPopulation(object):
         has_triple_orbpop = '{}/orbpop/long/df'.format(path) in store
         attrs = store.get_storer('{}/stars'.format(path)).attrs
 
-        #check that saved file is the right type
         poptype = attrs.poptype
-        if poptype != type(self):
-            raise TypeError('Saved population is {}.  Please instantiate proper class before loading.'.format(poptype))
+        new = poptype()
+
+        #if poptype != type(self):
+        #    raise TypeError('Saved population is {}.  Please instantiate proper class before loading.'.format(poptype))
 
 
         distribution_skip = attrs.distribution_skip
@@ -937,7 +970,7 @@ class StarPopulation(object):
         name = attrs.name
 
         for kw,val in attrs.properties.items():
-            setattr(self,kw,val)
+            setattr(new, kw, val)
         store.close()
 
         #load orbpop if there
@@ -947,8 +980,8 @@ class StarPopulation(object):
         elif has_triple_orbpop:
             orbpop = TripleOrbitPopulation.load_hdf(filename, path=path+'/orbpop')
 
-        self.stars = stars
-        self.orbpop = orbpop
+        new.stars = stars
+        new.orbpop = orbpop
 
 
         for n in constraint_df.columns:
@@ -956,12 +989,10 @@ class StarPopulation(object):
             c = Constraint(mask,name=n)
             sel_skip = n in selectfrac_skip
             dist_skip = n in distribution_skip
-            self.apply_constraint(c,selectfrac_skip=sel_skip,
+            new.apply_constraint(c,selectfrac_skip=sel_skip,
                                   distribution_skip=dist_skip)
 
-        #self._apply_all_constraints()
-
-        return self
+        return new
 
 class BinaryPopulation(StarPopulation):
     def __init__(self, stars=None,

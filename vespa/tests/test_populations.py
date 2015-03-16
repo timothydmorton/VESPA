@@ -25,7 +25,7 @@ def test_heb(filename=os.path.join(TMP,'test_heb.h5')):
     pop = HEBPopulation(mass=mass, age=age, feh=feh, mags=mags,
                        period=period, n=100, MAfn=MAfn)
     pop.save_hdf(filename, overwrite=True)
-    pop2 = HEBPopulation().load_hdf(filename)
+    pop2 = HEBPopulation.load_hdf(filename)
     os.remove(filename)
 
 
@@ -41,7 +41,7 @@ def test_eb(filename=os.path.join(TMP,'test_eb.h5')):
                        period=period, n=100, MAfn=MAfn)
 
     pop.save_hdf(filename, overwrite=True)
-    pop2 = EBPopulation().load_hdf(filename)
+    pop2 = EBPopulation.load_hdf(filename)
     os.remove(filename)
 
 def test_beb(filename=os.path.join(TMP,'test_beb.h5')):
@@ -56,5 +56,5 @@ def test_beb(filename=os.path.join(TMP,'test_beb.h5')):
                         n=100, MAfn=MAfn)
 
     pop.save_hdf(filename, overwrite=True)
-    pop2 = BEBPopulation().load_hdf(filename)
+    pop2 = BEBPopulation.load_hdf(filename)
     os.remove(filename)
