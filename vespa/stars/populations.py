@@ -1684,40 +1684,41 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
                  starfield=None, stars=None, **kwargs):
         """Multiple star population constrained to match provided colors
 
-        starfield is .h5 file of TRILEGAL simulation
+        Star systems are generated either according to provided
+        primary masses ``mA``, or by drawing primary masses
+        from provided TRILEGAL simulation (``starfield``).
 
-        Parameters
-        ----------
-        mags : dictionary (optional)
+        :param mags: (optional)
             Dictionary of magnitudes of total system.
 
-        colors : list (optional)
+        :param colors: (optional)
             Colors to use to constrain population generation.  
             e.g. ['JK'], or ['JK','gr'], etc.
 
-        colortol : float (optional)
+        :param colortol: (optional)
             Tolerance within which to constrain color matching.
 
-        mA, age, feh : float, array_like, or ``Distribution`` (optional)
+        :param mA, age, feh:
             Primary masses, age, and feh.  If float or array_like, 
             those values are used; if distributions, they are resampled.
             
-        n : int (optional)
+        :param n: (optional)
             Desired size of simulation (default = 2e4)
 
-        starfield : ``None``, string, or ``DataFrame``
+        :param starfield: (optional)
             If m1 is not provided in some form, then primary masses will
             get randomly selected from this starfield, assumed to be
             a TRILEGAL simulation.  If string, then should be a filename
-            of an .h5 file containing the TRILEGAL simulation, or can
-            be a DataFrame directly.
+            of an .h5 file containing the TRILEGAL simulation; can also
+            be a ``DataFrame`` directly.
 
-        stars : ``DataFrame`` of all properties
-            Can directly initialize with ``DataFrame``.  Be careful though,
-            because must pass the arguments appropriate to that simulation.
+        :param stars: (:class:`pandas.DataFrame`, optional)
+            Can directly initialize with :class:`pandas DataFrame`.  
+            Be careful though, because must pass the arguments
+            appropriate to that simulation.
 
-            
-        kwargs passed to MultipleStarPopulation
+        :param **kwargs:
+            Keyword arguments passed to :class:`MultipleStarPopulation`.
         """
         
         self.mags = mags
