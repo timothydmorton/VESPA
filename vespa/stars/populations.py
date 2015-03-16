@@ -975,11 +975,22 @@ class StarPopulation(object):
 
     @classmethod
     def load_hdf(cls, filename, path=''):
-        """Loads data from .h5 file
+        """Loads StarPopulation from .h5 file
 
         Correct properties should be restored to object, and object
-        should be original type that was saved.
+        will be original type that was saved.  Complement to 
+        :func:`StarPopulation.save_hdf`.
         
+        :param filename:
+            HDF file with save :class:`StarPopulation`.
+
+        :param path:
+            Path within HDF file.
+
+        :return:
+            :class:`StarPopulation` or appropriate subclass; whatever
+            was saved with :func:`StarPopulation.save_hdf`.
+
         """
         stars = pd.read_hdf(filename,path+'/stars', autoclose=True)
         constraint_df = pd.read_hdf(filename,path+'/constraints', autoclose=True)
@@ -1039,25 +1050,31 @@ class BinaryPopulation(StarPopulation):
         if not, then orbit population will be generated.  Single stars may
         be indicated if desired by having their mass set to zero and all
         magnitudes set to ``inf``.
+
+        This will usually be used via, e.g., the 
+        :class:`Raghavan_BinaryPopulation` subclass, rather than 
+        instantiated directly.
         
         Parameters
         ----------
-        primary,secondary : ``DataFrame``
+        :param primary,secondary: (:class:`pandas.DataFrame`)
             Properties of primary and secondary stars, respectively.
             These get merged into new ``stars`` attribute, with "_A"
-            and "_B" tags.   
+            and "_B" tags.
 
-        orbpop : ``OrbitPopulation``, optional
+        :param orbpop: (:class:`OrbitPopulation`, optional)
             Object describing orbits of stars.  If not provided, then ``period``
             and ``ecc`` keywords must be provided, or else they will be
             randomly generated (see below).
 
-        period,ecc : array-like, optional
+        :param period,ecc: 
             Periods and eccentricities of orbits.  If ``orbpop``
             not passed, and these are not provided, then periods and eccs 
             will be randomly generated according
             to the empirical distributions of the Raghavan (2010) and
-            Multiple Star Catalog distributions (see ``utils`` for details).
+            Multiple Star Catalog distributions using 
+            :func:`utils.draw_raghavan_periods` and
+            :func:`utils.draw_eccs`.
 
         """
 
