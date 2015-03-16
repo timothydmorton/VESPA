@@ -47,35 +47,40 @@ class StarPopulation(object):
     def __init__(self,stars=None,distance=None,
                  max_distance=1000*u.pc,convert_absmags=True,
                  name='', orbpop=None, mags=None):
-        """A population of stars.  Initialized with no constraints.
+        """A population of stars.  
 
-        Intended to be subclassed.  
-
-        stars : ``pandas`` ``DataFrame`` object
-            Data table containing properties of stars.
+        :param stars: (:class:`pandas.DataFrame`, optional)
+            Table containing properties of stars.
             Magnitude properties end with "_mag".  Default
             is that these magnitudes are absolute, and get 
             converted to apparent magnitudes based on distance,
             which is either provided or randomly assigned.
 
-        distance : ``Quantity`` or float, optional
-            If not ``None``, then distances of stars are assigned
-            randomly out to max_distance (or by comparing to mags).  
+        :param distance: 
+            If ``None``, then distances of stars are assigned
+            randomly out to max_distance, or by comparing to mags.  
             If float, then assumed to be in parsec.  Or, if stars already 
             has a distance column, this is ignored.
+        :type distance:
+            :class:`astropy.units.Quantity`, float, or array-like, optional
 
-        max_distance : ``Quantity`` or float, optional
+        :param max_distance: ``Quantity`` or float, optional
             Max distance out to which distances will be simulated,
             according to random placements in volume ($p(d)\simd^2$).  
             Ignored if stars already has a distance column.
+        :type max_distance:
+            :class:`astropy.units.Quantity` or float, optional
 
-        convert_absmags : bool
+        :param convert_absmags: (``bool``, optional)
             If ``True``, then magnitudes in ``stars`` will be converted
             to apparent magnitudes based on distance.  If ``False,``
             then magnitudes will be kept as-is.  Ignored if stars already
             has a distance column.
 
-        orbpop : ``OrbitPopulation``
+        :param orbpop:
+            Describes the orbits of the stars.
+        :type orbpop:
+            :class:`orbits.OrbitPopulation` 
 
 
         """
@@ -102,8 +107,11 @@ class StarPopulation(object):
                 if distance is None:
                     #generate random distances
                     dmax = max_distance.to('pc').value
-                    distance_distribution = dists.PowerLaw_Distribution(2.,1,dmax) # p(d)~d^2
-                    distance = distance_distribution.rvs(N)
+                    #distance_distribution = dists.PowerLaw_Distribution(2.,1,dmax) # p(d)~d^2
+                    #distance = distance_distribution.rvs(N)
+
+                    # p(d) ~ d^2
+                    distance = stats.powerlaw(3).rvs(N) * dmax
 
                 if type(distance) != Quantity:
                     distance = distance * u.pc
@@ -121,37 +129,58 @@ class StarPopulation(object):
             if 'distmod' not in self.stars:
                 self.stars['distmod'] = distancemodulus(self.stars['distance'])
 
-        #initialize empty constraint list
-        #self.constraints = ConstraintDict()
-        #self.hidden_constraints = ConstraintDict()
-        #self.selectfrac_skip = []
-        #self.distribution_skip = []
-
-        #apply constraints,  initializing the following attributes:
-        # self.distok, self.countok, self.selected, self.selectfrac
-        
-        #self._apply_all_constraints()
 
     @property
     def Rsky(self):
+        """
+        Projected angular distance between "primary" and "secondary" (exact meaning varies)
+        
+        """
         r = (self.orbpop.Rsky/self.distance)
         return r.to('arcsec',equivalencies=u.dimensionless_angles())
 
     @property
     def RV(self):
+        """
+        Radial velocity difference between "primary" and "secondary" (exact meaning varies)
+        """
         return self.orbpop.RV
 
     def dRV(self,dt):
+        """
+        Change in RV between two epochs separated by dt
+
+        :param dt:
+            Time difference between two epochs, either :class:`astropy.units.Quantity`
+            or days.
+
+        :return:
+            Change in RV. 
+        """
         return self.orbpop.dRV(dt)
 
     def dmag(self, band):
-        if not hasattr(self, 'mags'):
-            raise ValueError('This population does not have a "mags" attribute; dmags is meaningless.')
+        """
+        Magnitude difference between "primary" and "secondary" in given band
+
+        Exact definition will depend on context.  Only legit if ``self.mags``
+        is defined (i.e., not ``None``).
+
+        :param band: (``string``)
+            Desired photometric bandpass.
+        """
+        if self.mags is None:
+            raise ValueError('This population does not have a "mags" attribute ' +
+                             'defined; dmags is meaningless.')
         return self.stars['{}_mag'.format(band)] - self.mags[band]
 
 
     def append(self, other):
         """Appends stars from another StarPopulations, in place.
+
+        :param other:
+            Another :class:`StarPopulation`; must have same columns as ``self``.
+            
         """
         if not isinstance(other,StarPopulation):
             raise TypeError('Only StarPopulation objects can be appended to a StarPopulation.')
@@ -166,16 +195,6 @@ class StarPopulation(object):
         if self.orbpop is not None and other.orbpop is not None:
             self.orbpop = self.orbpop + other.orbpop
 
-        #Clear all constraints that might exist
-        #self.constraints = ConstraintDict()
-        #self.hidden_constraints = ConstraintDict()
-        #self.selectfrac_skip = []
-        #self.distribution_skip = []
-
-        #apply constraints,  initializing the following attributes:
-        # self.distok, self.countok, self.selected, self.selectfrac
-        
-        #self._apply_all_constraints()
 
     def __getitem__(self,prop):
         return self.selected[prop]
@@ -185,14 +204,23 @@ class StarPopulation(object):
                            hashdf(self.stars), self.orbpop)
     
     def generate(self, *args, **kwargs):
+        """
+        Function that generates population.
+        """
         raise NotImplementedError
 
     @property
     def is_ruled_out(self):
+        """
+        Will be ``True`` if contraints rule out all (or all but one) instances
+        """
         return self.distok.sum() < 2
 
     @property
-    def magnitudes(self):
+    def bands(self):
+        """
+        Bandpasses for which StarPopulation has magnitude data
+        """
         bands = []
         for c in self.stars.columns:
             if re.search('_mag',c):
@@ -201,18 +229,21 @@ class StarPopulation(object):
 
     @property
     def distance(self):
+        """Distance to stars.
+        
+        """
         return np.array(self.stars['distance'])*u.pc
 
     @distance.setter
     def distance(self,value):
-        """value must be a ``Quantity`` object
+        """New distance value must be a ``Quantity`` object
         """
         self.stars['distance'] = value.to('pc').value
 
         old_distmod = self.stars['distmod'].copy()
         new_distmod = distancemodulus(self.stars['distance'])
 
-        for m in self.magnitudes:
+        for m in self.bands:
             self.stars[m] += new_distmod - old_distmod
 
         self.stars['distmod'] = new_distmod
@@ -220,46 +251,15 @@ class StarPopulation(object):
         logging.warning('Setting the distance manually may have screwed up your constraints.  Re-apply constraints as necessary.')
 
 
-    def _apply_all_constraints(self):
-        """Applies all constraints in ``self.constraints`` to population.
-
-        A constraint may either change the overall character of the population,
-        or just the overall number of allowed stars.  If a constraint
-        changes just the overall number of allowed stars (not the makeup),
-        then the name of the constraint should be in the ``self.distribution_skip``
-        list.  If the opposite is true, then the constraint name should be in 
-        ``self.selectfrac_skip``.
-
-        Result
-        ------
-        Sets values for ``self.distok``, ``self.countok``, 
-        ``self.selected``, and ``self.selectfrac`` attributes.
-        """
-
-        if not hasattr(self, 'constraints'):
-            self.constraints = ConstraintDict()
-            self.hidden_constraints = ConstraintDict()
-            self.selectfrac_skip = []
-            self.distribution_skip = []
-            
-        if self.stars is not None:
-            n = len(self.stars)
-            self.distok = np.ones(len(self.stars)).astype(bool)
-            self.countok = np.ones(len(self.stars)).astype(bool)
-
-            for name in self.constraints:
-                c = self.constraints[name]
-                if c.name not in self.distribution_skip:
-                    self.distok &= c.ok
-                if c.name not in self.selectfrac_skip:
-                    self.countok &= c.ok
-
-            self.selected = self.stars[self.distok]
-            self.selectfrac = self.countok.sum()/n
-
 
     @property
     def distok(self):
+        """
+        Boolean array showing which stars pass all distribution constraints.
+
+        A "distribution constraint" is a constraint that affects the
+        distribution of stars, rather than just the number.  
+        """
         ok = np.ones(len(self.stars)).astype(bool)
         for name in self.constraints:
             c = self.constraints[name]
@@ -269,6 +269,11 @@ class StarPopulation(object):
 
     @property
     def countok(self):
+        """
+        Boolean array showing which stars pass all count constraints.
+
+        A "count constraint" is a constraint that affects the number of stars.
+        """
         ok = np.ones(len(self.stars)).astype(bool)
         for name in self.constraints:
             c = self.constraints[name]
@@ -278,49 +283,54 @@ class StarPopulation(object):
 
     @property
     def selected(self):
+        """
+        All stars that pass all distribution constraints.
+        
+        """
         return self.stars[self.distok]
 
     @property
     def selectfrac(self):
+        """
+        Fraction of stars that pass count constraints.
+        """
         return self.countok.sum()/len(self.stars)
 
     def prophist2d(self,propx,propy, mask=None,
-                   logx=False,logy=False,inds=None,
+                   logx=False,logy=False,
                    fig=None,selected=False,**kwargs):
         """Makes a 2d density histogram of two given properties
 
-        propx, propy : string
+        :param propx, propy:
             Names of properties to histogram.  Must be names of columns
             in ``self.stars`` table.
 
-        inds : ndarray, optional
-            Desired indices of ``self.stars`` to plot.  If ``None``,
-            then all is assumed.
+        :param mask: (optional)
+            Boolean mask (``True`` is good) to say which indices to plot.
+            Must be same length as ``self.stars``.
 
-        mask : ndarray, optional
-            Boolean mask (True is good) to say which indices to plot.
-            Will override inds keyword.
+        :param logx, logy: (optional)
+            Whether to plot the log10 of x and/or y properties.
+            
+        :param fig: (optional)
+            Argument passed to :func:`plotutils.setfig`.
 
-        fig : None or int, optional
-            Argument passed to ``plotutils.setfig`` function.
-
-        selected : bool, optional
+        :param selected: (optional)
             If ``True``, then only the "selected" stars (that is, stars
-            obeying all constraints attached to this object) will
-            be plotted.
+            obeying all distribution constraints attached to this object)
+            will be plotted.  In this case, ``mask`` will be ignored. 
 
-        kwargs :
-            Keyword arguments passed to ``plot2dhist`` function.
+        :param kwargs:
+            Additional keyword arguments passed to :func:`plotutils.plot2dhist`.
+
         """
         
         if mask is not None:
             inds = np.where(mask)[0]
-        elif inds is None:
+        else:
             if selected:
-                #inds = np.arange(len(self.selected))
                 inds = self.selected.index
             else:
-                #inds = np.arange(len(self.stars))
                 inds = self.stars.index
 
         if selected:
@@ -338,7 +348,6 @@ class StarPopulation(object):
             xvals = self.depth.iloc[inds].values
         if propy=='depth' and hasattr(self,'depth'):
             yvals = self.depth.iloc[inds].values
-        
 
         if logx:
             xvals = np.log10(xvals)
@@ -350,10 +359,31 @@ class StarPopulation(object):
         plt.ylabel(propy)
         
 
-    def prophist(self,prop,fig=None,log=False,inds=None,
-                 mask=None,
+    def prophist(self,prop,fig=None,log=False, mask=None,
                  selected=False,**kwargs):
-        """Plots a histogram of desired property
+        """Plots a 1-d histogram of desired property.
+
+        :param prop:
+            Name of property to plot.  Must be column of ``self.stars``.
+
+        :param fig: (optional)
+            Argument for :func:`plotutils.setfig`
+
+        :param log: (optional)
+            Whether to plot the histogram of log10 of the property.
+
+        :param mask: (optional)
+            Boolean array (length of ``self.stars``) to say
+            which indices to plot (``True`` is good).
+
+        :param selected: (optional)
+            If ``True``, then only the "selected" stars (that is, stars
+            obeying all distribution constraints attached to this object)
+            will be plotted.  In this case, ``mask`` will be ignored. 
+        
+        :param **kwargs:
+            Additional keyword arguments passed to :func:`plt.hist`.
+            
         """
         
         setfig(fig)
@@ -384,6 +414,14 @@ class StarPopulation(object):
 
     def constraint_stats(self,primarylist=None):
         """Returns information about effect of constraints on population.
+
+        :param primarylist:
+           List of constraint names that you want specific information on
+           (i.e., not blended within "multiple constraints".)
+
+        :return:
+           ``dict`` of what percentage of population is ruled out by
+           each  constraint, including a "multiple constraints" entry.
         """
         if primarylist is None:
             primarylist = []
@@ -435,7 +473,25 @@ class StarPopulation(object):
                             legend=True,nolabels=False):
         """Makes piechart illustrating constraints on population
 
-        for FPP, primarylist default was ['secondary depth']; remember that
+        :param primarylist: (optional)
+            List of most import constraints to show (see
+            :func:`StarPopulation.constraint_stats`)
+
+        :param fig: (optional)
+            Passed to :func:`plotutils.setfig`.
+
+        :param title: (optional)
+            Title for pie chart
+
+        :param colordict: (optional)
+            Dictionary describing colors (keys are constraint names).
+
+        :param legend: (optional)
+            ``bool`` indicating whether to display a legend.
+
+        :param nolabels: (optional)
+            If ``True``, then leave out legend labels.
+        
         """
 
         setfig(fig,figsize=(6,6))
@@ -503,6 +559,9 @@ class StarPopulation(object):
 
     @property
     def selectfrac_skip(self):
+        """
+        Names of constraints that should *not* be considered for counting purposes
+        """
         try:
             return self._selectfrac_skip
         except AttributeError:
@@ -515,6 +574,9 @@ class StarPopulation(object):
 
     @property
     def distribution_skip(self):
+        """
+        Names of constraints that should *not* be considered for distribution purposes
+        """
         try:
             return self._distribution_skip
         except AttributeError:
@@ -527,6 +589,9 @@ class StarPopulation(object):
 
     @property
     def constraints(self):
+        """
+        Constraints applied to the population.
+        """
         try:
             return self._constraints
         except AttributeError:
@@ -539,6 +604,9 @@ class StarPopulation(object):
 
     @property
     def hidden_constraints(self):
+        """
+        Constraints applied to the population, but temporarily removed.
+        """
         try:
             return self._hidden_constraints
         except AttributeError:
@@ -552,6 +620,11 @@ class StarPopulation(object):
     def apply_constraint(self,constraint,selectfrac_skip=False,
                          distribution_skip=False,overwrite=False):
         """Apply a constraint to the population
+
+        :param constraint:
+            Constraint to apply.
+        :type constraint:
+            :class:`Constraint`
         """
         #grab properties
         constraints = self.constraints
@@ -821,7 +894,7 @@ class BinaryPopulation(StarPopulation):
         if not, then orbit population will be generated.  Single stars may
         be indicated if desired by having their mass set to zero and all
         magnitudes set to ``inf``.
-
+        
         Parameters
         ----------
         primary,secondary : ``DataFrame``

@@ -11,6 +11,7 @@ TMP = tempfile.gettempdir()
 
 def test_raghavan(filename=os.path.join(TMP,'test_raghavan.h5')):
     pop = Raghavan_BinaryPopulation(1, n=100, qmin=0.2)
+    pop.constrain_property('mass_B',lo=0.5)
     pop.save_hdf(filename, overwrite=True)
     pop2 = Raghavan_BinaryPopulation().load_hdf(filename)
 
@@ -22,6 +23,7 @@ def test_raghavan(filename=os.path.join(TMP,'test_raghavan.h5')):
 
 def test_multiple(filename=os.path.join(TMP,'test_multiple.h5')):
     pop = MultipleStarPopulation(1, n=100, minmass=0.15)
+    pop.constrain_property('mass_B',lo=0.5)
     pop.save_hdf(filename, overwrite=True)
     pop2 = MultipleStarPopulation().load_hdf(filename)
 
@@ -38,6 +40,7 @@ def test_colormatch(filename=os.path.join(TMP,'test_colormatch.h5')):
     pop = ColormatchMultipleStarPopulation(mags, mA=(1,0.1),
                                            age=(9.7,0.1),
                                            feh=(0,0.1), n=100)
+    pop.constrain_property('mass_B',lo=0.5)
     pop.save_hdf(filename, overwrite=True)
     pop2 = ColormatchMultipleStarPopulation().load_hdf(filename)    
 
@@ -50,11 +53,13 @@ def test_colormatch(filename=os.path.join(TMP,'test_colormatch.h5')):
 
 def test_multiple_specific_periods(filename=os.path.join(TMP,'test_pshort.h5')):
     pop = MultipleStarPopulation(1, period_short=100, n=100)
+    pop.constrain_property('mass_B',lo=0.5)
     pop.save_hdf(filename, overwrite=True)
     pop2 = MultipleStarPopulation().load_hdf(filename)
     os.remove(filename)
 
     pop = MultipleStarPopulation(1, period_long=1000, n=100)
+    pop.constrain_property('mass_B',lo=0.5)
     pop.save_hdf(filename, overwrite=True)
     pop2 = MultipleStarPopulation().load_hdf(filename)
     os.remove(filename)

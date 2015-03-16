@@ -443,7 +443,7 @@ class OrbitPopulation(object):
         """
         self.dataframe.to_hdf(filename,'{}/df'.format(path))
 
-    @classmethod(cls, df):
+    @classmethod
     def from_df(cls, df):
         """Creates an OrbitPopulation from a DataFrame.
 
