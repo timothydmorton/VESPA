@@ -777,7 +777,7 @@ class StarPopulation(object):
         """
         Constrains change in RV to be less than limit over time dt.
 
-        Only works if ``dRV`` and ``plong`` attributes are defined
+        Only works if ``dRV`` and ``Plong`` attributes are defined
         for population.
         
         :param limit:
@@ -1108,13 +1108,26 @@ class BinaryPopulation(StarPopulation):
 
     @property
     def singles(self):
+        """
+        Subset of stars that are single.
+        """
         return self.stars.query('mass_B == 0')
 
     @property
     def binaries(self):
+        """
+        Subset of stars that are binaries.
+        """
         return self.stars.query('mass_B > 0')
 
     def binary_fraction(self,query='mass_A >= 0'):
+        """
+        Binary fraction of stars passing given query
+
+        :param query:
+            Query to pass to stars ``DataFrame``.
+
+        """
         subdf = self.stars.query(query)
         nbinaries = (subdf['mass_B'] > 0).sum()
         frac = nbinaries/len(subdf)
@@ -1122,24 +1135,68 @@ class BinaryPopulation(StarPopulation):
         
     @property
     def Plong(self):
+        """ Orbital period.
+        
+        Called "Plong" to be consistent with hierarchical
+        populations that have this attribute mean the
+        longer of two periods.
+
+        """
         return self.orbpop.P
 
     def dmag(self,band):
+        """
+        Difference in magnitude between primary and secondary stars
+
+        :param band:
+            Photometric bandpass.
+
+        """
         mag2 = self.stars['{}_mag_B'.format(band)]
         mag1 = self.stars['{}_mag_A'.format(band)]
         return mag2-mag1
 
-    def rsky_distribution(self,rmax=None,dr=0.005,smooth=0.1,nbins=100):
+    def rsky_distribution(self,rmax=None,smooth=0.1,nbins=100):
+        """
+        Distribution of projected separations
+
+        Returns a :class:`simpledists.Hist_Distribution` object.
+
+        :param rmax: (optional)
+            Maximum radius to calculate distribution.
+
+        :param dr: (optional)
+            Bin width for histogram
+
+        :param smooth: (optional)
+            Smoothing parameter for :class:`simpledists.Hist_Distribution`
+
+        :param nbins: (optional)
+            Number of bins for histogram
+
+        :return:
+            :class:`simpledists.Hist_Distribution` describing Rsky distribution
+
+        """
         if rmax is None:
             if hasattr(self,'maxrad'):
                 rmax = self.maxrad
             else:
                 rmax = np.percentile(self.Rsky,99)
-        rs = np.arange(0,rmax,dr)
         dist = dists.Hist_Distribution(self.Rsky.value,bins=nbins,maxval=rmax,smooth=smooth)
         return dist
 
     def rsky_lhood(self,rsky,**kwargs):
+        """
+        Evaluates Rsky likelihood at provided position(s)
+
+        :param rsky:
+            position
+
+        :param **kwargs:
+            Keyword arguments passed to :func:`BinaryPopulation.rsky_distribution`
+
+        """
         dist = self.rsky_distribution(**kwargs)
         return dist(rsky)
 
@@ -1150,40 +1207,55 @@ class Simulated_BinaryPopulation(BinaryPopulation):
                  age=9.6,feh=0.0, minmass=0.12, **kwargs):
         """Simulates BinaryPopulation according to provide primary mass(es), generating functions, and stellar isochrone models.
 
-        Parameters
-        ----------
-        M : float or array-like
-            Primary mass(es).
 
-        q_fn : function
+        :param M:
+            Primary mass(es).
+        :type M:
+            ``float`` or array-like
+
+        :param q_fn: (optional)
             Mass ratio generating function. Must return 'n' mass ratios, and be
             called as follows::
         
                 qs = q_fn(n)
 
-        P_fn : function
+        :type q_fn:
+            Callable function.
+
+        :param P_fn: (optional)
             Orbital period generating function.  Must return ``n`` orbital periods,
             and be called as follows::
             
                 Ps = P_fn(n)
 
-        ecc_fn : function
+        :type P_fn:
+            Callable function.
+
+        :param ecc_fn: (optional)
             Orbital eccentricity generating function.  Must return ``n`` orbital 
             eccentricities generated according to provided period(s)::
 
                 eccs = ecc_fn(n,Ps)
 
-        n : int, optional
+        :type ecc_fn:
+            Callable function.
+
+        :param n: (optional)
             Number of instances to simulate.
 
-        ichrone : ``Isochrone`` object
+        :param ichrone:
             Stellar model object from which to simulate stellar properties.
+            Default is the default Dartmouth isochrone.
+        :type ichrone:
+            :class:`isochrones.Isochrone`
 
-        age,feh : float or array-like
+        :param age,feh:
             log(age) and metallicity at which to simulate population.
+            Can be ``float`` or array-like
 
-        minmass : float
-            Minimum mass to simulate
+        :param minmass: 
+            Minimum mass to simulate.
+
         """
         self.q_fn = q_fn
         self.qmin = qmin
