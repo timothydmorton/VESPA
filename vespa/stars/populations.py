@@ -14,20 +14,21 @@ from astropy.coordinates import SkyCoord
 
 from ..orbits import OrbitPopulation
 from ..orbits import TripleOrbitPopulation
-from plotutils import setfig,plot2dhist
+from ..plotutils import setfig,plot2dhist
 
 from isochrones import StarModel
 
 from simpledist import distributions as dists
 
-from hashutils import hashcombine, hashdict, hashdf
+from ..hashutils import hashcombine, hashdict, hashdf
 
 from .constraints import Constraint,UpperLimit,LowerLimit,JointConstraintOr
 from .constraints import ConstraintDict,MeasurementConstraint,RangeConstraint
 from .contrastcurve import ContrastCurveConstraint,VelocityContrastCurveConstraint 
 from .contrastcurve import ContrastCurveFromFile
 
-from .utils import randpos_in_circle, draw_raghavan_periods, draw_msc_periods, draw_eccs
+from .utils import randpos_in_circle, draw_raghavan_periods 
+from .utils import draw_msc_periods, draw_eccs
 from .utils import flat_massratio, mult_masses
 from .utils import distancemodulus, addmags, dfromdm
 
@@ -48,6 +49,38 @@ class StarPopulation(object):
                  max_distance=1000*u.pc,convert_absmags=True,
                  name='', orbpop=None, mags=None):
         """A population of stars.  
+
+        This object contains information of a simulated population
+        of stars.  It has a flexible purpose-- it could represent
+        many random realizations of a single system, or it could 
+        also represent many different random systems.  This is the general 
+        base class; subclasses include, e.g., :class:`MultipleStarPopulation`
+        and :class:`BGStarPopulation_TRILEGAL`.  
+
+        The :attr:`StarPopulation.stars` attribute is a 
+        :class:`pandas.DataFrame` containing
+        all the information about all the random realizations, such
+        as the physical star properties (mass, radius, etc.) and
+        observational characteristics (magnitudes in different bands).
+        
+        The :attr:`StarPopulation.orbpop` attribute stores information
+        about the orbits of the random stars, if such a thing is 
+        relevant for the population in question (such as, e.g., a
+        :class:`MultipleStarPopulation`).  If orbits are relevant,
+        then attributes such as :attr:`StarPopulation.Rsky`, 
+        :attr:`StarPopulation.RV`, and :func:`StarPopulation.dmag`
+        are defined as well.
+
+        Importantly, you can apply constraints to a :class:`StarPopulation`,
+        implemented via the :class:`Constraint` class.  You can 
+        constrain properties of the stars to be within a given range,
+        you can apply a :class:`ContrastCurveConstraint`, simulating
+        the exclusion curve of an imaging observation, and many others.
+
+        You can save and re-load :class:`StarPopulation` objects
+        using :func:`StarPopulation.save_hdf` and 
+        :func:`StarPopulation.load_hdf`.  **Support for saving 
+        constraints is planned and partially implemented but untested.**
 
         :param stars: (:class:`pandas.DataFrame`, optional)
             Table containing properties of stars.
@@ -655,7 +688,15 @@ class StarPopulation(object):
         #self._apply_all_constraints()
 
     def replace_constraint(self,name,selectfrac_skip=False,distribution_skip=False):
-        """Re-apply constraint that had been removed
+        """
+        Re-apply constraint that had been removed
+
+        :param name:
+            Name of constraint to replace
+
+        :param selectfrac_skip, distribution_skip: (optional)
+            Same as :func:`StarPopulation.apply_constraint`
+
         """
         hidden_constraints = self.hidden_constraints
         if name in hidden_constraints:
@@ -669,7 +710,11 @@ class StarPopulation(object):
         self.hidden_constraints = hidden_constraints
 
     def remove_constraint(self,name):
-        """Remove a constraint (make it "hidden")
+        """
+        Remove a constraint (make it "hidden")
+
+        :param name:
+            Name of constraint.
         """
         constraints = self.constraints
         hidden_constraints = self.hidden_constraints
@@ -697,20 +742,25 @@ class StarPopulation(object):
                            selectfrac_skip=False,distribution_skip=False):
         """Apply constraint that constrains property.
 
-        prop : string
+        :param prop:
             Name of property.  Must be column in ``self.stars``.
+        :type prop: 
+            ``str``
 
-        lo,hi : float, optional
-            Low and high allowed values for ``prop``.
+        :param lo,hi: (optional)
+            Low and high allowed values for ``prop``.  Defaults
+            to ``-np.inf`` and ``np.inf`` to allow for defining
+            only lower or upper limits if desired.
 
-        measurement : (value,err)
-            Value and error of measurement. 
+        :param measurement: (optional)
+            Value and error of measurement in form ``(value, error)``.
 
-        thresh : float
-            Number of "sigma" to allow.
+        :param thresh: (optional)
+            Number of "sigma" to allow for measurement constraint.
 
-        selectfrac_skip, distribution_skip : bool
-            Passed to ``self.apply_constraint``
+        :param selectfrac_skip, distribution_skip:
+            Passed to :func:`StarPopulation.apply_constraint`.
+
         """
         if prop in self.constraints:
             logging.info('re-doing {} constraint'.format(prop))
@@ -728,13 +778,29 @@ class StarPopulation(object):
                                   distribution_skip=distribution_skip)
 
     def apply_trend_constraint(self,limit,dt, distribution_skip=True, **kwargs):
-        """Only works if object has dRV method and plong attribute; limit in km/s
+        """
+        Constrains change in RV to be less than limit over time dt.
 
-        limit : ``Quantity``
-            Radial velocity limit on trend
+        Only works if ``dRV`` and ``Plong`` attributes are defined
+        for population.
+        
+        :param limit:
+            Radial velocity limit on trend.  Must be 
+            :class:`astropy.units.Quantity` object.
 
-        dt : ``Quantity``
-            Time baseline of RV observations.
+        :param dt:
+            Time baseline of RV observations.  Must be 
+            :class:`astropy.units.Quantity` object.
+
+        :param distribution_skip:
+            This is by default ``True``.  *To be honest, I'm not
+            exactly sure why.  Might be important, might not
+            (don't remember).*
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`StarPopulation.apply_constraint`.
+            
         """
         dRVs = np.absolute(self.dRV(dt))
         c1 = UpperLimit(dRVs, limit)
@@ -746,7 +812,25 @@ class StarPopulation(object):
 
     def apply_cc(self, cc, distribution_skip=True,
                  **kwargs):
-        """Only works if object has Rsky, dmag attributes
+        """
+        Apply contrast-curve constraint to population.
+
+        Only works if object has ``Rsky``, ``dmag`` attributes
+
+        :param cc:
+            Contrast curve.
+        :type cc:
+            :class:`ContrastCurveConstraint`
+
+        :param distribution_skip:
+            This is by default ``True``.  *To be honest, I'm not
+            exactly sure why.  Might be important, might not
+            (don't remember).*
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`StarPopulation.apply_constraint`.
+        
         """
         rs = self.Rsky.to('arcsec').value
         dmags = self.dmag(cc.band)
@@ -755,7 +839,29 @@ class StarPopulation(object):
 
     def apply_vcc(self, vcc, distribution_skip=True,
                   **kwargs):
-        """only works if has dmag and RV attributes"""
+        """
+        Applies "velocity contrast curve" to population.
+
+        That is, the constraint that comes from not seeing two sets
+        of spectral lines in a high resolution spectrum. 
+
+        Only works if population has ``dmag`` and ``RV`` attributes.
+
+        :param vcc:
+            Velocity contrast curve; dmag vs. delta-RV.
+        :type cc:
+            :class:`VelocityContrastCurveConstraint`
+
+        :param distribution_skip:
+            This is by default ``True``.  *To be honest, I'm not
+            exactly sure why.  Might be important, might not
+            (don't remember).*
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`StarPopulation.apply_constraint`.
+
+        """
         rvs = self.RV.value
         dmags = self.dmag(vcc.band)
         self.apply_constraint(VelocityContrastCurveConstraint(rvs,dmags,vcc,
@@ -763,14 +869,21 @@ class StarPopulation(object):
                               distribution_skip=distribution_skip, **kwargs)
         
     def set_maxrad(self,maxrad, distribution_skip=True):
-        """Adds a constraint that rejects everything with Rsky > maxrad
+        """
+        Adds a constraint that rejects everything with Rsky > maxrad
 
-        Requires Rsky attribute, which should always have units.
+        Requires ``Rsky`` attribute, which should always have units.
 
-        Parameters
-        ----------
-        maxrad : ``Quantity``
+        :param maxrad:
             The maximum angular value of Rsky.
+        :type maxrad:
+            :class:`astropy.units.Quantity`
+
+        :param distribution_skip:
+            This is by default ``True``.  *To be honest, I'm not
+            exactly sure why.  Might be important, might not
+            (don't remember).*
+
         """
         self.maxrad = maxrad
         self.apply_constraint(UpperLimit(self.Rsky,maxrad,
@@ -782,7 +895,8 @@ class StarPopulation(object):
 
     @property
     def constraint_df(self):
-        """A ``DataFrame`` representing all constraints, hidden or not
+        """
+        A DataFrame representing all constraints, hidden or not
         """
         df = pd.DataFrame()
         for name,c in self.constraints.iteritems():
@@ -797,10 +911,39 @@ class StarPopulation(object):
 
     def save_hdf(self,filename,path='',properties=None,
                  overwrite=False, append=False):
-        """Saves to .h5 file.
+        """Saves to HDF5 file.
 
-        Subclasses should define a save_hdf that passes
-        the appropriate properties to reconstruct the object.
+        Subclasses should be sure to define 
+        ``_properties`` attribute to ensure that all
+        correct attributes get saved.
+
+        :param filename:
+            Name of HDF file.
+
+        :param path: (optional)
+            Path within HDF file to save object.
+
+        :param properties: (optional)
+            Names of any properties (in addition to 
+            those defined in ``_properties`` attribute)
+            that you wish to save.  (This is an old
+            keyword, and should probably be removed.
+            Feel free to ignore it.)
+
+        :param overwrite: (optional)
+            Whether to overwrite file if it already
+            exists.  If ``True``, then any existing file
+            will be deleted before object is saved.  Use
+            ``append`` if you don't wish this to happen.
+
+        :param append: (optional)
+            If ``True``, then if the file exists, 
+            then only the particular path in the file
+            will get written/overwritten.  If ``False`` and both
+            file and path exist, then an ``IOError`` will
+            be raised.  If ``False`` and file exists but not
+            path, then no error will be raised.
+
         """
         if os.path.exists(filename):
             store = pd.HDFStore(filename)
@@ -834,10 +977,24 @@ class StarPopulation(object):
         attrs.properties = properties
         store.close()
 
-    def load_hdf(self, filename, path=''):
-        """Loads data from .h5 file
+    @classmethod
+    def load_hdf(cls, filename, path=''):
+        """Loads StarPopulation from .h5 file
 
-        Correct properties should be restored to object.
+        Correct properties should be restored to object, and object
+        will be original type that was saved.  Complement to 
+        :func:`StarPopulation.save_hdf`.
+        
+        :param filename:
+            HDF file with save :class:`StarPopulation`.
+
+        :param path:
+            Path within HDF file.
+
+        :return:
+            :class:`StarPopulation` or appropriate subclass; whatever
+            was saved with :func:`StarPopulation.save_hdf`.
+
         """
         stars = pd.read_hdf(filename,path+'/stars', autoclose=True)
         constraint_df = pd.read_hdf(filename,path+'/constraints', autoclose=True)
@@ -847,10 +1004,11 @@ class StarPopulation(object):
         has_triple_orbpop = '{}/orbpop/long/df'.format(path) in store
         attrs = store.get_storer('{}/stars'.format(path)).attrs
 
-        #check that saved file is the right type
         poptype = attrs.poptype
-        if poptype != type(self):
-            raise TypeError('Saved population is {}.  Please instantiate proper class before loading.'.format(poptype))
+        new = poptype()
+
+        #if poptype != type(self):
+        #    raise TypeError('Saved population is {}.  Please instantiate proper class before loading.'.format(poptype))
 
 
         distribution_skip = attrs.distribution_skip
@@ -858,7 +1016,7 @@ class StarPopulation(object):
         name = attrs.name
 
         for kw,val in attrs.properties.items():
-            setattr(self,kw,val)
+            setattr(new, kw, val)
         store.close()
 
         #load orbpop if there
@@ -868,8 +1026,8 @@ class StarPopulation(object):
         elif has_triple_orbpop:
             orbpop = TripleOrbitPopulation.load_hdf(filename, path=path+'/orbpop')
 
-        self.stars = stars
-        self.orbpop = orbpop
+        new.stars = stars
+        new.orbpop = orbpop
 
 
         for n in constraint_df.columns:
@@ -877,12 +1035,10 @@ class StarPopulation(object):
             c = Constraint(mask,name=n)
             sel_skip = n in selectfrac_skip
             dist_skip = n in distribution_skip
-            self.apply_constraint(c,selectfrac_skip=sel_skip,
+            new.apply_constraint(c,selectfrac_skip=sel_skip,
                                   distribution_skip=dist_skip)
 
-        #self._apply_all_constraints()
-
-        return self
+        return new
 
 class BinaryPopulation(StarPopulation):
     def __init__(self, stars=None,
@@ -898,25 +1054,31 @@ class BinaryPopulation(StarPopulation):
         if not, then orbit population will be generated.  Single stars may
         be indicated if desired by having their mass set to zero and all
         magnitudes set to ``inf``.
+
+        This will usually be used via, e.g., the 
+        :class:`Raghavan_BinaryPopulation` subclass, rather than 
+        instantiated directly.
         
         Parameters
         ----------
-        primary,secondary : ``DataFrame``
+        :param primary,secondary: (:class:`pandas.DataFrame`)
             Properties of primary and secondary stars, respectively.
             These get merged into new ``stars`` attribute, with "_A"
-            and "_B" tags.   
+            and "_B" tags.
 
-        orbpop : ``OrbitPopulation``, optional
+        :param orbpop: (:class:`OrbitPopulation`, optional)
             Object describing orbits of stars.  If not provided, then ``period``
             and ``ecc`` keywords must be provided, or else they will be
             randomly generated (see below).
 
-        period,ecc : array-like, optional
+        :param period,ecc: 
             Periods and eccentricities of orbits.  If ``orbpop``
             not passed, and these are not provided, then periods and eccs 
             will be randomly generated according
             to the empirical distributions of the Raghavan (2010) and
-            Multiple Star Catalog distributions (see ``utils`` for details).
+            Multiple Star Catalog distributions using 
+            :func:`utils.draw_raghavan_periods` and
+            :func:`utils.draw_eccs`.
 
         """
 
@@ -950,13 +1112,26 @@ class BinaryPopulation(StarPopulation):
 
     @property
     def singles(self):
+        """
+        Subset of stars that are single.
+        """
         return self.stars.query('mass_B == 0')
 
     @property
     def binaries(self):
+        """
+        Subset of stars that are binaries.
+        """
         return self.stars.query('mass_B > 0')
 
     def binary_fraction(self,query='mass_A >= 0'):
+        """
+        Binary fraction of stars passing given query
+
+        :param query:
+            Query to pass to stars ``DataFrame``.
+
+        """
         subdf = self.stars.query(query)
         nbinaries = (subdf['mass_B'] > 0).sum()
         frac = nbinaries/len(subdf)
@@ -964,24 +1139,68 @@ class BinaryPopulation(StarPopulation):
         
     @property
     def Plong(self):
+        """ Orbital period.
+        
+        Called "Plong" to be consistent with hierarchical
+        populations that have this attribute mean the
+        longer of two periods.
+
+        """
         return self.orbpop.P
 
     def dmag(self,band):
+        """
+        Difference in magnitude between primary and secondary stars
+
+        :param band:
+            Photometric bandpass.
+
+        """
         mag2 = self.stars['{}_mag_B'.format(band)]
         mag1 = self.stars['{}_mag_A'.format(band)]
         return mag2-mag1
 
-    def rsky_distribution(self,rmax=None,dr=0.005,smooth=0.1,nbins=100):
+    def rsky_distribution(self,rmax=None,smooth=0.1,nbins=100):
+        """
+        Distribution of projected separations
+
+        Returns a :class:`simpledists.Hist_Distribution` object.
+
+        :param rmax: (optional)
+            Maximum radius to calculate distribution.
+
+        :param dr: (optional)
+            Bin width for histogram
+
+        :param smooth: (optional)
+            Smoothing parameter for :class:`simpledists.Hist_Distribution`
+
+        :param nbins: (optional)
+            Number of bins for histogram
+
+        :return:
+            :class:`simpledists.Hist_Distribution` describing Rsky distribution
+
+        """
         if rmax is None:
             if hasattr(self,'maxrad'):
                 rmax = self.maxrad
             else:
                 rmax = np.percentile(self.Rsky,99)
-        rs = np.arange(0,rmax,dr)
         dist = dists.Hist_Distribution(self.Rsky.value,bins=nbins,maxval=rmax,smooth=smooth)
         return dist
 
     def rsky_lhood(self,rsky,**kwargs):
+        """
+        Evaluates Rsky likelihood at provided position(s)
+
+        :param rsky:
+            position
+
+        :param **kwargs:
+            Keyword arguments passed to :func:`BinaryPopulation.rsky_distribution`
+
+        """
         dist = self.rsky_distribution(**kwargs)
         return dist(rsky)
 
@@ -992,40 +1211,58 @@ class Simulated_BinaryPopulation(BinaryPopulation):
                  age=9.6,feh=0.0, minmass=0.12, **kwargs):
         """Simulates BinaryPopulation according to provide primary mass(es), generating functions, and stellar isochrone models.
 
-        Parameters
-        ----------
-        M : float or array-like
-            Primary mass(es).
 
-        q_fn : function
+        :param M:
+            Primary mass(es).
+        :type M:
+            ``float`` or array-like
+
+        :param q_fn: (optional)
             Mass ratio generating function. Must return 'n' mass ratios, and be
             called as follows::
         
                 qs = q_fn(n)
 
-        P_fn : function
+        :type q_fn:
+            Callable function.
+
+        :param P_fn: (optional)
             Orbital period generating function.  Must return ``n`` orbital periods,
             and be called as follows::
             
                 Ps = P_fn(n)
 
-        ecc_fn : function
+        :type P_fn:
+            Callable function.
+
+        :param ecc_fn: (optional)
             Orbital eccentricity generating function.  Must return ``n`` orbital 
             eccentricities generated according to provided period(s)::
 
                 eccs = ecc_fn(n,Ps)
 
-        n : int, optional
+        :type ecc_fn:
+            Callable function.
+
+        :param n: (optional)
             Number of instances to simulate.
 
-        ichrone : ``Isochrone`` object
+        :param ichrone: (optional)
             Stellar model object from which to simulate stellar properties.
+            Default is the default Dartmouth isochrone.
+        :type ichrone:
+            :class:`isochrones.Isochrone`
 
-        age,feh : float or array-like
+        :param bands: (optional)
+            Photometric bands to simulate via ``ichrone``.
+
+        :param age,feh: (optional)
             log(age) and metallicity at which to simulate population.
+            Can be ``float`` or array-like
 
-        minmass : float
-            Minimum mass to simulate
+        :param minmass: (optional)
+            Minimum mass to simulate.  Default = 0.12.
+
         """
         self.q_fn = q_fn
         self.qmin = qmin
@@ -1041,6 +1278,11 @@ class Simulated_BinaryPopulation(BinaryPopulation):
 
     def generate(self, M, age=9.6, feh=0.0,
                  ichrone=DARTMOUTH, n=1e4, bands=None, **kwargs):
+        """
+        Function that generates population.
+
+        Called by ``__init__`` if ``M`` is passed.
+        """
         n = int(n)
         M2 = M * self.q_fn(n, qmin=max(self.qmin,self.minmass/M))
         P = self.P_fn(n)
@@ -1070,27 +1312,27 @@ class Raghavan_BinaryPopulation(Simulated_BinaryPopulation):
         eccentricity/period relation comes from data from the Multiple Star
         Catalog (Tokovinin, xxxx).
 
-        Parameters
-        ----------
-        M : float or array-like
+        :param M:
             Primary mass(es) in solar masses.
 
-        e_M : float, optional
+        :param e_M: (optional)
             1-sigma uncertainty in primary mass.
 
-        n : int
+        :param n: (optional)
             Number of simulated instances to create.
 
-        ichrone : ``Isochrone`` object
+        :param ichrone: (optional)
             Stellar models from which to generate binary companions.
+        :type ichrone:
+            :class:`isochrones.Isochrone`
 
-        age,feh : float or array-like
+        :param age,feh: (optional)
             Age and metallicity of system.
 
-        name : str
+        :param name: (optional)
             Name of population.
 
-        q_fn : function
+        :param q_fn: (optional)
             A function that returns random mass ratios.  Defaults to flat
             down to provided minimum mass.  Must be able to be called as 
             follows::
@@ -1099,6 +1341,7 @@ class Raghavan_BinaryPopulation(Simulated_BinaryPopulation):
 
             to provide ``n`` random mass ratios.
 
+            
 
         """
         if M is not None:
@@ -1126,29 +1369,30 @@ class TriplePopulation(StarPopulation):
                  **kwargs):
         """A population of triple stars.
 
-        Primary orbits (secondary + tertiary) in a long orbit;
+        (Primary) orbits (secondary + tertiary) in a long orbit;
         secondary and tertiary orbit each other with a shorter orbit.
         Single or double stars may be indicated if desired by having
         the masses of secondary or tertiary set to zero, and all magnitudes
         to ``inf``.
-        
-        Parameters
-        ----------
-        stars : DataFrame, optional
-            Full stars DataFrame.  If not passed, then primary, secondary, 
+
+        :param stars: (optional)
+            Full stars ``DataFrame``.  If not passed, then primary, secondary, 
             and tertiary must be.
 
-        primary, secondary, tertiary : ``pandas.DataFrame`` objects, optional
-            Properties of primary, secondary, and tertiary stars.
+        :param primary, secondary, tertiary: (optional)
+            Properties of primary, secondary, and tertiary stars,
+            in :class:`pandas.DataFrame` form.
             These will get merged into a new ``stars`` attribute,
             with "_A", "_B", and "_C" tags.
 
-        orbpop : ``TripleOrbitPopulation``, optional
+        :param orbpop: (optional)
             Object describing orbits of stars.  If not provided, then the period
             and eccentricity keywords must be provided, or else they will be
             randomly generated (see below).
+        :type orbpop:
+            :class:`TripleOrbitPopulation`
 
-        period_short, period_long, ecc_short, ecc_long : array-like, optional
+        :param period_short, period_long, ecc_short, ecc_long: (array-like, optional)
             Orbital periods and eccentricities of short and long-period orbits. 
             "Short" describes the close pair of the hierarchical system; "long"
             describes the separation between the two major components.  Randomly
@@ -1173,17 +1417,6 @@ class TriplePopulation(StarPopulation):
                 stars['{}_C'.format(c)] = tertiary[c]
                
 
-            ##For orbit population, stars 2 and 3 are in short orbit, and star 1 in long.
-            ## So we need to define the proper mapping from A,B,C to 1,2,3.
-            ## If C is with A, then A=2, C=3, B=1
-            ## If C is with B, then A=1, B=2, C=3
-
-            #CwA = stars['C_orbits']=='A'
-            #CwB = stars['C_orbits']=='B'
-            #stars['orbpop_number_A'] = np.ones(N)*(CwA*2 + CwB*1)
-            #stars['orbpop_number_B'] = np.ones(N)*(CwA*1 + CwB*2)
-            #stars['orbpop_number_C'] = np.ones(N)*3
-
             if orbpop is None:
                 if period_long is None or period_short is None:
                     period_1 = draw_raghavan_periods(N)
@@ -1205,7 +1438,12 @@ class TriplePopulation(StarPopulation):
         StarPopulation.__init__(self, stars=stars, orbpop=orbpop, **kwargs)
 
     def dmag(self, band):
-        """Return difference magnitude between fainter and brighter components.
+        """
+        Difference in magnitudes between fainter and brighter components in band.
+
+        :param band:
+            Photometric bandpass.
+
         """
         m1 = self.stars['{}_mag_A'.format(band)]
         m2 = addmags(self.stars['{}_mag_B'.format(band)],
@@ -1213,12 +1451,18 @@ class TriplePopulation(StarPopulation):
         return np.abs(m2-m1)
 
     def A_brighter(self, band='g'):
+        """
+        Instances where star A is brighter than (B+C)
+        """
         mA = self.stars['{}_mag_A'.format(band)]
         mBC = addmags(self.stars['{}_mag_B'.format(band)],
                      self.stars['{}_mag_C'.format(band)])
         return mA < mBC
         
     def BC_brighter(self, band='g'):
+        """
+        Instances where stars (B+C) are brighter than star A
+        """
         return ~self.A_brighter(band=band)
 
     def dRV(self, dt, band='g'):
@@ -1240,6 +1484,9 @@ class TriplePopulation(StarPopulation):
         return self.stars.query('mass_B > 0 and mass_C > 0')
         
     def binary_fraction(self,query='mass_A > 0', unc=False):
+        """
+        Binary fraction of stars following given query
+        """
         subdf = self.stars.query(query)
         nbinaries = ((subdf['mass_B'] > 0) & (subdf['mass_C']==0)).sum()
         frac = nbinaries/len(subdf)
@@ -1249,6 +1496,9 @@ class TriplePopulation(StarPopulation):
             return frac
         
     def triple_fraction(self,query='mass_A > 0', unc=False):
+        """
+        Triple fraction of stars following given query
+        """
         subdf = self.stars.query(query)
         ntriples = ((subdf['mass_B'] > 0) & (subdf['mass_C'] > 0)).sum()
         frac = ntriples/len(subdf)
@@ -1276,41 +1526,50 @@ class MultipleStarPopulation(TriplePopulation):
                  **kwargs):
         """A population of single, double, and triple stars, generated according to prescription.
 
-        Parameters
-        ----------
-        mA: float or array_like (optional)
-            Mass of primary star(s).  Default=1.  If array, then the simulation will be 
-            lots of individual systems; if float, then the simulation will be lots of 
+        :param mA: (optional)
+            Mass of primary star(s).  Default=1.  
+            If array, then the simulation will be 
+            lots of individual systems; if float, 
+            then the simulation will be lots of 
             realizations of one system.
 
-        age, feh : float or array_like (optional)
+        :param age, feh: (optional)
             Age, feh of system(s).
 
-        f_binary, f_triple : floats summing to between 0 and 1 (optional)
+        :param f_binary, f_triple: (optional)
             Fraction of systems that should be binaries or triples.
+            Should have ``f_binary + f_triple < 1``, though if 
+            ``f_binary + f_triple >= 1``, then ``f_binary`` will 
+            implicitly be treated as ``1 - f_triple``.
 
-        qmin : float (optional):
+        :param qmin: (optional)
             Minimum mass ratio.
 
-        minmass : float (optional):
+        :param minmass: (optional)
             Minimum stellar mass to simulate.
 
-        n : integer (optional):
-            Size of simulation (if m1 is a scalar)
+        :param n: (optional)
+            Size of simulation (if ``mA`` is a scalar).  If 
+            ``mA`` is array-like, then ``n = len(mA)``.
 
-        ichrone : ``Isochrone`` (optional)
+        :param ichrone: (:class:`isochrones.Isochrone`, optional)
             Stellar model isochrone to generate simulations.  Defaults
             to Dartmouth model grid.
 
-        multmass_fn, peroid_long_fn, period_short_fn, ecc_fn : callables (optional)
-            Functions to generate masses, orbital periods, and eccentricities.
-            Defaults built in.  See ``TriplePopulation``.
+        :param bands: (optional)
+            Photometry bandpasses to simulate using ``ichrone``.
 
-        orbpop : ``TripleOrbitPopulation`` (optional)
+        :param multmass_fn, period_long_fn, period_short_fn, ecc_fn: (optional)
+            Functions to generate masses, orbital periods, and eccentricities.
+            Defaults built in.  See :class`TriplePopulation`.
+
+        :param orbpop: (optional)
             Object describing orbits of stars.  If not provided, orbits will
             be randomly generated according to generating functions.
-            
-        Additional keyword arguments passed to ``TriplePopulation``.
+        :type orbpop:
+            :class:`orbits.TripleOrbitPopulation`
+
+        Additional keyword arguments passed to :class:`TriplePopulation`.
 
 
         """
@@ -1339,6 +1598,14 @@ class MultipleStarPopulation(TriplePopulation):
 
     def generate(self, mA=1, age=9.6, feh=0.0, n=1e5, ichrone=DARTMOUTH,
                  orbpop=None, bands=None, **kwargs):
+        """
+        Generates population.
+
+        Called if :class:`MultipleStarPopulation` is initialized without
+        providing ``stars``, and if ``mA`` is provided.
+
+        """
+
         n = int(n)
         #star with m1 orbits (m2+m3).  So mA (most massive)
         # will correspond to either m1 or m2.
@@ -1421,40 +1688,42 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
                  starfield=None, stars=None, **kwargs):
         """Multiple star population constrained to match provided colors
 
-        starfield is .h5 file of TRILEGAL simulation
+        Star systems are generated either according to provided
+        primary masses ``mA``, or by drawing primary masses
+        from provided TRILEGAL simulation (``starfield``).
 
-        Parameters
-        ----------
-        mags : dictionary (optional)
+        :param mags: (optional)
             Dictionary of magnitudes of total system.
 
-        colors : list (optional)
+        :param colors: (optional)
             Colors to use to constrain population generation.  
             e.g. ['JK'], or ['JK','gr'], etc.
 
-        colortol : float (optional)
+        :param colortol: (optional)
             Tolerance within which to constrain color matching.
 
-        mA, age, feh : float, array_like, or ``Distribution`` (optional)
+        :param mA, age, feh:
             Primary masses, age, and feh.  If float or array_like, 
             those values are used; if distributions, they are resampled.
             
-        n : int (optional)
+        :param n: (optional)
             Desired size of simulation (default = 2e4)
 
-        starfield : ``None``, string, or ``DataFrame``
+        :param starfield: (optional)
             If m1 is not provided in some form, then primary masses will
             get randomly selected from this starfield, assumed to be
             a TRILEGAL simulation.  If string, then should be a filename
-            of an .h5 file containing the TRILEGAL simulation, or can
-            be a DataFrame directly.
+            of an .h5 file containing the TRILEGAL simulation; can also
+            be a ``DataFrame`` directly.
 
-        stars : ``DataFrame`` of all properties
-            Can directly initialize with ``DataFrame``.  Be careful though,
-            because must pass the arguments appropriate to that simulation.
+        :param stars: (:class:`pandas.DataFrame`, optional)
+            Can directly initialize with :class:`pandas DataFrame`.  
+            Be careful though, because must pass the arguments
+            appropriate to that simulation.
 
-            
-        kwargs passed to MultipleStarPopulation
+        :param **kwargs:
+            Keyword arguments passed to :class:`MultipleStarPopulation`.
+
         """
         
         self.mags = mags
@@ -1476,6 +1745,13 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
 
     def generate(self, mA=None, age=9.6, feh=0.0, ichrone=DARTMOUTH,
                  n=2e4, **kwargs):
+        """
+        Generating function for population
+
+        Called if ``stars`` is not passed to ``__init__`` and 
+        ``mags`` is.
+
+        """
         n = int(n)
 
         stars = pd.DataFrame()
@@ -1618,11 +1894,41 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
 class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
     def __init__(self, filename=None, Teff=None, logg=None, feh=None, 
                  starmodel=None,
-                 n=2e4, stars=None, path='', ichrone=DARTMOUTH, 
+                 n=2e4, path='', ichrone=DARTMOUTH, 
                  mcmc_kws=None, **kwargs):
         """MultipleStarPopulation based on spectroscopically confirmed primary star
 
-        kwargs passed to MultipleStarPopulation
+        :param filename: (optional)
+            If passed, saved population will be restored.
+
+        :param Teff, logg, feh: (optional)
+            Spectroscopic measurements ``(value, error)``.  Must
+            be provided neither ``filename`` nor ``starmodel`` are.
+
+        :param starmodel: (optional)
+            :class:`isochrones.StarModel` object; must be provided
+            if ``filename`` is not and spectroscopic measurements
+            are not provided.
+
+        :param n:
+            Size of population to simulate.
+
+        :param path:
+            Path within ``filename`` from which to load population.
+
+        :param ichrone:
+            :class:`isochrones.Isochrone` object from which to generate 
+            population.
+
+        :param mcmc_kwargs:
+            Keyword arguments to pass to 
+            :func:`isochrones.StarModel.fit_mcmc`.
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :class:`MultipleStarPopulation`
+
+
         """
         
         self.Teff = Teff
@@ -1632,15 +1938,17 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
 
 
         if filename is not None:
-            self.load_hdf(filename, path=path)
+            self = Spectroscopic_MultipleStarPopulation.load_hdf(filename, path=path)
         elif (Teff is not None and logg is not None and feh is not None)\
                 or (starmodel is not None):
             #make and fit stellar model
             if self.starmodel is None:
-                logging.info('Fitting stellar model (Teff={}, logg={}, feh={})...'.format(Teff,
-                                                                                          logg,
-                                                                                          feh))
-                self.starmodel = StarModel(ichrone, Teff=Teff, logg=logg, feh=feh)
+                logging.info('Fitting stellar model ' +
+                             '(Teff={}, logg={}, ' +
+                             'feh={})...'.format(Teff,logg,feh))
+
+                self.starmodel = StarModel(ichrone, Teff=Teff, 
+                                           logg=logg, feh=feh)
                 if mcmc_kws is None:
                     mcmc_kws = {}
                 self.starmodel.fit_mcmc(**mcmc_kws)
@@ -1660,26 +1968,45 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
                 'feh'] + super(type(self),self)._properties
 
     def save_hdf(self, filename, path='', **kwargs):
+        """
+        Saves both population and StarModel
+        
+        """
         super(type(self),self).save_hdf(filename, path=path,
                                         **kwargs)
 
         self.starmodel.save_hdf(filename, path=path, **kwargs)
         
-        
-    def load_hdf(self, filename, path=''):
-        pop = super(type(self),self).load_hdf(filename, path=path)
+    @classmethod
+    def load_hdf(cls, filename, path=''):
+        #is there a better way to do this?
+        pop = MultipleStarPopulation.load_hdf(filename, path=path)
         pop.starmodel = StarModel.load_hdf(filename, path=path)
         return pop
 
 class BGStarPopulation(StarPopulation):
     def __init__(self,stars=None,mags=None,maxrad=1800,density=None,
-                 name='', **kwargs):
+                 **kwargs):
         """Background star population
 
-        Parameters
-        ----------
-        stars : ``pandas.DataFrame``
+        This should usually be accessed via the
+        :class:`BGStarPopulation_TRILEGAL` subclass.
+
+        :param stars: (:class:`pandas.DataFrame`, optional)
             Properties of stars.  Must have 'distance' column defined.
+
+        :param mags: (optional)
+            Magnitudes of primary (foreground) stars.
+
+        :param maxrad: (optional)
+            Maximum distance (arcseconds) of BG stars from
+            foreground primary star.
+
+        :param density: (optional)
+            Density in arcsec^{-2} for BG star population.
+
+        :param **kwargs:
+            Additional keyword arguments passed to :class:`StarPopulation`.
 
         """
         self.mags = mags
@@ -1700,13 +2027,17 @@ class BGStarPopulation(StarPopulation):
             else:
                 self._maxrad = maxrad
 
-        StarPopulation.__init__(self,stars=stars,name=name, **kwargs)
+        StarPopulation.__init__(self,stars=stars, **kwargs)
 
         if stars is not None:
             self.stars['Rsky'] = randpos_in_circle(len(stars),maxrad,return_rad=True)
         
     @property
     def Rsky(self):
+        """
+        Project on-sky separation between primary star and BG stars
+
+        """
         return np.array(self.stars['Rsky'])*u.arcsec
 
     @property
@@ -1734,6 +2065,10 @@ class BGStarPopulation(StarPopulation):
             logging.warning('maxrad changed for {} population; {} contrast curve re-applied'.format(self.name, cc.name))
         
     def dmag(self,band):
+        """
+        Magnitude difference between primary star and BG stars
+
+        """
         if self.mags is None:
             raise ValueError('dmag is not defined because primary mags are not defined for this population.')
         return self.stars['{}_mag'.format(band)] - self.mags[band]
@@ -1745,33 +2080,34 @@ class BGStarPopulation(StarPopulation):
 
 class BGStarPopulation_TRILEGAL(BGStarPopulation):
     def __init__(self,filename=None,ra=None,dec=None,mags=None,maxrad=1800,
-                 name='',**kwargs):
+                 **kwargs):
         """Creates TRILEGAL simulation for ra,dec; loads as BGStarPopulation
 
-        Parameters
-        ----------
-        filename : string
+        :param filename:
             Desired name of the TRILEGAL simulation.  Can either have '.h5' extension
             or not.  If filename (or 'filename.h5') exists locally, it will be
             loaded; otherwise, TRILEGAL will be called via the ``get_trilegal`` perl
             script, and the file will be generated.  
 
-        ra, dec : float (optional)
+        :param ra, dec: (optional)
             Sky coordinates of TRILEGAL simulation.  Must be passed if generating 
             TRILEGAL simulation and not just reading from existing file.
 
-        mags : dictionary (optional)
+        :param mags: (optional)
             Dictionary of primary star magnitudes (if this is being used to generate
             a background population behind a particular foreground star).  This 
             must be set in order to use the ``dmag`` attribute.
 
-        maxrad : float (optional)
+        :type mags: (optional)
+            ``dict``
+
+        :param maxrad: (optional)
             Maximum distance (arcsec) out to which to place simulated stars.
 
-        name : string (optional)
-            A name, if desired.
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`stars.trilegal.get_trilegal`
 
-        Additional keyword arguments passed to ``get_trilegal``
         """
 
         self.trilegal_args = {}
@@ -1813,7 +2149,7 @@ class BGStarPopulation_TRILEGAL(BGStarPopulation):
             stars['distance'] = dfromdm(stars['distmod']) 
 
             BGStarPopulation.__init__(self,stars,mags=mags,maxrad=maxrad,
-                                      density=density,name=name)
+                                      density=density,**kwargs)
 
     @property
     def _properties(self):

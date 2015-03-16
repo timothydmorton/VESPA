@@ -8,9 +8,6 @@ import matplotlib.pyplot as plt
 
 import pandas as pd
 
-from plotutils import setfig
-from hashutils import hashcombine, hashdf
-
 from astropy import units as u
 from astropy.units.quantity import Quantity
 from astropy import constants as const
@@ -20,6 +17,9 @@ DAY = 86400
 G = const.G.cgs.value
 
 from .utils import semimajor,random_spherepos,orbitproject,orbit_posvel
+
+from ..plotutils import setfig
+from ..hashutils import hashcombine, hashdf
 
 
 class TripleOrbitPopulation(object):

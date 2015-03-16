@@ -9,8 +9,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
-from plotutils import setfig, plot2dhist
-from hashutils import hashcombine
 
 from scipy.stats import gaussian_kde
 from sklearn.neighbors import KernelDensity
@@ -19,6 +17,9 @@ from sklearn.grid_search import GridSearchCV
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .fitebs import fitebs
+
+from .plotutils import setfig, plot2dhist
+from .hashutils import hashcombine
 
 from .stars.populations import StarPopulation, MultipleStarPopulation
 from .stars.populations import ColormatchMultipleStarPopulation
@@ -34,7 +35,7 @@ from .stars.constraints import UpperLimit
 
 import simpledist.distributions as dists
 
-from orbitutils.populations import OrbitPopulation_FromDF, TripleOrbitPopulation_FromDF
+from .orbits.populations import OrbitPopulation, TripleOrbitPopulation
 
 SHORT_MODELNAMES = {'Planets':'pl',
                     'EBs':'eb',
@@ -431,13 +432,13 @@ class EclipsePopulation(StarPopulation):
                 'is_specific', 'cadence'] + \
             super(EclipsePopulation,self)._properties
 
-    def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
-        StarPopulation.load_hdf(self, filename, path=path)
-        try:
-            self._make_kde()
-        except NoTrapfitError:
-            logging.warning('Trapezoid fit not done.')
-        return self
+    #def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
+    #    StarPopulation.load_hdf(self, filename, path=path)
+    #    try:
+    #        self._make_kde()
+    #    except NoTrapfitError:
+    #        logging.warning('Trapezoid fit not done.')
+    #    return self
 
 class PlanetPopulation(EclipsePopulation):
     def __init__(self, filename=None, period=None, rprs=None,
@@ -742,7 +743,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
         stars = stars.iloc[:n]
         df_orbpop = df_orbpop.iloc[:n]
-        orbpop = OrbitPopulation_FromDF(df_orbpop)            
+        orbpop = OrbitPopulation.from_df(df_orbpop)            
 
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
@@ -919,7 +920,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         stars = stars.iloc[:n]
         df_long = df_long.iloc[:n]
         df_short = df_short.iloc[:n]
-        orbpop = TripleOrbitPopulation_FromDF(df_long, df_short)            
+        orbpop = TripleOrbitPopulation.from_df(df_long, df_short)            
 
         stars = stars.reset_index()
         stars.drop('index', axis=1, inplace=True)
@@ -1102,8 +1103,6 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
             n_adapt = int(n_adapt)
             
         stars = stars.iloc[:n]
-        #df_orbpop = df_orbpop.iloc[:n]
-        #orbpop = OrbitPopulation_FromDF(df_orbpop)            
 
         if 'level_0' in stars:
             stars.drop('level_0', axis=1, inplace=True) #dunno where this came from
@@ -1183,7 +1182,7 @@ class PopulationSet(object):
                           do_only=do_only)
             
         elif type(poplist)==type(''):
-            self.load_hdf(poplist)
+            return PopulationSet.load_hdf(poplist)
         else:
             self.poplist = poplist
 
@@ -1300,7 +1299,8 @@ class PopulationSet(object):
             name = pop.modelshort
             pop.save_hdf(filename, path='{}/{}'.format(path,name), append=True)
 
-    def load_hdf(self, filename, path=''):
+    @classmethod
+    def load_hdf(cls, filename, path=''):
         store = pd.HDFStore(filename)
         models = []
         types = []
@@ -1314,8 +1314,9 @@ class PopulationSet(object):
             poplist.append(t().load_hdf(filename, path='{}/{}'.format(path,m)))
         store.close()
 
-        PopulationSet.__init__(self, poplist) #how to deal with saved constraints?
-        return self
+        return cls(poplist) #how to deal with saved constraints?
+        #PopulationSet.__init__(self, poplist) #how to deal with saved constraints?
+        #return self
 
     def add_population(self,pop):
         if pop.model in self.modelnames:
