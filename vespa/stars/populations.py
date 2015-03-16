@@ -1243,18 +1243,21 @@ class Simulated_BinaryPopulation(BinaryPopulation):
         :param n: (optional)
             Number of instances to simulate.
 
-        :param ichrone:
+        :param ichrone: (optional)
             Stellar model object from which to simulate stellar properties.
             Default is the default Dartmouth isochrone.
         :type ichrone:
             :class:`isochrones.Isochrone`
 
-        :param age,feh:
+        :param bands: (optional)
+            Photometric bands to simulate via ``ichrone``.
+
+        :param age,feh: (optional)
             log(age) and metallicity at which to simulate population.
             Can be ``float`` or array-like
 
-        :param minmass: 
-            Minimum mass to simulate.
+        :param minmass: (optional)
+            Minimum mass to simulate.  Default = 0.12.
 
         """
         self.q_fn = q_fn
@@ -1271,6 +1274,11 @@ class Simulated_BinaryPopulation(BinaryPopulation):
 
     def generate(self, M, age=9.6, feh=0.0,
                  ichrone=DARTMOUTH, n=1e4, bands=None, **kwargs):
+        """
+        Function that generates population.
+
+        Called by ``__init__`` if ``M`` is passed.
+        """
         n = int(n)
         M2 = M * self.q_fn(n, qmin=max(self.qmin,self.minmass/M))
         P = self.P_fn(n)
@@ -1300,27 +1308,27 @@ class Raghavan_BinaryPopulation(Simulated_BinaryPopulation):
         eccentricity/period relation comes from data from the Multiple Star
         Catalog (Tokovinin, xxxx).
 
-        Parameters
-        ----------
-        M : float or array-like
+        :param M:
             Primary mass(es) in solar masses.
 
-        e_M : float, optional
+        :param e_M: (optional)
             1-sigma uncertainty in primary mass.
 
-        n : int
+        :param n: (optional)
             Number of simulated instances to create.
 
-        ichrone : ``Isochrone`` object
+        :param ichrone: (optional)
             Stellar models from which to generate binary companions.
+        :type ichrone:
+            :class:`isochrones.Isochrone`
 
-        age,feh : float or array-like
+        :param age,feh: (optional)
             Age and metallicity of system.
 
-        name : str
+        :param name: (optional)
             Name of population.
 
-        q_fn : function
+        :param q_fn: (optional)
             A function that returns random mass ratios.  Defaults to flat
             down to provided minimum mass.  Must be able to be called as 
             follows::
@@ -1329,6 +1337,7 @@ class Raghavan_BinaryPopulation(Simulated_BinaryPopulation):
 
             to provide ``n`` random mass ratios.
 
+            
 
         """
         if M is not None:
@@ -1356,29 +1365,30 @@ class TriplePopulation(StarPopulation):
                  **kwargs):
         """A population of triple stars.
 
-        Primary orbits (secondary + tertiary) in a long orbit;
+        (Primary) orbits (secondary + tertiary) in a long orbit;
         secondary and tertiary orbit each other with a shorter orbit.
         Single or double stars may be indicated if desired by having
         the masses of secondary or tertiary set to zero, and all magnitudes
         to ``inf``.
-        
-        Parameters
-        ----------
-        stars : DataFrame, optional
-            Full stars DataFrame.  If not passed, then primary, secondary, 
+
+        :param stars: (optional)
+            Full stars ``DataFrame``.  If not passed, then primary, secondary, 
             and tertiary must be.
 
-        primary, secondary, tertiary : ``pandas.DataFrame`` objects, optional
-            Properties of primary, secondary, and tertiary stars.
+        :param primary, secondary, tertiary: (optional)
+            Properties of primary, secondary, and tertiary stars,
+            in :class:`pandas.DataFrame` form.
             These will get merged into a new ``stars`` attribute,
             with "_A", "_B", and "_C" tags.
 
-        orbpop : ``TripleOrbitPopulation``, optional
+        :param orbpop: (optional)
             Object describing orbits of stars.  If not provided, then the period
             and eccentricity keywords must be provided, or else they will be
             randomly generated (see below).
+        :type orbpop:
+            :class:`TripleOrbitPopulation`
 
-        period_short, period_long, ecc_short, ecc_long : array-like, optional
+        :param period_short, period_long, ecc_short, ecc_long: (array-like, optional)
             Orbital periods and eccentricities of short and long-period orbits. 
             "Short" describes the close pair of the hierarchical system; "long"
             describes the separation between the two major components.  Randomly
@@ -1403,17 +1413,6 @@ class TriplePopulation(StarPopulation):
                 stars['{}_C'.format(c)] = tertiary[c]
                
 
-            ##For orbit population, stars 2 and 3 are in short orbit, and star 1 in long.
-            ## So we need to define the proper mapping from A,B,C to 1,2,3.
-            ## If C is with A, then A=2, C=3, B=1
-            ## If C is with B, then A=1, B=2, C=3
-
-            #CwA = stars['C_orbits']=='A'
-            #CwB = stars['C_orbits']=='B'
-            #stars['orbpop_number_A'] = np.ones(N)*(CwA*2 + CwB*1)
-            #stars['orbpop_number_B'] = np.ones(N)*(CwA*1 + CwB*2)
-            #stars['orbpop_number_C'] = np.ones(N)*3
-
             if orbpop is None:
                 if period_long is None or period_short is None:
                     period_1 = draw_raghavan_periods(N)
@@ -1435,7 +1434,12 @@ class TriplePopulation(StarPopulation):
         StarPopulation.__init__(self, stars=stars, orbpop=orbpop, **kwargs)
 
     def dmag(self, band):
-        """Return difference magnitude between fainter and brighter components.
+        """
+        Difference in magnitudes between fainter and brighter components in band.
+
+        :param band:
+            Photometric bandpass.
+
         """
         m1 = self.stars['{}_mag_A'.format(band)]
         m2 = addmags(self.stars['{}_mag_B'.format(band)],
@@ -1443,12 +1447,18 @@ class TriplePopulation(StarPopulation):
         return np.abs(m2-m1)
 
     def A_brighter(self, band='g'):
+        """
+        Instances where star A is brighter than (B+C)
+        """
         mA = self.stars['{}_mag_A'.format(band)]
         mBC = addmags(self.stars['{}_mag_B'.format(band)],
                      self.stars['{}_mag_C'.format(band)])
         return mA < mBC
         
     def BC_brighter(self, band='g'):
+        """
+        Instances where stars (B+C) are brighter than star A
+        """
         return ~self.A_brighter(band=band)
 
     def dRV(self, dt, band='g'):
@@ -1470,6 +1480,9 @@ class TriplePopulation(StarPopulation):
         return self.stars.query('mass_B > 0 and mass_C > 0')
         
     def binary_fraction(self,query='mass_A > 0', unc=False):
+        """
+        Binary fraction of stars following given query
+        """
         subdf = self.stars.query(query)
         nbinaries = ((subdf['mass_B'] > 0) & (subdf['mass_C']==0)).sum()
         frac = nbinaries/len(subdf)
@@ -1479,6 +1492,9 @@ class TriplePopulation(StarPopulation):
             return frac
         
     def triple_fraction(self,query='mass_A > 0', unc=False):
+        """
+        Triple fraction of stars following given query
+        """
         subdf = self.stars.query(query)
         ntriples = ((subdf['mass_B'] > 0) & (subdf['mass_C'] > 0)).sum()
         frac = ntriples/len(subdf)
@@ -1506,41 +1522,50 @@ class MultipleStarPopulation(TriplePopulation):
                  **kwargs):
         """A population of single, double, and triple stars, generated according to prescription.
 
-        Parameters
-        ----------
-        mA: float or array_like (optional)
-            Mass of primary star(s).  Default=1.  If array, then the simulation will be 
-            lots of individual systems; if float, then the simulation will be lots of 
+        :param mA: (optional)
+            Mass of primary star(s).  Default=1.  
+            If array, then the simulation will be 
+            lots of individual systems; if float, 
+            then the simulation will be lots of 
             realizations of one system.
 
-        age, feh : float or array_like (optional)
+        :param age, feh: (optional)
             Age, feh of system(s).
 
-        f_binary, f_triple : floats summing to between 0 and 1 (optional)
+        :param f_binary, f_triple: (optional)
             Fraction of systems that should be binaries or triples.
+            Should have ``f_binary + f_triple < 1``, though if 
+            ``f_binary + f_triple >= 1``, then ``f_binary`` will 
+            implicitly be treated as ``1 - f_triple``.
 
-        qmin : float (optional):
+        :param qmin: (optional)
             Minimum mass ratio.
 
-        minmass : float (optional):
+        :param minmass: (optional)
             Minimum stellar mass to simulate.
 
-        n : integer (optional):
-            Size of simulation (if m1 is a scalar)
+        :param n: (optional)
+            Size of simulation (if ``mA`` is a scalar).  If 
+            ``mA`` is array-like, then ``n = len(mA)``.
 
-        ichrone : ``Isochrone`` (optional)
+        :param ichrone: (:class:`isochrones.Isochrone`, optional)
             Stellar model isochrone to generate simulations.  Defaults
             to Dartmouth model grid.
 
-        multmass_fn, peroid_long_fn, period_short_fn, ecc_fn : callables (optional)
-            Functions to generate masses, orbital periods, and eccentricities.
-            Defaults built in.  See ``TriplePopulation``.
+        :param bands: (optional)
+            Photometry bandpasses to simulate using ``ichrone``.
 
-        orbpop : ``TripleOrbitPopulation`` (optional)
+        :param multmass_fn, period_long_fn, period_short_fn, ecc_fn: (optional)
+            Functions to generate masses, orbital periods, and eccentricities.
+            Defaults built in.  See :class`TriplePopulation`.
+
+        :param orbpop: (optional)
             Object describing orbits of stars.  If not provided, orbits will
             be randomly generated according to generating functions.
-            
-        Additional keyword arguments passed to ``TriplePopulation``.
+        :type orbpop:
+            :class:`orbits.TripleOrbitPopulation`
+
+        Additional keyword arguments passed to :class:`TriplePopulation`.
 
 
         """
@@ -1569,6 +1594,14 @@ class MultipleStarPopulation(TriplePopulation):
 
     def generate(self, mA=1, age=9.6, feh=0.0, n=1e5, ichrone=DARTMOUTH,
                  orbpop=None, bands=None, **kwargs):
+        """
+        Generates population.
+
+        Called if :class:`MultipleStarPopulation` is initialized without
+        providing ``stars``, and if ``mA`` is provided.
+
+        """
+
         n = int(n)
         #star with m1 orbits (m2+m3).  So mA (most massive)
         # will correspond to either m1 or m2.
