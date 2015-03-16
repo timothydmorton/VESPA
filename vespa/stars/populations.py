@@ -625,6 +625,10 @@ class StarPopulation(object):
             Constraint to apply.
         :type constraint:
             :class:`Constraint`
+
+        :param selectfrac_skip: (optional)
+            If ``True``, then this constraint will not be considered
+            towards diminishing the 
         """
         #grab properties
         constraints = self.constraints
