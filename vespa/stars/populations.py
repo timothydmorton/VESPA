@@ -907,10 +907,39 @@ class StarPopulation(object):
 
     def save_hdf(self,filename,path='',properties=None,
                  overwrite=False, append=False):
-        """Saves to .h5 file.
+        """Saves to HDF5 file.
 
-        Subclasses should define a save_hdf that passes
-        the appropriate properties to reconstruct the object.
+        Subclasses should be sure to define 
+        ``_properties`` attribute to ensure that all
+        correct attributes get saved.
+
+        :param filename:
+            Name of HDF file.
+
+        :param path: (optional)
+            Path within HDF file to save object.
+
+        :param properties: (optional)
+            Names of any properties (in addition to 
+            those defined in ``_properties`` attribute)
+            that you wish to save.  (This is an old
+            keyword, and should probably be removed.
+            Feel free to ignore it.)
+
+        :param overwrite: (optional)
+            Whether to overwrite file if it already
+            exists.  If ``True``, then any existing file
+            will be deleted before object is saved.  Use
+            ``append`` if you don't wish this to happen.
+
+        :param append: (optional)
+            If ``True``, then if the file exists, 
+            then only the particular path in the file
+            will get written/overwritten.  If ``False`` and both
+            file and path exist, then an ``IOError`` will
+            be raised.  If ``False`` and file exists but not
+            path, then no error will be raised.
+
         """
         if os.path.exists(filename):
             store = pd.HDFStore(filename)
@@ -948,7 +977,9 @@ class StarPopulation(object):
     def load_hdf(cls, filename, path=''):
         """Loads data from .h5 file
 
-        Correct properties should be restored to object.
+        Correct properties should be restored to object, and object
+        should be original type that was saved.
+        
         """
         stars = pd.read_hdf(filename,path+'/stars', autoclose=True)
         constraint_df = pd.read_hdf(filename,path+'/constraints', autoclose=True)
