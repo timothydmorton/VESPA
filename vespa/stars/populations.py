@@ -1719,6 +1719,7 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
 
         :param **kwargs:
             Keyword arguments passed to :class:`MultipleStarPopulation`.
+
         """
         
         self.mags = mags
@@ -1740,6 +1741,13 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
 
     def generate(self, mA=None, age=9.6, feh=0.0, ichrone=DARTMOUTH,
                  n=2e4, **kwargs):
+        """
+        Generating function for population
+
+        Called if ``stars`` is not passed to ``__init__`` and 
+        ``mags`` is.
+
+        """
         n = int(n)
 
         stars = pd.DataFrame()
@@ -1882,11 +1890,41 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
 class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
     def __init__(self, filename=None, Teff=None, logg=None, feh=None, 
                  starmodel=None,
-                 n=2e4, stars=None, path='', ichrone=DARTMOUTH, 
+                 n=2e4, path='', ichrone=DARTMOUTH, 
                  mcmc_kws=None, **kwargs):
         """MultipleStarPopulation based on spectroscopically confirmed primary star
 
-        kwargs passed to MultipleStarPopulation
+        :param filename: (optional)
+            If passed, saved population will be restored.
+
+        :param Teff, logg, feh: (optional)
+            Spectroscopic measurements ``(value, error)``.  Must
+            be provided neither ``filename`` nor ``starmodel`` are.
+
+        :param starmodel: (optional)
+            :class:`isochrones.StarModel` object; must be provided
+            if ``filename`` is not and spectroscopic measurements
+            are not provided.
+
+        :param n:
+            Size of population to simulate.
+
+        :param path:
+            Path within ``filename`` from which to load population.
+
+        :param ichrone:
+            :class:`isochrones.Isochrone` object from which to generate 
+            population.
+
+        :param mcmc_kwargs:
+            Keyword arguments to pass to 
+            :func:`isochrones.StarModel.fit_mcmc`.
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :class:`MultipleStarPopulation`
+
+
         """
         
         self.Teff = Teff
@@ -1896,15 +1934,17 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
 
 
         if filename is not None:
-            self.load_hdf(filename, path=path)
+            self = Spectroscopic_MultipleStarPopulation.load_hdf(filename, path=path)
         elif (Teff is not None and logg is not None and feh is not None)\
                 or (starmodel is not None):
             #make and fit stellar model
             if self.starmodel is None:
-                logging.info('Fitting stellar model (Teff={}, logg={}, feh={})...'.format(Teff,
-                                                                                          logg,
-                                                                                          feh))
-                self.starmodel = StarModel(ichrone, Teff=Teff, logg=logg, feh=feh)
+                logging.info('Fitting stellar model ' +
+                             '(Teff={}, logg={}, ' +
+                             'feh={})...'.format(Teff,logg,feh))
+
+                self.starmodel = StarModel(ichrone, Teff=Teff, 
+                                           logg=logg, feh=feh)
                 if mcmc_kws is None:
                     mcmc_kws = {}
                 self.starmodel.fit_mcmc(**mcmc_kws)
@@ -1924,26 +1964,45 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
                 'feh'] + super(type(self),self)._properties
 
     def save_hdf(self, filename, path='', **kwargs):
+        """
+        Saves both population and StarModel
+        
+        """
         super(type(self),self).save_hdf(filename, path=path,
                                         **kwargs)
 
         self.starmodel.save_hdf(filename, path=path, **kwargs)
         
-        
-    def load_hdf(self, filename, path=''):
-        pop = super(type(self),self).load_hdf(filename, path=path)
+    @classmethod
+    def load_hdf(cls, filename, path=''):
+        #is there a better way to do this?
+        pop = MultipleStarPopulation.load_hdf(filename, path=path)
         pop.starmodel = StarModel.load_hdf(filename, path=path)
         return pop
 
 class BGStarPopulation(StarPopulation):
     def __init__(self,stars=None,mags=None,maxrad=1800,density=None,
-                 name='', **kwargs):
+                 **kwargs):
         """Background star population
 
-        Parameters
-        ----------
-        stars : ``pandas.DataFrame``
+        This should usually be accessed via the
+        :class:`BGStarPopulation_TRILEGAL` subclass.
+
+        :param stars: (:class:`pandas.DataFrame`, optional)
             Properties of stars.  Must have 'distance' column defined.
+
+        :param mags: (optional)
+            Magnitudes of primary (foreground) stars.
+
+        :param maxrad: (optional)
+            Maximum distance (arcseconds) of BG stars from
+            foreground primary star.
+
+        :param density: (optional)
+            Density in arcsec^{-2} for BG star population.
+
+        :param **kwargs:
+            Additional keyword arguments passed to :class:`StarPopulation`.
 
         """
         self.mags = mags
@@ -1964,13 +2023,17 @@ class BGStarPopulation(StarPopulation):
             else:
                 self._maxrad = maxrad
 
-        StarPopulation.__init__(self,stars=stars,name=name, **kwargs)
+        StarPopulation.__init__(self,stars=stars, **kwargs)
 
         if stars is not None:
             self.stars['Rsky'] = randpos_in_circle(len(stars),maxrad,return_rad=True)
         
     @property
     def Rsky(self):
+        """
+        Project on-sky separation between primary star and BG stars
+
+        """
         return np.array(self.stars['Rsky'])*u.arcsec
 
     @property
@@ -1998,6 +2061,10 @@ class BGStarPopulation(StarPopulation):
             logging.warning('maxrad changed for {} population; {} contrast curve re-applied'.format(self.name, cc.name))
         
     def dmag(self,band):
+        """
+        Magnitude difference between primary star and BG stars
+
+        """
         if self.mags is None:
             raise ValueError('dmag is not defined because primary mags are not defined for this population.')
         return self.stars['{}_mag'.format(band)] - self.mags[band]
@@ -2009,33 +2076,34 @@ class BGStarPopulation(StarPopulation):
 
 class BGStarPopulation_TRILEGAL(BGStarPopulation):
     def __init__(self,filename=None,ra=None,dec=None,mags=None,maxrad=1800,
-                 name='',**kwargs):
+                 **kwargs):
         """Creates TRILEGAL simulation for ra,dec; loads as BGStarPopulation
 
-        Parameters
-        ----------
-        filename : string
+        :param filename:
             Desired name of the TRILEGAL simulation.  Can either have '.h5' extension
             or not.  If filename (or 'filename.h5') exists locally, it will be
             loaded; otherwise, TRILEGAL will be called via the ``get_trilegal`` perl
             script, and the file will be generated.  
 
-        ra, dec : float (optional)
+        :param ra, dec: (optional)
             Sky coordinates of TRILEGAL simulation.  Must be passed if generating 
             TRILEGAL simulation and not just reading from existing file.
 
-        mags : dictionary (optional)
+        :param mags: (optional)
             Dictionary of primary star magnitudes (if this is being used to generate
             a background population behind a particular foreground star).  This 
             must be set in order to use the ``dmag`` attribute.
 
-        maxrad : float (optional)
+        :type mags: (optional)
+            ``dict``
+
+        :param maxrad: (optional)
             Maximum distance (arcsec) out to which to place simulated stars.
 
-        name : string (optional)
-            A name, if desired.
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`stars.trilegal.get_trilegal`
 
-        Additional keyword arguments passed to ``get_trilegal``
         """
 
         self.trilegal_args = {}
@@ -2077,7 +2145,7 @@ class BGStarPopulation_TRILEGAL(BGStarPopulation):
             stars['distance'] = dfromdm(stars['distmod']) 
 
             BGStarPopulation.__init__(self,stars,mags=mags,maxrad=maxrad,
-                                      density=density,name=name)
+                                      density=density,**kwargs)
 
     @property
     def _properties(self):
