@@ -66,17 +66,43 @@ class EclipsePopulation(StarPopulation):
                  **kwargs):
         """Base class for populations of eclipsing things.
 
-        stars DataFrame must have the following columns:
-        'M_1', 'M_2', 'R_1', 'R_2', 'u1_1', 'u1_2', 'u2_1', 'u2_2', and 
-        either the P keyword argument provided or a `period column, as 
-        well as the eclipse parameters: 'inc', 'ecc', 'w', 'dpri', 
-        'dsec', 'b_sec', 'b_pri', 'fluxfrac_1', 'fluxfrac_2'
+        This is the base class for populations of various scenarios
+        that could explain a tranist signal; that is, 
+        astrophysical false positives or transiting planets.
 
-        For some functionality, also needs to have trapezoid fit 
-        parameters in DataFrame
-        
+        Once set up properly, :func:`EclipsePopulation.fit_trapezoids`
+        can be used to fit the trapezoidal shape parameters, after
+        which the likelihood of a transit signal under the model
+        may be calculated.
+
+        Subclasses :class:`stars.StarPopulation`, which enables
+        all the functionality of observational constraints.
+
         if prob is not passed; should be able to calculated from given
         star/orbit properties.
+
+        :param stars:
+            ``DataFrame`` with star properties.  Must contain
+            ``M_1, M_2, R_1, R_2, u1_1, u1_2, u2_1, u2_2``.
+            Also, either the ``period`` keyword argument must be provided
+            or a ``period`` column should be in ``stars``.
+            ``stars`` must also have the eclipse parameters:
+            `'inc, ecc, w, dpri, dsec, b_sec, b_pri, fluxfrac_1, fluxfrac_2``.
+            
+        :param period: (optional)
+            Orbital period.  If not provided, then ``stars`` must
+            have period column.
+
+        :param model: (optional)
+            Name of the model.
+
+        :param priorfactors: (optional)
+            Multiplicative factors that quantify the model prior
+            for this particular model; e.g. ``f_binary``, etc.
+
+        :param lhoodcachefile: (optional)
+            File where likelihood calculation cache is written.
+
         """
         
         self.period = period
