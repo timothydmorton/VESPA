@@ -45,78 +45,78 @@ except ImportError:
 BANDS = ['g','r','i','z','J','H','K','Kepler']
 
 class StarPopulation(object):
+    """A population of stars.  
+
+    This object contains information of a simulated population
+    of stars.  It has a flexible purpose-- it could represent
+    many random realizations of a single system, or it could 
+    also represent many different random systems.  This is the general 
+    base class; subclasses include, e.g., :class:`MultipleStarPopulation`
+    and :class:`BGStarPopulation_TRILEGAL`.  
+
+    The :attr:`StarPopulation.stars` attribute is a 
+    :class:`pandas.DataFrame` containing
+    all the information about all the random realizations, such
+    as the physical star properties (mass, radius, etc.) and
+    observational characteristics (magnitudes in different bands).
+
+    The :attr:`StarPopulation.orbpop` attribute stores information
+    about the orbits of the random stars, if such a thing is 
+    relevant for the population in question (such as, e.g., a
+    :class:`MultipleStarPopulation`).  If orbits are relevant,
+    then attributes such as :attr:`StarPopulation.Rsky`, 
+    :attr:`StarPopulation.RV`, and :func:`StarPopulation.dmag`
+    are defined as well.
+
+    Importantly, you can apply constraints to a :class:`StarPopulation`,
+    implemented via the :class:`Constraint` class.  You can 
+    constrain properties of the stars to be within a given range,
+    you can apply a :class:`ContrastCurveConstraint`, simulating
+    the exclusion curve of an imaging observation, and many others.
+
+    You can save and re-load :class:`StarPopulation` objects
+    using :func:`StarPopulation.save_hdf` and 
+    :func:`StarPopulation.load_hdf`.  **Support for saving 
+    constraints is planned and partially implemented but untested.**
+
+    :param stars: (:class:`pandas.DataFrame`, optional)
+        Table containing properties of stars.
+        Magnitude properties end with "_mag".  Default
+        is that these magnitudes are absolute, and get 
+        converted to apparent magnitudes based on distance,
+        which is either provided or randomly assigned.
+
+    :param distance: 
+        If ``None``, then distances of stars are assigned
+        randomly out to max_distance, or by comparing to mags.  
+        If float, then assumed to be in parsec.  Or, if stars already 
+        has a distance column, this is ignored.
+    :type distance:
+        :class:`astropy.units.Quantity`, float, or array-like, optional
+
+    :param max_distance: ``Quantity`` or float, optional
+        Max distance out to which distances will be simulated,
+        according to random placements in volume ($p(d)\simd^2$).  
+        Ignored if stars already has a distance column.
+    :type max_distance:
+        :class:`astropy.units.Quantity` or float, optional
+
+    :param convert_absmags: (``bool``, optional)
+        If ``True``, then magnitudes in ``stars`` will be converted
+        to apparent magnitudes based on distance.  If ``False,``
+        then magnitudes will be kept as-is.  Ignored if stars already
+        has a distance column.
+
+    :param orbpop:
+        Describes the orbits of the stars.
+    :type orbpop:
+        :class:`orbits.OrbitPopulation` 
+
+
+    """
     def __init__(self,stars=None,distance=None,
                  max_distance=1000*u.pc,convert_absmags=True,
                  name='', orbpop=None, mags=None):
-        """A population of stars.  
-
-        This object contains information of a simulated population
-        of stars.  It has a flexible purpose-- it could represent
-        many random realizations of a single system, or it could 
-        also represent many different random systems.  This is the general 
-        base class; subclasses include, e.g., :class:`MultipleStarPopulation`
-        and :class:`BGStarPopulation_TRILEGAL`.  
-
-        The :attr:`StarPopulation.stars` attribute is a 
-        :class:`pandas.DataFrame` containing
-        all the information about all the random realizations, such
-        as the physical star properties (mass, radius, etc.) and
-        observational characteristics (magnitudes in different bands).
-        
-        The :attr:`StarPopulation.orbpop` attribute stores information
-        about the orbits of the random stars, if such a thing is 
-        relevant for the population in question (such as, e.g., a
-        :class:`MultipleStarPopulation`).  If orbits are relevant,
-        then attributes such as :attr:`StarPopulation.Rsky`, 
-        :attr:`StarPopulation.RV`, and :func:`StarPopulation.dmag`
-        are defined as well.
-
-        Importantly, you can apply constraints to a :class:`StarPopulation`,
-        implemented via the :class:`Constraint` class.  You can 
-        constrain properties of the stars to be within a given range,
-        you can apply a :class:`ContrastCurveConstraint`, simulating
-        the exclusion curve of an imaging observation, and many others.
-
-        You can save and re-load :class:`StarPopulation` objects
-        using :func:`StarPopulation.save_hdf` and 
-        :func:`StarPopulation.load_hdf`.  **Support for saving 
-        constraints is planned and partially implemented but untested.**
-
-        :param stars: (:class:`pandas.DataFrame`, optional)
-            Table containing properties of stars.
-            Magnitude properties end with "_mag".  Default
-            is that these magnitudes are absolute, and get 
-            converted to apparent magnitudes based on distance,
-            which is either provided or randomly assigned.
-
-        :param distance: 
-            If ``None``, then distances of stars are assigned
-            randomly out to max_distance, or by comparing to mags.  
-            If float, then assumed to be in parsec.  Or, if stars already 
-            has a distance column, this is ignored.
-        :type distance:
-            :class:`astropy.units.Quantity`, float, or array-like, optional
-
-        :param max_distance: ``Quantity`` or float, optional
-            Max distance out to which distances will be simulated,
-            according to random placements in volume ($p(d)\simd^2$).  
-            Ignored if stars already has a distance column.
-        :type max_distance:
-            :class:`astropy.units.Quantity` or float, optional
-
-        :param convert_absmags: (``bool``, optional)
-            If ``True``, then magnitudes in ``stars`` will be converted
-            to apparent magnitudes based on distance.  If ``False,``
-            then magnitudes will be kept as-is.  Ignored if stars already
-            has a distance column.
-
-        :param orbpop:
-            Describes the orbits of the stars.
-        :type orbpop:
-            :class:`orbits.OrbitPopulation` 
-
-
-        """
         self.orbpop = orbpop
         self.name = name
 
@@ -1037,46 +1037,46 @@ class StarPopulation(object):
         return new
 
 class BinaryPopulation(StarPopulation):
+    """A population of binary stars.
+
+    If ``OrbitPopulation`` provided, that will describe the orbits;
+    if not, then orbit population will be generated.  Single stars may
+    be indicated if desired by having their mass set to zero and all
+    magnitudes set to ``inf``.
+
+    This will usually be used via, e.g., the 
+    :class:`Raghavan_BinaryPopulation` subclass, rather than 
+    instantiated directly.
+
+    Parameters
+    ----------
+    :param primary,secondary: (:class:`pandas.DataFrame`)
+        Properties of primary and secondary stars, respectively.
+        These get merged into new ``stars`` attribute, with "_A"
+        and "_B" tags.
+
+    :param orbpop: (:class:`OrbitPopulation`, optional)
+        Object describing orbits of stars.  If not provided, then ``period``
+        and ``ecc`` keywords must be provided, or else they will be
+        randomly generated (see below).
+
+    :param period,ecc: 
+        Periods and eccentricities of orbits.  If ``orbpop``
+        not passed, and these are not provided, then periods and eccs 
+        will be randomly generated according
+        to the empirical distributions of the Raghavan (2010) and
+        Multiple Star Catalog distributions using 
+        :func:`utils.draw_raghavan_periods` and
+        :func:`utils.draw_eccs`.
+
+    """
+
     def __init__(self, stars=None,
                  primary=None,secondary=None,
                  orbpop=None, period=None,
                  ecc=None,
                  is_single=None,
                  **kwargs):
-
-        """A population of binary stars.
-
-        If ``OrbitPopulation`` provided, that will describe the orbits;
-        if not, then orbit population will be generated.  Single stars may
-        be indicated if desired by having their mass set to zero and all
-        magnitudes set to ``inf``.
-
-        This will usually be used via, e.g., the 
-        :class:`Raghavan_BinaryPopulation` subclass, rather than 
-        instantiated directly.
-        
-        Parameters
-        ----------
-        :param primary,secondary: (:class:`pandas.DataFrame`)
-            Properties of primary and secondary stars, respectively.
-            These get merged into new ``stars`` attribute, with "_A"
-            and "_B" tags.
-
-        :param orbpop: (:class:`OrbitPopulation`, optional)
-            Object describing orbits of stars.  If not provided, then ``period``
-            and ``ecc`` keywords must be provided, or else they will be
-            randomly generated (see below).
-
-        :param period,ecc: 
-            Periods and eccentricities of orbits.  If ``orbpop``
-            not passed, and these are not provided, then periods and eccs 
-            will be randomly generated according
-            to the empirical distributions of the Raghavan (2010) and
-            Multiple Star Catalog distributions using 
-            :func:`utils.draw_raghavan_periods` and
-            :func:`utils.draw_eccs`.
-
-        """
 
 
         if stars is None and primary is not None:
@@ -1202,64 +1202,65 @@ class BinaryPopulation(StarPopulation):
 
         
 class Simulated_BinaryPopulation(BinaryPopulation):
+    """Simulates BinaryPopulation according to provide primary mass(es), generating functions, and stellar isochrone models.
+
+
+    :param M:
+        Primary mass(es).
+    :type M:
+        ``float`` or array-like
+
+    :param q_fn: (optional)
+        Mass ratio generating function. Must return 'n' mass ratios, and be
+        called as follows::
+
+            qs = q_fn(n)
+
+    :type q_fn:
+        Callable function.
+
+    :param P_fn: (optional)
+        Orbital period generating function.  Must return ``n`` orbital periods,
+        and be called as follows::
+
+            Ps = P_fn(n)
+
+    :type P_fn:
+        Callable function.
+
+    :param ecc_fn: (optional)
+        Orbital eccentricity generating function.  Must return ``n`` orbital 
+        eccentricities generated according to provided period(s)::
+
+            eccs = ecc_fn(n,Ps)
+
+    :type ecc_fn:
+        Callable function.
+
+    :param n: (optional)
+        Number of instances to simulate.
+
+    :param ichrone: (optional)
+        Stellar model object from which to simulate stellar properties.
+        Default is the default Dartmouth isochrone.
+    :type ichrone:
+        :class:`isochrones.Isochrone`
+
+    :param bands: (optional)
+        Photometric bands to simulate via ``ichrone``.
+
+    :param age,feh: (optional)
+        log(age) and metallicity at which to simulate population.
+        Can be ``float`` or array-like
+
+    :param minmass: (optional)
+        Minimum mass to simulate.  Default = 0.12.
+
+    """
     def __init__(self,M=None,q_fn=None,P_fn=None,ecc_fn=None,
                  n=1e4,ichrone=DARTMOUTH, qmin=0.1, bands=BANDS,
                  age=9.6,feh=0.0, minmass=0.12, **kwargs):
-        """Simulates BinaryPopulation according to provide primary mass(es), generating functions, and stellar isochrone models.
 
-
-        :param M:
-            Primary mass(es).
-        :type M:
-            ``float`` or array-like
-
-        :param q_fn: (optional)
-            Mass ratio generating function. Must return 'n' mass ratios, and be
-            called as follows::
-        
-                qs = q_fn(n)
-
-        :type q_fn:
-            Callable function.
-
-        :param P_fn: (optional)
-            Orbital period generating function.  Must return ``n`` orbital periods,
-            and be called as follows::
-            
-                Ps = P_fn(n)
-
-        :type P_fn:
-            Callable function.
-
-        :param ecc_fn: (optional)
-            Orbital eccentricity generating function.  Must return ``n`` orbital 
-            eccentricities generated according to provided period(s)::
-
-                eccs = ecc_fn(n,Ps)
-
-        :type ecc_fn:
-            Callable function.
-
-        :param n: (optional)
-            Number of instances to simulate.
-
-        :param ichrone: (optional)
-            Stellar model object from which to simulate stellar properties.
-            Default is the default Dartmouth isochrone.
-        :type ichrone:
-            :class:`isochrones.Isochrone`
-
-        :param bands: (optional)
-            Photometric bands to simulate via ``ichrone``.
-
-        :param age,feh: (optional)
-            log(age) and metallicity at which to simulate population.
-            Can be ``float`` or array-like
-
-        :param minmass: (optional)
-            Minimum mass to simulate.  Default = 0.12.
-
-        """
         self.q_fn = q_fn
         self.qmin = qmin
         self.P_fn = P_fn
@@ -1298,48 +1299,49 @@ class Simulated_BinaryPopulation(BinaryPopulation):
 
 
 class Raghavan_BinaryPopulation(Simulated_BinaryPopulation):
+    """A Simulated_BinaryPopulation with empirical default distributions.
+
+    Default mass ratio distribution is flat down to chosen minimum mass,
+    default period distribution is from Raghavan (2010), default
+    eccentricity/period relation comes from data from the Multiple Star
+    Catalog (Tokovinin, xxxx).
+
+    :param M:
+        Primary mass(es) in solar masses.
+
+    :param e_M: (optional)
+        1-sigma uncertainty in primary mass.
+
+    :param n: (optional)
+        Number of simulated instances to create.
+
+    :param ichrone: (optional)
+        Stellar models from which to generate binary companions.
+    :type ichrone:
+        :class:`isochrones.Isochrone`
+
+    :param age,feh: (optional)
+        Age and metallicity of system.
+
+    :param name: (optional)
+        Name of population.
+
+    :param q_fn: (optional)
+        A function that returns random mass ratios.  Defaults to flat
+        down to provided minimum mass.  Must be able to be called as 
+        follows::
+
+            qs = q_fn(n, qmin, qmax)
+
+        to provide ``n`` random mass ratios.
+
+
+
+    """
     def __init__(self,M=None,e_M=0,n=1e4,ichrone=DARTMOUTH,
                  age=9.5, feh=0.0, q_fn=None, qmin=0.1,
                  minmass=0.12, **kwargs):
-        """A Simulated_BinaryPopulation with empirical default distributions.
 
-        Default mass ratio distribution is flat down to chosen minimum mass,
-        default period distribution is from Raghavan (2010), default
-        eccentricity/period relation comes from data from the Multiple Star
-        Catalog (Tokovinin, xxxx).
-
-        :param M:
-            Primary mass(es) in solar masses.
-
-        :param e_M: (optional)
-            1-sigma uncertainty in primary mass.
-
-        :param n: (optional)
-            Number of simulated instances to create.
-
-        :param ichrone: (optional)
-            Stellar models from which to generate binary companions.
-        :type ichrone:
-            :class:`isochrones.Isochrone`
-
-        :param age,feh: (optional)
-            Age and metallicity of system.
-
-        :param name: (optional)
-            Name of population.
-
-        :param q_fn: (optional)
-            A function that returns random mass ratios.  Defaults to flat
-            down to provided minimum mass.  Must be able to be called as 
-            follows::
-            
-                qs = q_fn(n, qmin, qmax)
-
-            to provide ``n`` random mass ratios.
-
-            
-
-        """
         if M is not None:
             if q_fn is None:
                 q_fn = flat_massratio
@@ -1356,6 +1358,40 @@ class Raghavan_BinaryPopulation(Simulated_BinaryPopulation):
                                             minmass=minmass, **kwargs)
 
 class TriplePopulation(StarPopulation):
+    """A population of triple stars.
+
+    (Primary) orbits (secondary + tertiary) in a long orbit;
+    secondary and tertiary orbit each other with a shorter orbit.
+    Single or double stars may be indicated if desired by having
+    the masses of secondary or tertiary set to zero, and all magnitudes
+    to ``inf``.
+
+    :param stars: (optional)
+        Full stars ``DataFrame``.  If not passed, then primary, secondary, 
+        and tertiary must be.
+
+    :param primary, secondary, tertiary: (optional)
+        Properties of primary, secondary, and tertiary stars,
+        in :class:`pandas.DataFrame` form.
+        These will get merged into a new ``stars`` attribute,
+        with "_A", "_B", and "_C" tags.
+
+    :param orbpop: (optional)
+        Object describing orbits of stars.  If not provided, then the period
+        and eccentricity keywords must be provided, or else they will be
+        randomly generated (see below).
+    :type orbpop:
+        :class:`TripleOrbitPopulation`
+
+    :param period_short, period_long, ecc_short, ecc_long: (array-like, optional)
+        Orbital periods and eccentricities of short and long-period orbits. 
+        "Short" describes the close pair of the hierarchical system; "long"
+        describes the separation between the two major components.  Randomly
+        generated if not provided.
+
+
+    """
+
     def __init__(self, stars=None,
                  primary=None, secondary=None, 
                  tertiary=None, 
@@ -1363,40 +1399,6 @@ class TriplePopulation(StarPopulation):
                  period_short=None, period_long=None,
                  ecc_short=0, ecc_long=0,
                  **kwargs):
-        """A population of triple stars.
-
-        (Primary) orbits (secondary + tertiary) in a long orbit;
-        secondary and tertiary orbit each other with a shorter orbit.
-        Single or double stars may be indicated if desired by having
-        the masses of secondary or tertiary set to zero, and all magnitudes
-        to ``inf``.
-
-        :param stars: (optional)
-            Full stars ``DataFrame``.  If not passed, then primary, secondary, 
-            and tertiary must be.
-
-        :param primary, secondary, tertiary: (optional)
-            Properties of primary, secondary, and tertiary stars,
-            in :class:`pandas.DataFrame` form.
-            These will get merged into a new ``stars`` attribute,
-            with "_A", "_B", and "_C" tags.
-
-        :param orbpop: (optional)
-            Object describing orbits of stars.  If not provided, then the period
-            and eccentricity keywords must be provided, or else they will be
-            randomly generated (see below).
-        :type orbpop:
-            :class:`TripleOrbitPopulation`
-
-        :param period_short, period_long, ecc_short, ecc_long: (array-like, optional)
-            Orbital periods and eccentricities of short and long-period orbits. 
-            "Short" describes the close pair of the hierarchical system; "long"
-            describes the separation between the two major components.  Randomly
-            generated if not provided.
-
-            
-        """
- 
         if stars is None and primary is not None:
             assert len(primary)==len(secondary) and len(primary)==len(tertiary)
             N = len(primary)
@@ -1506,6 +1508,56 @@ class TriplePopulation(StarPopulation):
 
         
 class MultipleStarPopulation(TriplePopulation):
+    """A population of single, double, and triple stars, generated according to prescription.
+
+    :param mA: (optional)
+        Mass of primary star(s).  Default=1.  
+        If array, then the simulation will be 
+        lots of individual systems; if float, 
+        then the simulation will be lots of 
+        realizations of one system.
+
+    :param age, feh: (optional)
+        Age, feh of system(s).
+
+    :param f_binary, f_triple: (optional)
+        Fraction of systems that should be binaries or triples.
+        Should have ``f_binary + f_triple < 1``, though if 
+        ``f_binary + f_triple >= 1``, then ``f_binary`` will 
+        implicitly be treated as ``1 - f_triple``.
+
+    :param qmin: (optional)
+        Minimum mass ratio.
+
+    :param minmass: (optional)
+        Minimum stellar mass to simulate.
+
+    :param n: (optional)
+        Size of simulation (if ``mA`` is a scalar).  If 
+        ``mA`` is array-like, then ``n = len(mA)``.
+
+    :param ichrone: (:class:`isochrones.Isochrone`, optional)
+        Stellar model isochrone to generate simulations.  Defaults
+        to Dartmouth model grid.
+
+    :param bands: (optional)
+        Photometry bandpasses to simulate using ``ichrone``.
+
+    :param multmass_fn, period_long_fn, period_short_fn, ecc_fn: (optional)
+        Functions to generate masses, orbital periods, and eccentricities.
+        Defaults built in.  See :class`TriplePopulation`.
+
+    :param orbpop: (optional)
+        Object describing orbits of stars.  If not provided, orbits will
+        be randomly generated according to generating functions.
+    :type orbpop:
+        :class:`orbits.TripleOrbitPopulation`
+
+    Additional keyword arguments passed to :class:`TriplePopulation`.
+
+
+    """
+
     def __init__(self, mA=None, age=9.6, feh=0.0,
                  f_binary=0.4, f_triple=0.12,
                  qmin=0.1, minmass=0.11,
@@ -1520,56 +1572,6 @@ class MultipleStarPopulation(TriplePopulation):
                  bands=BANDS,
                  orbpop=None, stars=None,
                  **kwargs):
-        """A population of single, double, and triple stars, generated according to prescription.
-
-        :param mA: (optional)
-            Mass of primary star(s).  Default=1.  
-            If array, then the simulation will be 
-            lots of individual systems; if float, 
-            then the simulation will be lots of 
-            realizations of one system.
-
-        :param age, feh: (optional)
-            Age, feh of system(s).
-
-        :param f_binary, f_triple: (optional)
-            Fraction of systems that should be binaries or triples.
-            Should have ``f_binary + f_triple < 1``, though if 
-            ``f_binary + f_triple >= 1``, then ``f_binary`` will 
-            implicitly be treated as ``1 - f_triple``.
-
-        :param qmin: (optional)
-            Minimum mass ratio.
-
-        :param minmass: (optional)
-            Minimum stellar mass to simulate.
-
-        :param n: (optional)
-            Size of simulation (if ``mA`` is a scalar).  If 
-            ``mA`` is array-like, then ``n = len(mA)``.
-
-        :param ichrone: (:class:`isochrones.Isochrone`, optional)
-            Stellar model isochrone to generate simulations.  Defaults
-            to Dartmouth model grid.
-
-        :param bands: (optional)
-            Photometry bandpasses to simulate using ``ichrone``.
-
-        :param multmass_fn, period_long_fn, period_short_fn, ecc_fn: (optional)
-            Functions to generate masses, orbital periods, and eccentricities.
-            Defaults built in.  See :class`TriplePopulation`.
-
-        :param orbpop: (optional)
-            Object describing orbits of stars.  If not provided, orbits will
-            be randomly generated according to generating functions.
-        :type orbpop:
-            :class:`orbits.TripleOrbitPopulation`
-
-        Additional keyword arguments passed to :class:`TriplePopulation`.
-
-
-        """
-
         #These get set even if stars is passed
         self.f_binary = f_binary
         self.f_triple = f_triple
@@ -1678,49 +1680,49 @@ class MultipleStarPopulation(TriplePopulation):
 
 
 class ColormatchMultipleStarPopulation(MultipleStarPopulation):
+    """Multiple star population constrained to match provided colors
+
+    Star systems are generated either according to provided
+    primary masses ``mA``, or by drawing primary masses
+    from provided TRILEGAL simulation (``starfield``).
+
+    :param mags: (optional)
+        Dictionary of magnitudes of total system.
+
+    :param colors: (optional)
+        Colors to use to constrain population generation.  
+        e.g. ['JK'], or ['JK','gr'], etc.
+
+    :param colortol: (optional)
+        Tolerance within which to constrain color matching.
+
+    :param mA, age, feh:
+        Primary masses, age, and feh.  If float or array_like, 
+        those values are used; if distributions, they are resampled.
+
+    :param n: (optional)
+        Desired size of simulation (default = 2e4)
+
+    :param starfield: (optional)
+        If m1 is not provided in some form, then primary masses will
+        get randomly selected from this starfield, assumed to be
+        a TRILEGAL simulation.  If string, then should be a filename
+        of an .h5 file containing the TRILEGAL simulation; can also
+        be a ``DataFrame`` directly.
+
+    :param stars: (:class:`pandas.DataFrame`, optional)
+        Can directly initialize with :class:`pandas DataFrame`.  
+        Be careful though, because must pass the arguments
+        appropriate to that simulation.
+
+    :param **kwargs:
+        Keyword arguments passed to :class:`MultipleStarPopulation`.
+
+    """
     def __init__(self, mags=None, colors=['JK'], colortol=0.1, 
                  mA=None, age=9.6, feh=0.0, n=2e4,
                  ichrone=DARTMOUTH,
                  starfield=None, stars=None, **kwargs):
-        """Multiple star population constrained to match provided colors
-
-        Star systems are generated either according to provided
-        primary masses ``mA``, or by drawing primary masses
-        from provided TRILEGAL simulation (``starfield``).
-
-        :param mags: (optional)
-            Dictionary of magnitudes of total system.
-
-        :param colors: (optional)
-            Colors to use to constrain population generation.  
-            e.g. ['JK'], or ['JK','gr'], etc.
-
-        :param colortol: (optional)
-            Tolerance within which to constrain color matching.
-
-        :param mA, age, feh:
-            Primary masses, age, and feh.  If float or array_like, 
-            those values are used; if distributions, they are resampled.
-            
-        :param n: (optional)
-            Desired size of simulation (default = 2e4)
-
-        :param starfield: (optional)
-            If m1 is not provided in some form, then primary masses will
-            get randomly selected from this starfield, assumed to be
-            a TRILEGAL simulation.  If string, then should be a filename
-            of an .h5 file containing the TRILEGAL simulation; can also
-            be a ``DataFrame`` directly.
-
-        :param stars: (:class:`pandas.DataFrame`, optional)
-            Can directly initialize with :class:`pandas DataFrame`.  
-            Be careful though, because must pass the arguments
-            appropriate to that simulation.
-
-        :param **kwargs:
-            Keyword arguments passed to :class:`MultipleStarPopulation`.
-
-        """
         
         self.mags = mags
         self.colors = colors
@@ -1888,45 +1890,46 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
 
 
 class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
+    """MultipleStarPopulation based on spectroscopically confirmed primary star
+
+    :param filename: (optional)
+        If passed, saved population will be restored.
+
+    :param Teff, logg, feh: (optional)
+        Spectroscopic measurements ``(value, error)``.  Must
+        be provided neither ``filename`` nor ``starmodel`` are.
+
+    :param starmodel: (optional)
+        :class:`isochrones.StarModel` object; must be provided
+        if ``filename`` is not and spectroscopic measurements
+        are not provided.
+
+    :param n:
+        Size of population to simulate.
+
+    :param path:
+        Path within ``filename`` from which to load population.
+
+    :param ichrone:
+        :class:`isochrones.Isochrone` object from which to generate 
+        population.
+
+    :param mcmc_kwargs:
+        Keyword arguments to pass to 
+        :func:`isochrones.StarModel.fit_mcmc`.
+
+    :param **kwargs:
+        Additional keyword arguments passed to 
+        :class:`MultipleStarPopulation`
+
+
+    """
+        
     def __init__(self, filename=None, Teff=None, logg=None, feh=None, 
                  starmodel=None,
                  n=2e4, path='', ichrone=DARTMOUTH, 
                  mcmc_kws=None, **kwargs):
-        """MultipleStarPopulation based on spectroscopically confirmed primary star
 
-        :param filename: (optional)
-            If passed, saved population will be restored.
-
-        :param Teff, logg, feh: (optional)
-            Spectroscopic measurements ``(value, error)``.  Must
-            be provided neither ``filename`` nor ``starmodel`` are.
-
-        :param starmodel: (optional)
-            :class:`isochrones.StarModel` object; must be provided
-            if ``filename`` is not and spectroscopic measurements
-            are not provided.
-
-        :param n:
-            Size of population to simulate.
-
-        :param path:
-            Path within ``filename`` from which to load population.
-
-        :param ichrone:
-            :class:`isochrones.Isochrone` object from which to generate 
-            population.
-
-        :param mcmc_kwargs:
-            Keyword arguments to pass to 
-            :func:`isochrones.StarModel.fit_mcmc`.
-
-        :param **kwargs:
-            Additional keyword arguments passed to 
-            :class:`MultipleStarPopulation`
-
-
-        """
-        
         self.Teff = Teff
         self.logg = logg
         self.feh = feh
@@ -1981,30 +1984,31 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
         return pop
 
 class BGStarPopulation(StarPopulation):
+    """Background star population
+
+    This should usually be accessed via the
+    :class:`BGStarPopulation_TRILEGAL` subclass.
+
+    :param stars: (:class:`pandas.DataFrame`, optional)
+        Properties of stars.  Must have 'distance' column defined.
+
+    :param mags: (optional)
+        Magnitudes of primary (foreground) stars.
+
+    :param maxrad: (optional)
+        Maximum distance (arcseconds) of BG stars from
+        foreground primary star.
+
+    :param density: (optional)
+        Density in arcsec^{-2} for BG star population.
+
+    :param **kwargs:
+        Additional keyword arguments passed to :class:`StarPopulation`.
+
+    """
     def __init__(self,stars=None,mags=None,maxrad=1800,density=None,
                  **kwargs):
-        """Background star population
 
-        This should usually be accessed via the
-        :class:`BGStarPopulation_TRILEGAL` subclass.
-
-        :param stars: (:class:`pandas.DataFrame`, optional)
-            Properties of stars.  Must have 'distance' column defined.
-
-        :param mags: (optional)
-            Magnitudes of primary (foreground) stars.
-
-        :param maxrad: (optional)
-            Maximum distance (arcseconds) of BG stars from
-            foreground primary star.
-
-        :param density: (optional)
-            Density in arcsec^{-2} for BG star population.
-
-        :param **kwargs:
-            Additional keyword arguments passed to :class:`StarPopulation`.
-
-        """
         self.mags = mags
 
         if stars is not None:
@@ -2075,36 +2079,37 @@ class BGStarPopulation(StarPopulation):
             super(BGStarPopulation, self)._properties
 
 class BGStarPopulation_TRILEGAL(BGStarPopulation):
+    """Creates TRILEGAL simulation for ra,dec; loads as BGStarPopulation
+
+    :param filename:
+        Desired name of the TRILEGAL simulation.  Can either have '.h5' extension
+        or not.  If filename (or 'filename.h5') exists locally, it will be
+        loaded; otherwise, TRILEGAL will be called via the ``get_trilegal`` perl
+        script, and the file will be generated.  
+
+    :param ra, dec: (optional)
+        Sky coordinates of TRILEGAL simulation.  Must be passed if generating 
+        TRILEGAL simulation and not just reading from existing file.
+
+    :param mags: (optional)
+        Dictionary of primary star magnitudes (if this is being used to generate
+        a background population behind a particular foreground star).  This 
+        must be set in order to use the ``dmag`` attribute.
+
+    :type mags: (optional)
+        ``dict``
+
+    :param maxrad: (optional)
+        Maximum distance (arcsec) out to which to place simulated stars.
+
+    :param **kwargs:
+        Additional keyword arguments passed to 
+        :func:`stars.trilegal.get_trilegal`
+
+    """
+
     def __init__(self,filename=None,ra=None,dec=None,mags=None,maxrad=1800,
                  **kwargs):
-        """Creates TRILEGAL simulation for ra,dec; loads as BGStarPopulation
-
-        :param filename:
-            Desired name of the TRILEGAL simulation.  Can either have '.h5' extension
-            or not.  If filename (or 'filename.h5') exists locally, it will be
-            loaded; otherwise, TRILEGAL will be called via the ``get_trilegal`` perl
-            script, and the file will be generated.  
-
-        :param ra, dec: (optional)
-            Sky coordinates of TRILEGAL simulation.  Must be passed if generating 
-            TRILEGAL simulation and not just reading from existing file.
-
-        :param mags: (optional)
-            Dictionary of primary star magnitudes (if this is being used to generate
-            a background population behind a particular foreground star).  This 
-            must be set in order to use the ``dmag`` attribute.
-
-        :type mags: (optional)
-            ``dict``
-
-        :param maxrad: (optional)
-            Maximum distance (arcsec) out to which to place simulated stars.
-
-        :param **kwargs:
-            Additional keyword arguments passed to 
-            :func:`stars.trilegal.get_trilegal`
-
-        """
 
         self.trilegal_args = {}
 

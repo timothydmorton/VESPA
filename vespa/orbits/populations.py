@@ -23,59 +23,60 @@ from ..hashutils import hashcombine, hashdf
 
 
 class TripleOrbitPopulation(object):
+    """
+    Stars 2 and 3 orbit each other (short orbit), far from star 1 (long orbit)
+
+    This object defines the orbits of a triple star system,
+    with orbits calculated approximating ``Pshort << Plong``.
+
+
+    :param M1, M2, M3:
+        Masses of stars.  Stars 2 and 3 are in a short orbit, far away from star 1.
+        If not :class:`astropy.units.Quantity` objects, then assumed to be
+        in solar mass units.  May be single value or array-like.
+
+    :param Plong, Pshort: 
+        Orbital Periods.  Plong is orbital period of 2+3 and 1; Pshort is orbital
+        period of 2 and 3.  If not :class:`astropy.units.Quantity` objects,
+        assumed to be in days.  Can be single value or array-like.
+        N.B. If any item in Pshort happens to be
+        longer than the corresponding item in Plong, they will be switched. 
+
+    :param ecclong, eccshort: (optional) 
+        Eccentricities.  Same story (long vs. short).  Default=0 (circular).
+        Can be single value or array-like.
+
+    :param n: (optional)
+        Number of systems to simulate (if ``M1``, ``M2``, ``M3`` aren't
+        arrays of size > 1 already).
+
+    :param mean_anomaly_short, mean_anomaly_long: (optional)
+        Mean anomalies.  This is only passed if you need to restore a
+        particular specific configuration (i.e., a particular saved simulation),
+        e.g., as done by :func:`TripleOrbitPopulation.from_df`.
+        If not provided, then randomized on (0, 2pi).
+
+    :param obsx_short, obsy_short, obsz_short: (optional)
+        "Observer" positions for the short orbit.  Also only passed for purposes
+        of restoring configuration.
+
+    :param obsx_long, obsy_long, obsz_long: (optional)
+        "Observer" positions for long orbit.  Also only passed for purposes of
+        restoring configuration.
+
+    :param obspos_short, obspos_long: (optional)
+        "Observer positions for short and long orbits, provided
+        as :class:`astropy.SkyCoord` objects.  These will replace
+        obsx_short/long, obsy_short/long, obsz_short/long parameters if present.
+
+    """
     def __init__(self,M1,M2,M3,Plong,Pshort,ecclong=0,eccshort=0,n=None,
                  mean_anomaly_long=None,obsx_long=None,obsy_long=None,obsz_long=None,
                  obspos_long=None,
                  mean_anomaly_short=None,obsx_short=None,
                  obsy_short=None,obsz_short=None,
                  obspos_short=None):                 
-        """
-        Stars 2 and 3 orbit each other (short orbit), far from star 1 (long orbit)
 
-        This object defines the orbits of a triple star system,
-        with orbits calculated approximating ``Pshort << Plong``.
-
-        
-        :param M1, M2, M3:
-            Masses of stars.  Stars 2 and 3 are in a short orbit, far away from star 1.
-            If not :class:`astropy.units.Quantity` objects, then assumed to be
-            in solar mass units.  May be single value or array-like.
-
-        :param Plong, Pshort: 
-            Orbital Periods.  Plong is orbital period of 2+3 and 1; Pshort is orbital
-            period of 2 and 3.  If not :class:`astropy.units.Quantity` objects,
-            assumed to be in days.  Can be single value or array-like.
-            N.B. If any item in Pshort happens to be
-            longer than the corresponding item in Plong, they will be switched. 
-
-        :param ecclong, eccshort: (optional) 
-            Eccentricities.  Same story (long vs. short).  Default=0 (circular).
-            Can be single value or array-like.
-
-        :param n: (optional)
-            Number of systems to simulate (if ``M1``, ``M2``, ``M3`` aren't
-            arrays of size > 1 already).
-
-        :param mean_anomaly_short, mean_anomaly_long: (optional)
-            Mean anomalies.  This is only passed if you need to restore a
-            particular specific configuration (i.e., a particular saved simulation),
-            e.g., as done by :func:`TripleOrbitPopulation.from_df`.
-            If not provided, then randomized on (0, 2pi).
-
-        :param obsx_short, obsy_short, obsz_short: (optional)
-            "Observer" positions for the short orbit.  Also only passed for purposes
-            of restoring configuration.
-
-        :param obsx_long, obsy_long, obsz_long: (optional)
-            "Observer" positions for long orbit.  Also only passed for purposes of
-            restoring configuration.
-
-        :param obspos_short, obspos_long: (optional)
-            "Observer positions for short and long orbits, provided
-            as :class:`astropy.SkyCoord` objects.  These will replace
-            obsx_short/long, obsy_short/long, obsz_short/long parameters if present.
-            
-        """
         Pshort, Plong = (np.minimum(Pshort,Plong), np.maximum(Pshort,Plong))
         #if Plong < Pshort:
         #    Pshort,Plong = (Plong, Pshort)
