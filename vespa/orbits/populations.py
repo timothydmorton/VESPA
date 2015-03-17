@@ -30,10 +30,10 @@ class TripleOrbitPopulation(object):
                  obsy_short=None,obsz_short=None,
                  obspos_short=None):                 
         """
-        Stars 2 and 3 orbit each other close (short orbit), far from star 1 (long orbit)
+        Stars 2 and 3 orbit each other (short orbit), far from star 1 (long orbit)
 
         This object defines the orbits of a triple star system,
-        with orbits calculated approximating Pshort << Plong.
+        with orbits calculated approximating ``Pshort << Plong``.
 
         
         :param M1, M2, M3:
@@ -198,6 +198,9 @@ class TripleOrbitPopulation(object):
         """
         Builds TripleOrbitPopulation from DataFrame
 
+        ``DataFrame`` objects must be of appropriate form to pass
+        to :func:`OrbitPopulation.from_df`.
+
         :param df_long, df_short:
             :class:`pandas.DataFrame` objects to pass to
             :func:`OrbitPopulation.from_df`.
@@ -231,33 +234,39 @@ class OrbitPopulation(object):
                  obspos=None):
         """Population of orbits.
 
-        Parameters
-        ----------
-        M1, M2 : float or array_like, or ``Quantity``
-            Primary and secondary masses (if not ``Quantity``, assumed to be in solar masses)
+        :param M1, M2: 
+            Primary and secondary masses (if not ``Quantity``, 
+            assumed to be in solar masses)
+        :type M1, M2:
+            ``float``, array-like or ``Quantity``
 
-        P : float or array_like, or ``Quantity``
-            Orbital periods (if not ``Quantity``, assumed to be in days)
+        :param P:
+            Orbital period(s) (if not ``Quantity``, assumed to be in days)
+        :type P:
+            ``float``, array-like or ``Quantity``.
 
-        ecc : float or array_like, optional
+        :param ecc: (``float`` or array-like, optional)
             Eccentricities.
 
-        n : int, optional
+        :param n: (optional)
             Number of instances to simulate.  If not provided, then this number
-            will be the length of M2s (or Ps) provided.
+            will be the length of ``M2`` (or ``P``) provided.
 
-        mean_anomaly : float or array_like, optional
+        :param mean_anomaly: (optional)
             Mean anomalies of orbits.  Usually this will just be set randomly,
             but can be provided to initialize a particular state (e.g., when
-            restoring an ``OrbitPopulation`` object from a saved state).
+            restoring an :class:`OrbitPopulation` object from a saved state).
 
-        obsx, obsy, obsz : float or array_like, optional
+        :param obsx, obsy, obsz: (optional)
             "Observer" positions to define coordinates.  Will be set randomly
             if not provided.
 
-        obspos : ``SkyCoord`` object, optional
+        :param obspos: (optional)
             "Observer" positions may be set with a ``SkyCoord`` object (replaces
             obsx, obsy, obsz)
+        :type obspos:
+            :class:`astropy.coordinates.SkyCoord`
+
         """
         if type(M1) != Quantity:
             M1 = Quantity(M1, unit='M_sun')
@@ -272,18 +281,10 @@ class OrbitPopulation(object):
             else:
                 n = M2.size
 
-        # Below now unnecessary...
-        #if len(M1s)==1 and len(M2s)==1:
-        #    M1s = np.ones(n)*M1s
-        #    M2s = np.ones(n)*M2s
-
         self.M1 = M1
         self.M2 = M2
 
         self.N = n
-
-        #if np.size(Ps)==1:
-        #    Ps = Ps*np.ones(n)
 
         self.P = P
 
@@ -333,51 +334,53 @@ class OrbitPopulation(object):
     
     @property
     def Rsky(self):
-        """Projected sky separation of stars
+        """
+        Projected sky separation of stars
         """
         return np.sqrt(self.position.x**2 + self.position.y**2)
 
     @property
     def RV(self):
-        """Relative radial velocities of two stars
+        """
+        Relative radial velocities of two stars
         """
         return self.velocity.z
 
     @property
     def RV_com1(self):
-        """RVs of star 1 relative to center-of-mass
+        """
+        RVs of star 1 relative to center-of-mass
         """
         return self.RV * (self.M2 / (self.M1 + self.M2))
 
     @property
     def RV_com2(self):
-        """RVs of star 2 relative to center-of-mass
+        """
+        RVs of star 2 relative to center-of-mass
         """
         return -self.RV * (self.M1 / (self.M1 + self.M2))
     
     def dRV(self,dt,com=False):
         """Change in RV of star 1 for time separation dt (default=days)
 
-        Parameters
-        ----------
-        dt : float, array_like, or ``Quantity``
+        :param dt: 
             Time separation for which to compute RV change.  If not a ``Quantity``,
             then assumed to be in days. 
+        :type dt:
+            float, array-like, or ``Quantity``
 
-        com : bool, optional
+        :param com: (``bool``, optional)
             If ``True``, then return dRV of star 1 in center-of-mass frame.
 
-        Returns
-        -------
-        dRV : ``Quantity``
-            Change in radial velocity over time dt.
+        :return dRV:
+            Change in radial velocity over time ``dt``.
+
         """
         if type(dt) != Quantity:
             dt *= u.day
 
         mean_motions = np.sqrt(G*(self.mred)*MSUN/(self.semimajor*AU)**3)
         mean_motions = np.sqrt(const.G*(self.mred)/(self.semimajor)**3)
-        #print mean_motions * dt / (2*pi)
 
         newM = self.M + mean_motions * dt
         pos,vel = orbit_posvel(newM,self.ecc,self.semimajor.value,
@@ -390,26 +393,42 @@ class OrbitPopulation(object):
             return vel.z-self.RV
 
     def RV_timeseries(self,ts,recalc=False):
-        """Radial Velocity time series for star 1 at given times ts.
+        """
+        Radial Velocity time series for star 1 at given times ts.
+
+        :param ts:
+            Times.  If not ``Quantity``, assumed to be in days.
+        :type ts:
+            array-like or ``Quantity``
+
+        :param recalc: (optional)
+            If ``False``, then if called with the exact same ``ts``
+            as last call, it will return cached calculation.
+
         """
         if type(ts) != Quantity:
             ts *= u.day
 
         if not recalc and hasattr(self,'RV_measurements'):
             if (ts == self.ts).all():
-                return self.RV_measurements
+                return self._RV_measurements
             else:
                 pass
             
         RVs = Quantity(np.zeros((len(ts),self.N)),unit='km/s')
         for i,t in enumerate(ts):
             RVs[i,:] = self.dRV(t,com=True)
-        self.RV_measurements = RVs
+        self._RV_measurements = RVs
         self.ts = ts
         return RVs
 
     @property
     def dataframe(self):
+        """
+        Summary DataFrame of OrbitPopulation
+
+        Used to save/restore state.
+        """
         if not hasattr(self,'_dataframe'):
             obspos = self.obspos.represent_as('cartesian')
             obsx, obsy, obsz = (obspos.x,obspos.y,obspos.z)
@@ -427,6 +446,28 @@ class OrbitPopulation(object):
 
     def scatterplot(self,fig=None,figsize=(7,7),ms=0.5,
                     rmax=None,log=False,**kwargs):
+        """
+        Makes a scatter plot of projected X-Y sky separation
+
+        :param fig: (optional)
+            Passed to :func:`plotutils.setfig`
+
+        :param figsize: (optional)
+            Size of figure (in).
+
+        :param ms: (optional)
+            Marker size
+
+        :param rmax: (optional)
+            Maximum projected radius to plot.
+
+        :param log: (optional)
+            Whether to plot with log scale.
+
+        :param **kwargs:
+            Additional keyword arguments passed to ``plt.plot``.
+
+        """
         setfig(fig,figsize=figsize)
         plt.plot(self.position.x.value,self.position.y.value,'o',ms=ms,**kwargs)
         plt.xlabel('projected separation [AU]')
@@ -439,7 +480,8 @@ class OrbitPopulation(object):
             plt.yscale('log')
     
     def save_hdf(self,filename,path=''):
-        """Saves all relevant data to .h5 file; so state can be restored.
+        """
+        Saves all relevant data to .h5 file; so state can be restored.
         """
         self.dataframe.to_hdf(filename,'{}/df'.format(path))
 
