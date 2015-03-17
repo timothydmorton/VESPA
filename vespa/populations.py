@@ -658,6 +658,19 @@ class EclipsePopulation(StarPopulation):
 
     @classmethod
     def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
+        """
+        Loads EclipsePopulation from HDF file
+
+        Also runs :func:`EclipsePopulation._make_kde` if it can.
+
+        :param filename:
+            HDF file
+
+        :param path: (optional)
+            Path within HDF file
+
+        """
+
         new = StarPopulation.load_hdf(filename, path=path)
         try:
             new._make_kde()
@@ -666,7 +679,7 @@ class EclipsePopulation(StarPopulation):
         return new
 
 class PlanetPopulation(EclipsePopulation):
-    def __init__(self, filename=None, period=None, rprs=None,
+    def __init__(self, period, rprs,
                  mass=None, radius=None, Teff=None, logg=None,
                  starmodel=None,
                  band='Kepler', model='Planets', n=2e4,
@@ -675,14 +688,19 @@ class PlanetPopulation(EclipsePopulation):
                  MAfn=None, lhoodcachefile=None, **kwargs):
         """Population of Transiting Planets
 
-        Mostly a copy of EBPopulation, with small modifications.
+        Subclass of :class:`EclipsePopulation`.  This is mostly
+        a copy of :class:`EBPopulation`, with small modifications.
 
-        For simplicity, primary star has only a radius and mass;
-        the real properties don't matter at all.
+        Star properties may be defined either with either a 
+        :class:`isochrones.StarModel` or by defining just its
+        ``mass`` and ``radius`` (and ``Teff`` and ``logg`` if 
+        desired to set limb darkening coefficients appropriately).
 
-        
-                
-        If file is passed, population is loaded from .h5 file.
+        :param period:
+            Period of signal.  
+
+        :param rprs:
+            Point-estimate of Rp/Rs radius ratio.
 
         """
 
@@ -695,18 +713,12 @@ class PlanetPopulation(EclipsePopulation):
         self.logg = logg
         self.starmodel = starmodel
         
-        if filename is not None:
-            logging.debug('loading planet population from {}'.format(filename))
-            self.load_hdf(filename)
-        elif radius is not None and mass is not None or starmodel is not None:
-            # calculates eclipses 
-            logging.debug('generating planet population...')
-            self.generate(rprs=rprs, mass=mass, radius=radius,
-                          n=n, fp_specific=fp_specific, 
-                          starmodel=starmodel,
-                          rbin_width=rbin_width,
-                          u1=u1, u2=u2, Teff=Teff, logg=logg,
-                          MAfn=MAfn, **kwargs)
+        self.generate(rprs=rprs, mass=mass, radius=radius,
+                      n=n, fp_specific=fp_specific, 
+                      starmodel=starmodel,
+                      rbin_width=rbin_width,
+                      u1=u1, u2=u2, Teff=Teff, logg=logg,
+                      MAfn=MAfn, **kwargs)
 
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
