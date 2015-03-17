@@ -3,6 +3,7 @@ from __future__ import print_function, division
 from vespa.populations import HEBPopulation
 from vespa.populations import EBPopulation
 from vespa.populations import BEBPopulation
+from vespa.populations import PlanetPopulation
 
 from pkg_resources import resource_filename
 
@@ -60,4 +61,17 @@ def test_beb(filename=os.path.join(TMP,'test_beb.h5')):
     pop.save_hdf(filename, overwrite=True)
     pop2 = BEBPopulation.load_hdf(filename)
     assert type(pop2)==BEBPopulation
+    os.remove(filename)
+
+def test_pl(filename=os.path.join(TMP,'test_pl.h5')):
+    mass = (0.83,0.03)
+    radius = (0.91,0.03)
+    period = 289.8622
+    rprs = 0.02
+    pop = PlanetPopulation(period=period, rprs=rprs,
+                       mass=mass, radius=radius, n=100, MAfn=MAfn)
+
+    pop.save_hdf(filename, overwrite=True)
+    pop2 = PlanetPopulation.load_hdf(filename)
+    assert type(pop2)==PlanetPopulation
     os.remove(filename)

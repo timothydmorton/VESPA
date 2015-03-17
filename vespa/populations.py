@@ -66,17 +66,65 @@ class EclipsePopulation(StarPopulation):
                  **kwargs):
         """Base class for populations of eclipsing things.
 
-        stars DataFrame must have the following columns:
-        'M_1', 'M_2', 'R_1', 'R_2', 'u1_1', 'u1_2', 'u2_1', 'u2_2', and 
-        either the P keyword argument provided or a `period column, as 
-        well as the eclipse parameters: 'inc', 'ecc', 'w', 'dpri', 
-        'dsec', 'b_sec', 'b_pri', 'fluxfrac_1', 'fluxfrac_2'
+        This is the base class for populations of various scenarios
+        that could explain a tranist signal; that is, 
+        astrophysical false positives or transiting planets.
 
-        For some functionality, also needs to have trapezoid fit 
-        parameters in DataFrame
-        
+        Once set up properly, :func:`EclipsePopulation.fit_trapezoids`
+        can be used to fit the trapezoidal shape parameters, after
+        which the likelihood of a transit signal under the model
+        may be calculated.
+
+        Subclasses :class:`stars.StarPopulation`, which enables
+        all the functionality of observational constraints.
+
         if prob is not passed; should be able to calculated from given
         star/orbit properties.
+
+        As with :class:`stars.StarPopulation`, any subclass must be able 
+        to be initialized with no arguments passed, in order for
+        :func:`stars.StarPopulation.load_hdf` to work properly.
+
+        :param stars:
+            ``DataFrame`` with star properties.  Must contain
+            ``M_1, M_2, R_1, R_2, u1_1, u1_2, u2_1, u2_2``.
+            Also, either the ``period`` keyword argument must be provided
+            or a ``period`` column should be in ``stars``.
+            ``stars`` must also have the eclipse parameters:
+            `'inc, ecc, w, dpri, dsec, b_sec, b_pri, fluxfrac_1, fluxfrac_2``.
+            
+        :param period: (optional)
+            Orbital period.  If not provided, then ``stars`` must
+            have period column.
+
+        :param model: (optional)
+            Name of the model.
+
+        :param priorfactors: (optional)
+            Multiplicative factors that quantify the model prior
+            for this particular model; e.g. ``f_binary``, etc.
+
+        :param lhoodcachefile: (optional)
+            File where likelihood calculation cache is written.
+
+        :param orbpop: (optional)
+            Orbit population.
+        :type orbpop: 
+            :class:`orbits.OrbitPopulation` or 
+            :class:`orbits.TripleOrbitPopulation`
+
+        :param prob: (optional)
+            Averaged eclipse probability of scenario instances.
+            If not provided, this should be calculated,
+            though this is not implemented yet.
+
+        :param cadence: (optional)
+            Observing cadence, in days.  Defaults to *Kepler* value.
+        
+        :param **kwargs:
+            Additional keyword arguments passed to
+            :class:`stars.StarPopulation`.
+
         """
         
         self.period = period
@@ -100,6 +148,25 @@ class EclipsePopulation(StarPopulation):
             self._make_kde()
 
     def fit_trapezoids(self, MAfn=None, msg=None, **kwargs):
+        """
+        Fit trapezoid shape to each eclipse in population
+
+        For each instance in the population, first the correct,
+        physical Mandel-Agol transit shape is simulated,
+        and then this curve is fit with a trapezoid model
+
+        :param MAfn:
+            :class:`transit_basic.MAInterpolationFunction` object.
+            If not passed, then one with default parameters will
+            be created.
+
+        :param msg:
+            Message to be displayed for progressbar output.
+
+        :param **kwargs:
+            Additional keyword arguments passed to :func:`fitebs.fitebs`.
+
+        """
         logging.info('Fitting trapezoid models for {}...'.format(self.model))
         if MAfn is None:
             MAfn = MAInterpolationFunction(nzs=200,nps=400,pmin=0.007,pmax=1/0.007)
@@ -120,6 +187,7 @@ class EclipsePopulation(StarPopulation):
     @property
     def eclipseprob(self):
         """
+        Array of eclipse probabilities.
         """
         #TODO: incorporate eccentricity/omega for exact calculation?
         s = self.stars
@@ -128,10 +196,27 @@ class EclipsePopulation(StarPopulation):
 
     @property
     def mean_eclipseprob(self):
+        """Mean eclipse probability for population
+        """
         return self.eclipseprob.mean()
 
     @property
     def modelshort(self):
+        """
+        Short version of model name
+
+        Dictionary defined in ``populations.py``::
+
+            SHORT_MODELNAMES = {'Planets':'pl',
+                    'EBs':'eb', 
+                    'HEBs':'heb',
+                    'BEBs':'beb',
+                    'Blended Planets':'bpl',
+                    'Specific BEB':'sbeb',
+                    'Specific HEB':'sheb'}
+
+        
+        """
         try:
             name = SHORT_MODELNAMES[self.model]
             
@@ -146,36 +231,73 @@ class EclipsePopulation(StarPopulation):
 
     @property
     def dilution_factor(self):
+        """
+        Multiplicative factor (<1) that converts true depth to diluted depth.
+        """
         return np.ones(len(self.stars))
 
     @property
     def depth(self):
+        """
+        Observed primary depth (fitted undiluted depth * dilution factor)
+        """
         return self.dilution_factor * self.stars['depth']
 
     @property
     def secondary_depth(self):
+        """
+        Observed secondary depth (fitted undiluted sec. depth * dilution factor)
+        """
         return self.dilution_factor * self.stars['secdepth']
 
     def constrain_secdepth(self, thresh):
+        """
+        Constrain the observed secondary depth to be less than a given value
+
+        :param thresh:
+            Maximum allowed fractional depth for diluted secondary
+            eclipse depth
+
+        """
         self.apply_constraint(UpperLimit(self.secondary_depth, thresh, name='secondary depth'))
 
     def apply_secthresh(self, *args, **kwargs):
+        """Another name for constrain_secdepth
+        """
         return self.constrain_secdepth(*args, **kwargs)
 
     def fluxfrac_eclipsing(self, band=None):
+        """Stub for future multicolor transit implementation
+        """
         pass
 
     def depth_in_band(self, band):
+        """Stub for future multicolor transit implementation
+        """
         pass
 
     @property
     def prior(self):
+        """
+        Model prior for particular model.
+
+        Product of eclipse probability (``self.prob``),
+        the fraction of scenario that is allowed by the various
+        constraints (``self.selectfrac``), and all additional
+        factors in ``self.priorfactors``.
+
+        """
         prior = self.prob * self.selectfrac
         for f in self.priorfactors:
             prior *= self.priorfactors[f]
         return prior
 
     def add_priorfactor(self,**kwargs):
+        """Adds given values to priorfactors
+
+        If given keyword exists already, error will be raised
+        to use :func:`EclipsePopulation.change_prior` instead.
+        """
         for kw in kwargs:
             if kw in self.priorfactors:
                 logging.error('%s already in prior factors for %s.  use change_prior function instead.' % (kw,self.model))
@@ -185,6 +307,12 @@ class EclipsePopulation(StarPopulation):
                 logging.info('%s added to prior factors for %s' % (kw,self.model))
 
     def change_prior(self, **kwargs):
+        """
+        Changes existing priorfactors.
+
+        If given keyword isn't already in priorfactors,
+        then will be ignored.
+        """
         for kw in kwargs:
             if kw in self.priorfactors:
                 self.priorfactors[kw] = kwargs[kw]
@@ -195,9 +323,24 @@ class EclipsePopulation(StarPopulation):
                   **kwargs):
         """Creates KDE objects for 3-d shape parameter distribution
 
-        Uses scikit-learn KDE by default
+        KDE represents likelihood as function of trapezoidal
+        shape parameters (log(delta), T, T/tau).
 
-        Keyword arguments passed to gaussian_kde
+        Uses :class:`scipy.stats.gaussian_kde`` KDE by default;
+        Scikit-learn KDE implementation tested a bit, but not 
+        fully implemented.
+
+        :param use_sklearn:
+            Whether to use scikit-learn implementation of KDE. 
+            Not yet fully implemented, so this should stay ``False``.
+
+        :param bandwidth, rtol:
+            Parameters for sklearn KDE.
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :class:`scipy.stats.gaussian_kde``.
+
         """
 
         try:
@@ -249,6 +392,13 @@ class EclipsePopulation(StarPopulation):
                 
     def _density(self, logd, dur, slope):
         """
+        Evaluate KDE at given points.
+
+        Prepares data according to whether sklearn or scipy
+        KDE in use.
+
+        :param log, dur, slope:
+            Trapezoidal shape parameters.
         """
         if self.sklearn_kde:
             #TODO: fix preprocessing
@@ -261,6 +411,20 @@ class EclipsePopulation(StarPopulation):
 
     def lhood(self, trsig, recalc=False, cachefile=None):
         """Returns likelihood of transit signal
+
+        Returns sum of ``trsig`` MCMC samples evaluated
+        at ``self.kde``.
+
+        :param trsig:
+            :class:`TransitSignal` object.
+
+        :param recalc: (optional)
+            Whether to recalculate likelihood (if calculation
+            is cached).
+
+        :param cachefile: (optional)
+            File that holds likelihood calculation cache.
+
         """
         if not hasattr(self,'kde'):
             self._make_kde()
@@ -287,13 +451,77 @@ class EclipsePopulation(StarPopulation):
         return lh
         
         
-    def lhoodplot(self, trsig=None, fig=None, label='', plotsignal=False, 
+    def lhoodplot(self, trsig=None, fig=None, 
                   piechart=True, figsize=None, logscale=True,
                   constraints='all', suptitle=None, Ltot=None,
                   maxdur=None, maxslope=None, inverse=False, 
                   colordict=None, cachefile=None, nbins=20,
                   dur_range=None, slope_range=None, depth_range=None,
                   **kwargs):
+        """
+        Makes plot of likelihood density function, optionally with transit signal
+
+        If ``trsig`` not passed, then just density plot of the likelidhoo 
+        will be made; if it is passed, then it will be plotted 
+        over the density plot.
+
+        :param trsig: (optional)
+            :class:`TransitSignal` object.
+
+        :param fig: (optional)
+            Argument for :func:`plotutils.setfig`.
+
+        :param piechart: (optional)
+            Whether to include a plot of the piechart that describes
+            the effect of the constraints on the population.
+
+        :param figsize: (optional)
+            Passed to :func:`plotutils.setfig`.
+
+        :param logscale: (optional)
+            If ``True``, then shading will be based on the log-histogram
+            (thus showing more detail at low density).  Passed to
+            :func:`StarPopulation.prophist2d`.
+
+        :param constraints: (``'all', 'none'`` or ``list``; optional)
+            Which constraints to apply in making plot.  Picking 
+            specific constraints allows you to visualize in more
+            detail what the effect of a constraint is.
+
+        :param suptitle: (optional)
+            Title for the figure.
+
+        :param Ltot: (optional)
+            Total of ``prior * likelihood`` for all models.  If this is
+            passed, then "Probability of scenario" gets a text box 
+            in the middle.
+
+        :param inverse: (optional)
+            Intended to allow showing only the instances that are 
+            ruled out, rather than those that remain.  Not sure if this
+            works anymore.
+
+        :param colordict: (optional)
+            Dictionary to define colors of constraints to be used 
+            in pie chart.  Intended to unify constraint colors among
+            different models.
+
+        :param cachefile: (optional)
+            Likelihood calculation cache file.
+
+        :param nbins: (optional)
+            Number of bins with which to make the 2D histogram plot;
+            passed to :func:`StarPopulation.prophist2d`.
+
+        :param dur_range, slope_range, depth_range: (optional)
+            Define ranges of plots.
+
+        :param **kwargs:
+            Additional keyword arguments passed to 
+            :func:`StarPopulation.prophist2d`.
+
+        """
+
         setfig(fig, figsize=figsize)
 
         if trsig is not None:
@@ -432,48 +660,112 @@ class EclipsePopulation(StarPopulation):
                 'is_specific', 'cadence'] + \
             super(EclipsePopulation,self)._properties
 
-    #def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
-    #    StarPopulation.load_hdf(self, filename, path=path)
-    #    try:
-    #        self._make_kde()
-    #    except NoTrapfitError:
-    #        logging.warning('Trapezoid fit not done.')
-    #    return self
+    @classmethod
+    def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
+        """
+        Loads EclipsePopulation from HDF file
+
+        Also runs :func:`EclipsePopulation._make_kde` if it can.
+
+        :param filename:
+            HDF file
+
+        :param path: (optional)
+            Path within HDF file
+
+        """
+
+        new = StarPopulation.load_hdf(filename, path=path)
+        try:
+            new._make_kde()
+        except NoTrapfitError:
+            logging.warning('Trapezoid fit not done.')
+        return new
 
 class PlanetPopulation(EclipsePopulation):
-    def __init__(self, filename=None, period=None, rprs=None,
+    def __init__(self, period=None, rprs=None,
                  mass=None, radius=None, Teff=None, logg=None,
                  starmodel=None,
                  band='Kepler', model='Planets', n=2e4,
                  fp_specific=0.01, u1=None, u2=None,
                  rbin_width=0.3,
-                 MAfn=None, lhoodcachefile=None, **kwargs):
+                 MAfn=None, **kwargs):
         """Population of Transiting Planets
 
-        Mostly a copy of EBPopulation, with small modifications.
+        Subclass of :class:`EclipsePopulation`.  This is mostly
+        a copy of :class:`EBPopulation`, with small modifications.
 
-        For simplicity, primary star has only a radius and mass;
-        the real properties don't matter at all.
+        Star properties may be defined either with either a 
+        :class:`isochrones.StarModel` or by defining just its
+        ``mass`` and ``radius`` (and ``Teff`` and ``logg`` if 
+        desired to set limb darkening coefficients appropriately).
 
-        
-                
-        If file is passed, population is loaded from .h5 file.
+        :param period:
+            Period of signal.  
+
+        :param rprs:
+            Point-estimate of Rp/Rs radius ratio.
+
+        :param mass, radius: (optional)
+            Mass and radius of host star.  If defined, must be
+            either tuples of form ``(value, error)`` or 
+            :class:`simpledist.Distribution` objects.
+
+        :param Teff, logg: (optional)
+            Teff and logg point estimates for host star.
+            These are used only for calculating limb darkening
+            coefficients.
+
+        :param starmodel: (optional)
+            The preferred way to define the properties of the 
+            host star.  If MCMC has been run on this model,
+            then samples are just read off; if it hasn't,
+            then it will run it.
+        :type starmodel:
+            :class:`isochrones.StarModel`
+
+        :param band: (optional)
+            Photometric band in which eclipse is detected.
+
+        :param model: (optional)
+            Name of the model.
+
+        :param n: (optional)
+            Number of instances to simulate.  Default = ``2e4``.
+
+        :param fp_specific: (optional)
+            "Specific occurrence rate" for this type of planets;
+            that is, the planet occurrence rate integrated
+            from ``(1-rbin_width)x`` to ``(1+rbin_width)x`` this planet radius.  This
+            goes into the ``priorfactor`` for this model.
+
+        :param u1, u2: (optional)
+            Limb darkening parameters.  If not provided, then 
+            calculated based on ``Teff, logg`` or just
+            defaulted to solar values.
+
+        :param rbin_width: (optional)
+            Fractional width of rbin for ``fp_specific``.
+
+        :param MAfn:
+            :class:`transit_basic.MAInterpolationFunction` object.
+            If not passed, then one with default parameters will
+            be created.
+
+        :param **kwargs:
+            Additional keyword arguments passed to :class:`EclipsePopulation`.
 
         """
 
         self.period = period
         self.model = model
         self.band = band
-        self.lhoodcachefile = lhoodcachefile
         self.rprs = rprs
         self.Teff = Teff
         self.logg = logg
         self.starmodel = starmodel
         
-        if filename is not None:
-            logging.debug('loading planet population from {}'.format(filename))
-            self.load_hdf(filename)
-        elif radius is not None and mass is not None or starmodel is not None:
+        if radius is not None and mass is not None or starmodel is not None:
             # calculates eclipses 
             logging.debug('generating planet population...')
             self.generate(rprs=rprs, mass=mass, radius=radius,
@@ -488,7 +780,8 @@ class PlanetPopulation(EclipsePopulation):
                  starmodel=None,
                 Teff=None, logg=None, rbin_width=0.3,
                 MAfn=None, **kwargs):
-        """Generates transits
+        """Generates Population
+
         """
 
         n = int(n)
@@ -528,7 +821,7 @@ class PlanetPopulation(EclipsePopulation):
         rp = self.rprs*radius.mean()
         rbin_min = (1-rbin_width)*rp
         rbin_max = (1+rbin_width)*rp
-        radius_p = np.random.random(1e5)*(rbin_max - rbin_min) + rbin_min
+        radius_p = np.random.random(int(1e5))*(rbin_max - rbin_min) + rbin_min
         mass_p = (radius_p*RSUN/REARTH)**2.06 * MEARTH/MSUN #hokey, but doesn't matter
 
         logging.debug('planet radius: {}'.format(radius_p))
@@ -597,8 +890,8 @@ class PlanetPopulation(EclipsePopulation):
 
         EclipsePopulation.__init__(self, stars=stars,
                                    period=self.period, model=self.model,
-                                   lhoodcachefile=self.lhoodcachefile,
-                                   priorfactors=priorfactors, prob=tot_prob)
+                                   priorfactors=priorfactors, prob=tot_prob,
+                                   **kwargs)
     @property
     def _properties(self):
         return ['rprs', 'Teff', 'logg'] + \
