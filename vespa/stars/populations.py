@@ -82,6 +82,10 @@ class StarPopulation(object):
         :func:`StarPopulation.load_hdf`.  **Support for saving 
         constraints is planned and partially implemented but untested.**
 
+        Any subclass must be able to be initialized with no arguments,
+        with no calculations being done; this enables the way that
+        :func:`StarPopulation.load_hdf` is implemented to work properly.
+
         :param stars: (:class:`pandas.DataFrame`, optional)
             Table containing properties of stars.
             Magnitude properties end with "_mag".  Default

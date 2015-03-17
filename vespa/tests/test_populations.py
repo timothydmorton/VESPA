@@ -64,9 +64,10 @@ def test_beb(filename=os.path.join(TMP,'test_beb.h5')):
     os.remove(filename)
 
 def test_pl(filename=os.path.join(TMP,'test_pl.h5')):
-    mass = 0.83
-    radius = 0.91
+    mass = (0.83,0.03)
+    radius = (0.91,0.03)
     period = 289.8622
+    rprs = 0.02
     pop = PlanetPopulation(period=period, rprs=rprs,
                        mass=mass, radius=radius, n=100, MAfn=MAfn)
 

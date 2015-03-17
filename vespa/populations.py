@@ -81,6 +81,10 @@ class EclipsePopulation(StarPopulation):
         if prob is not passed; should be able to calculated from given
         star/orbit properties.
 
+        As with :class:`stars.StarPopulation`, any subclass must be able 
+        to be initialized with no arguments passed, in order for
+        :func:`stars.StarPopulation.load_hdf` to work properly.
+
         :param stars:
             ``DataFrame`` with star properties.  Must contain
             ``M_1, M_2, R_1, R_2, u1_1, u1_2, u2_1, u2_2``.
@@ -679,13 +683,13 @@ class EclipsePopulation(StarPopulation):
         return new
 
 class PlanetPopulation(EclipsePopulation):
-    def __init__(self, period, rprs,
+    def __init__(self, period=None, rprs=None,
                  mass=None, radius=None, Teff=None, logg=None,
                  starmodel=None,
                  band='Kepler', model='Planets', n=2e4,
                  fp_specific=0.01, u1=None, u2=None,
                  rbin_width=0.3,
-                 MAfn=None, lhoodcachefile=None, **kwargs):
+                 MAfn=None, **kwargs):
         """Population of Transiting Planets
 
         Subclass of :class:`EclipsePopulation`.  This is mostly
@@ -702,23 +706,74 @@ class PlanetPopulation(EclipsePopulation):
         :param rprs:
             Point-estimate of Rp/Rs radius ratio.
 
+        :param mass, radius: (optional)
+            Mass and radius of host star.  If defined, must be
+            either tuples of form ``(value, error)`` or 
+            :class:`simpledist.Distribution` objects.
+
+        :param Teff, logg: (optional)
+            Teff and logg point estimates for host star.
+            These are used only for calculating limb darkening
+            coefficients.
+
+        :param starmodel: (optional)
+            The preferred way to define the properties of the 
+            host star.  If MCMC has been run on this model,
+            then samples are just read off; if it hasn't,
+            then it will run it.
+        :type starmodel:
+            :class:`isochrones.StarModel`
+
+        :param band: (optional)
+            Photometric band in which eclipse is detected.
+
+        :param model: (optional)
+            Name of the model.
+
+        :param n: (optional)
+            Number of instances to simulate.  Default = ``2e4``.
+
+        :param fp_specific: (optional)
+            "Specific occurrence rate" for this type of planets;
+            that is, the planet occurrence rate integrated
+            from ``(1-rbin_width)x`` to ``(1+rbin_width)x`` this planet radius.  This
+            goes into the ``priorfactor`` for this model.
+
+        :param u1, u2: (optional)
+            Limb darkening parameters.  If not provided, then 
+            calculated based on ``Teff, logg`` or just
+            defaulted to solar values.
+
+        :param rbin_width: (optional)
+            Fractional width of rbin for ``fp_specific``.
+
+        :param MAfn:
+            :class:`transit_basic.MAInterpolationFunction` object.
+            If not passed, then one with default parameters will
+            be created.
+
+        :param **kwargs:
+            Additional keyword arguments passed to :class:`EclipsePopulation`.
+
         """
 
         self.period = period
         self.model = model
         self.band = band
-        self.lhoodcachefile = lhoodcachefile
         self.rprs = rprs
         self.Teff = Teff
         self.logg = logg
         self.starmodel = starmodel
         
-        self.generate(rprs=rprs, mass=mass, radius=radius,
-                      n=n, fp_specific=fp_specific, 
-                      starmodel=starmodel,
-                      rbin_width=rbin_width,
-                      u1=u1, u2=u2, Teff=Teff, logg=logg,
-                      MAfn=MAfn, **kwargs)
+        if radius is not None and mass is not None or starmodel is not None:
+            # calculates eclipses 
+            logging.debug('generating planet population...')
+            self.generate(rprs=rprs, mass=mass, radius=radius,
+                          n=n, fp_specific=fp_specific, 
+                          starmodel=starmodel,
+                          rbin_width=rbin_width,
+                          u1=u1, u2=u2, Teff=Teff, logg=logg,
+                          MAfn=MAfn, **kwargs)
 
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
@@ -765,7 +820,7 @@ class PlanetPopulation(EclipsePopulation):
         rp = self.rprs*radius.mean()
         rbin_min = (1-rbin_width)*rp
         rbin_max = (1+rbin_width)*rp
-        radius_p = np.random.random(1e5)*(rbin_max - rbin_min) + rbin_min
+        radius_p = np.random.random(int(1e5))*(rbin_max - rbin_min) + rbin_min
         mass_p = (radius_p*RSUN/REARTH)**2.06 * MEARTH/MSUN #hokey, but doesn't matter
 
         logging.debug('planet radius: {}'.format(radius_p))
@@ -834,8 +889,8 @@ class PlanetPopulation(EclipsePopulation):
 
         EclipsePopulation.__init__(self, stars=stars,
                                    period=self.period, model=self.model,
-                                   lhoodcachefile=self.lhoodcachefile,
-                                   priorfactors=priorfactors, prob=tot_prob)
+                                   priorfactors=priorfactors, prob=tot_prob,
+                                   **kwargs)
     @property
     def _properties(self):
         return ['rprs', 'Teff', 'logg'] + \
