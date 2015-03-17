@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+# Author: Leo Girardi
+# TDM added <use_binaries> input argument; 1 if binaries should be simulated, 0 if no.
+$argc = @ARGV;
+if ($argc<8) {
+  die "Usage: get_trilegal <version> <gc_l> <gc_b> <area> <use_binaries> <AV_extinction> <sigmaAV_AV> <Phot.system> <icm_lim> <mag_lim> <outputfile>\n";
+} else {
+  if (@ARGV[0]>0) { 
+    $webserver = 'http://stev.oapd.inaf.it' ;
+  } else {
+    $webserver = 'http://localhost' ;
+    @ARGV[0] =~ s/-//;
+  };
+  $version = @ARGV[0];
+  $gal_l = @ARGV[1];
+  $gal_b = @ARGV[2];
+  $area = @ARGV[3];
+  $use_binaries = @ARGV[4];
+  $avextinction= @ARGV[5];
+  $sigmaav_av= @ARGV[6];
+  $system = @ARGV[7];
+  $icmlim = @ARGV[8];
+  $maglim = @ARGV[9];
+  $outputfile = @ARGV[10];
+  print "TRILEGAL is being called with \n l=$gal_l deg, b=$gal_b deg, area=$area sqrdeg\n Av=$avextinction with $sigmaav_av fractional r.m.s. spread \n in the $system system, complete down to mag=$maglim in its ${icmlim}th filter, use_binaries set to $use_binaries.\n";
+}
+
+$mainparams = ($version eq "1.6beta" || $version eq "1.6") ? 
+  "imf_file=tab_imf%2Fimf_chabrier_lognormal.dat&binary_frac=0.3&binary_mrinf=0.7&binary_mrsup=1&extinction_h_r=100000&extinction_h_z=110&extinction_kind=2&extinction_rho_sun=0.00015&extinction_infty=${avextinction}&extinction_sigma=${sigmaav_av}&r_sun=8700&z_sun=24.2&thindisk_kind=3&thindisk_h_z0=94.6902&thindisk_hz_tau0=5.55079e9&thindisk_hz_alpha=1.6666&thindisk_h_r=2913.36&thindisk_r_min=0&thindisk_r_max=15000&thindisk_rho_sun=55.4082&thindisk_file=tab_sfr%2Ffile_sfr_thindisk_mod.dat&thindisk_a=0.735097&thindisk_b=0&thickdisk_kind=3&thickdisk_h_z=800&thickdisk_h_r=2394.07&thickdisk_r_min=0&thickdisk_r_max=15000&thickdisk_rho_sun=0.0010&thickdisk_file=tab_sfr%2Ffile_sfr_thickdisk_m05.dat&thickdisk_a=1&thickdisk_b=0&halo_kind=2&halo_r_eff=2698.93&halo_q=0.583063&halo_rho_sun=0.000100397&halo_file=tab_sfr%2Ffile_sfr_halo.dat&halo_a=1&halo_b=0&bulge_kind=2&bulge_am=2500&bulge_a0=95&bulge_eta=0.68&bulge_csi=0.31&bulge_phi0=15&bulge_rho_central=406.0&bulge_file=tab_sfr%2Ffile_sfr_bulge_zoccali_p03.dat&bulge_a=1&bulge_b=-2.0e9&object_kind=0&object_mass=1280&object_dist=1658&object_av=1.504&object_avkind=1&object_file=tab_sfr%2Ffile_sfr_m4.dat&object_a=1&object_b=0&output_kind=1&bulge_cutoffmass=0.01&object_cutoffmass=0.8"
+  :
+  "imf_file=tab_imf%2Fimf_chabrier_lognormal.dat&binary_frac=0.3&binary_mrinf=0.7&binary_mrsup=1&extinction_h_r=100000&extinction_h_z=110&extinction_kind=2&extinction_rho_sun=0.00015&extinction_infty=${avextinction}&extinction_sigma=${sigmaav_av}&r_sun=8700&z_sun=24.2&thindisk_h_r=2800&thindisk_r_min=0&thindisk_r_max=15000&thindisk_kind=3&thindisk_h_z0=95&thindisk_hz_tau0=4400000000&thindisk_hz_alpha=1.6666&thindisk_rho_sun=59&thindisk_file=tab_sfr%2Ffile_sfr_thindisk_mod.dat&thindisk_a=0.8&thindisk_b=0&thickdisk_kind=0&thickdisk_h_r=2800&thickdisk_r_min=0&thickdisk_r_max=15000&thickdisk_h_z=800&thickdisk_rho_sun=0.0015&thickdisk_file=tab_sfr%2Ffile_sfr_thickdisk.dat&thickdisk_a=1&thickdisk_b=0&halo_kind=2&halo_r_eff=2800&halo_q=0.65&halo_rho_sun=0.00015&halo_file=tab_sfr%2Ffile_sfr_halo.dat&halo_a=1&halo_b=0&bulge_kind=2&bulge_am=2500&bulge_a0=95&bulge_eta=0.68&bulge_csi=0.31&bulge_phi0=15&bulge_rho_central=406.0&bulge_cutoffmass=0.01&bulge_file=tab_sfr%2Ffile_sfr_bulge_zoccali_p03.dat&bulge_a=1&bulge_b=-2.0e9&object_kind=0&object_mass=1280&object_dist=1658&object_av=1.504&object_avkind=1&object_cutoffmass=0.8&object_file=tab_sfr%2Ffile_sfr_m4.dat&object_a=1&object_b=0&output_kind=1"
+  ;
+while () {
+  $tr = `wget -o lixo -Otmpfile --post-data='submit_form=Submit&trilegal_version=${version}&gal_coord=1&gc_l=${gal_l}&gc_b=${gal_b}&eq_alpha=0&eq_delta=0&field=${area}&photsys_file=tab_mag_odfnew%2Ftab_mag_${system}.dat&icm_lim=${icmlim}&mag_lim=${maglim}&mag_res=0.1&binary_kind=${use_binaries}&${mainparams}' ${webserver}/cgi-bin/trilegal_${version}`;
+  if (-s "tmpfile") {
+    last;
+  } else {
+    print "No communication with $webserver, will retry in 2 min\n";
+    `sleep 120`;
+  }
+}
+
+open (TMP,"tmpfile");
+while ($_=<TMP>) {
+  last if (/output\d/);
+}
+$tr=$_;
+close TMP;
+if ($tr =~ /(output\d+)/){
+    $code = $1;
+}
+$filename = $code . ".dat";
+print "retrieving data from $filename ...\n";
+while () {
+  `sleep 40`;
+  `wget -o lixo -O$filename ${webserver}/~lgirardi/tmp/$filename`;
+  $_=`tail -1 $filename`;
+  if (/normally/) {
+    print "model downloaded!..\n";
+    last;
+  } else {
+    print "still running...\n";
+  }
+}
+`rm -f lixo tmpfile`;
+`mv $filename $outputfile`;
+print "results copied to $outputfile\n";

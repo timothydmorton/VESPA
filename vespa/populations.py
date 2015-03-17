@@ -780,7 +780,8 @@ class PlanetPopulation(EclipsePopulation):
                  starmodel=None,
                 Teff=None, logg=None, rbin_width=0.3,
                 MAfn=None, **kwargs):
-        """Generates transits
+        """Generates Population
+
         """
 
         n = int(n)
