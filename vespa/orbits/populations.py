@@ -519,25 +519,30 @@ class BinaryGrid(OrbitPopulation):
     def __init__(self, M1, qmin=0.1, qmax=1, Pmin=0.5, Pmax=365, N=1e5, logP=True, eccfn=None):
         """A grid of companions to primary, in mass ratio and period space.
 
-        Parameters
-        ----------
-        M1 : float
-            Primary mass (solar masses)
 
-        qmin,qmax : float, optional
+        :param M1:
+            Primary mass [solar masses].
+        :type M1:
+            ``float``
+
+        :param qmin,qmax: (optional)
             Minimum and maximum mass ratios.
 
-        Pmin,Pmax : float, optional
+        :param Pmin,Pmax: (optional)
             Min/max periods in days.
 
-        N : int, optional
-            Total number of simulations.
+        :param N: (optional)
+            Total number of simulations.  Default = 10^5.
 
-        logP : bool, optional
+        :param logP: (optional)
             Whether to grid in log-period.  If ``False``, then linear.
 
-        eccfn : callable, or ``None``, optional
+        :param eccfn: (optional)
             Function that returns eccentricity as a function of period.
+            If ``None``, then eccentricity will be zero.
+        :type eccfn:
+            callable
+
         """
         M1s = np.ones(N)*M1
         M2s = (rand.random(size=N)*(qmax-qmin) + qmin)*M1s
@@ -557,11 +562,43 @@ class BinaryGrid(OrbitPopulation):
 
         OrbitPopulation.__init__(self,M1s,M2s,Ps,ecc=eccs)
 
-    def RV_RMSgrid(self,ts,res=20,mres=None,Pres=None,conf=0.95,measured_rms=None,drv=0,
+    def RV_RMSgrid(self,ts,res=20,mres=None,Pres=None,
+                   conf=0.95,measured_rms=None,drv=0,
                    plot=True,fig=None,contour=True,sigma=1):
         """Writes a grid of RV RMS values, assuming observations at given times.
 
-        Hasn't really been tested 
+        Caveat Emptor: Written a long time ago, and 
+        hasn't really been tested. 
+
+        :param ts:
+            Times of observations
+
+        :param res, mres, Pres: (optional)
+            Resolution of grids.  ``res`` relates to both mass and period;
+            otherwise ``mres`` and ``Pres`` can be set separately.
+
+        :param conf: (optional)
+            Confidence at which to exclude regions.  Used if ``measured_rms``
+            is ``None``.
+
+        :param measured_rms: (optional)
+            Measured RV RMS, if applicable [not sure exactly how this is used]
+
+        :param drv: (optional)
+            Uncertainties in RV to simulate.
+
+        :param plot: (optional)
+            Whether to plot result.
+
+        :param fig: (optional)
+            Passed to :func:`plotutils.setfig`.
+
+        :param contour: (optional)
+            Whether to plot contours.
+
+        :param sigma: (optional)
+            Level at which to exclude, based on ``measured_rms``.
+
         """
         RVs = self.RV_timeseries(ts)
         RVs += rand.normal(size=np.size(RVs)).reshape(RVs.shape)*drv
@@ -579,14 +616,9 @@ class BinaryGrid(OrbitPopulation):
         mbin_centers = (mbins[:-1] + mbins[1:])/2.
         logPbin_centers = (logPbins[:-1] + logPbins[1:])/2.
 
-        #print mbins
-        #print Pbins
-
         minds = np.digitize(self.M2,mbins)
         Pinds = np.digitize(self.P,Pbins)
 
-        #means = np.zeros((mres,Pres))
-        #stds = np.zeros((mres,Pres))
         pctiles = np.zeros((mres,Pres))
         ns = np.zeros((mres,Pres))
 
@@ -594,8 +626,6 @@ class BinaryGrid(OrbitPopulation):
             for j in np.arange(Pres):
                 w = np.where((minds==i+1) & (Pinds==j+1))
                 these = rms[w]
-                #means[i,j] = these.mean() 
-                #stds[i,j] = these.std()
                 n = size(these)
                 ns[i,j] = n
                 if measured_rms is not None:
@@ -605,10 +635,6 @@ class BinaryGrid(OrbitPopulation):
                     pctiles[i,j] = these[inds][int((1-conf)*n)]
 
         Ms,logPs = np.meshgrid(mbin_centers,logPbin_centers)
-        #pts = np.array([Ms.ravel(),logPs.ravel()]).T
-        #interp = interpnd(pts,pctiles.ravel())
-
-        #interp = interp2d(Ms,logPs,pctiles.ravel(),kind='linear')
 
         if plot:
             setfig(fig)
@@ -641,6 +667,5 @@ class BinaryGrid(OrbitPopulation):
             plt.xlabel('Log P')
             plt.ylabel('M2')
 
-        #return interp
         return mbins,Pbins,pctiles,ns
             
