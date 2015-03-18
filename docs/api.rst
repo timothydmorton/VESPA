@@ -4,3 +4,4 @@ API
 ===
 
 .. module:: vespa
+
