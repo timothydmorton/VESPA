@@ -1803,6 +1803,9 @@ class PopulationSet(object):
 
     @property
     def constraints(self):
+        """
+        Unique list of constraints among all populations in set.
+        """
         cs = []
         for pop in self.poplist:
             cs += [c for c in pop.constraints]
@@ -1810,13 +1813,22 @@ class PopulationSet(object):
 
     @property
     def modelnames(self):
+        """
+        List of model names
+        """
         return [pop.model for pop in self.poplist]
 
     @property
     def shortmodelnames(self):
+        """
+        List of short modelnames.
+        """
         return [pop.modelshort for pop in self.poplist]
 
     def save_hdf(self, filename, path='', overwrite=False):
+        """
+        Saves PopulationSet to HDF file.
+        """
         if os.path.exists(filename) and overwrite:
             os.remove(filename)
 
