@@ -1,22 +1,31 @@
-.. vespa documentation master file, created by
-   sphinx-quickstart on Wed Mar 18 14:47:37 2015.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to vespa's documentation!
+vespa
 =================================
 
-Contents:
+``vespa`` is a Python package built to enable automated false positive 
+analysis of transiting planet signals. It implements my latest version of the 
+general procedure described in detail in `Morton (2012) <http://adsabs.harvard.edu/abs/2012ApJ...761....6M>`_.
+
+Installation
+------------
+
+To install, you can get the most recently released version from PyPI::
+
+    pip install isochrones [--user]
+
+Or you can clone from github::
+
+    git clone https://github.com/timothydmorton/isochrones.git
+    cd isochrones
+    python setup.py install [--user]
+
+The ``--user`` argument may be necessary if you don't have root privileges.
+
+
+API Documentation
+-----------------
 
 .. toctree::
    :maxdepth: 2
 
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+   api
