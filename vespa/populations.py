@@ -773,7 +773,7 @@ class PlanetPopulation(EclipsePopulation):
                           starmodel=starmodel,
                           rbin_width=rbin_width,
                           u1=u1, u2=u2, Teff=Teff, logg=logg,
-                          MAfn=MAfn)
+                          MAfn=MAfn,lhoodcachefile=lhoodcachefile)
 
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
@@ -1838,6 +1838,9 @@ class PopulationSet(object):
 
     @classmethod
     def load_hdf(cls, filename, path=''):
+        """
+        Loads PopulationSet from file
+        """
         store = pd.HDFStore(filename)
         models = []
         types = []
@@ -1856,6 +1859,8 @@ class PopulationSet(object):
         #return self
 
     def add_population(self,pop):
+        """Adds population to PopulationSet
+        """
         if pop.model in self.modelnames:
             raise ValueError('%s model already in PopulationSet.' % pop.model)
         self.modelnames.append(pop.model)
@@ -1864,6 +1869,8 @@ class PopulationSet(object):
         self.apply_dmaglim()
 
     def remove_population(self,pop):
+        """Removes population from PopulationSet
+        """
         iremove=None
         for i in range(len(self.poplist)):
             if self.modelnames[i]==self.poplist[i].model:
@@ -1902,6 +1909,9 @@ class PopulationSet(object):
 
     @property
     def colordict(self):
+        """
+        Dictionary holding colors that correspond to constraints.
+        """
         d = {}
         i=0
         n = len(self.constraints)
@@ -1913,6 +1923,8 @@ class PopulationSet(object):
 
     @property
     def priorfactors(self):
+        """Combinartion of priorfactors from all populations
+        """
         priorfactors = {}
         for pop in self.poplist:
             for f in pop.priorfactors:
@@ -1925,6 +1937,8 @@ class PopulationSet(object):
         
 
     def change_prior(self,**kwargs):
+        """Changes prior factor(s) in all populations
+        """
         for kw,val in kwargs.iteritems():
             if kw=='area':
                 logging.warning('cannot change area in this way--use change_maxrad instead')
@@ -1934,12 +1948,26 @@ class PopulationSet(object):
                 pop.change_prior(**k)
 
     def apply_multicolor_transit(self,band,depth):
+        """
+        Applies constraint corresponding to measuring transit in different band
+
+        This is not implemented yet.
+        """
         if '{} band transit'.format(band) not in self.constraints:
             self.constraints.append('{} band transit'.format(band))
         for pop in self.poplist:
             pop.apply_multicolor_transit(band,depth)
 
     def set_maxrad(self,newrad):
+        """
+        Sets max allowed radius in populations.
+
+        Doesn't operate via the :class:`stars.Constraint`
+        protocol; rather just rescales the sky positions
+        for the background objects and recalculates
+        sky area, etc.
+
+        """
         if not isinstance(newrad, Quantity):
             newrad = newrad * u.arcsec
         #if 'Rsky' not in self.constraints:
