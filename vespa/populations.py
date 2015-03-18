@@ -689,7 +689,7 @@ class PlanetPopulation(EclipsePopulation):
                  band='Kepler', model='Planets', n=2e4,
                  fp_specific=0.01, u1=None, u2=None,
                  rbin_width=0.3,
-                 MAfn=None, **kwargs):
+                 MAfn=None, lhoodcachefile=None):
         """Population of Transiting Planets
 
         Subclass of :class:`EclipsePopulation`.  This is mostly
@@ -747,14 +747,14 @@ class PlanetPopulation(EclipsePopulation):
         :param rbin_width: (optional)
             Fractional width of rbin for ``fp_specific``.
 
-        :param MAfn:
+        :param MAfn: (optional)
             :class:`transit_basic.MAInterpolationFunction` object.
             If not passed, then one with default parameters will
             be created.
 
-        :param **kwargs:
-            Additional keyword arguments passed to :class:`EclipsePopulation`.
-
+        :param lhoodcachefile: (optional)
+            Likelihood calculation cache file.
+            
         """
 
         self.period = period
@@ -773,15 +773,16 @@ class PlanetPopulation(EclipsePopulation):
                           starmodel=starmodel,
                           rbin_width=rbin_width,
                           u1=u1, u2=u2, Teff=Teff, logg=logg,
-                          MAfn=MAfn, **kwargs)
+                          MAfn=MAfn)
 
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
                  starmodel=None,
                 Teff=None, logg=None, rbin_width=0.3,
-                MAfn=None, **kwargs):
+                MAfn=None):
         """Generates Population
 
+        All arguments defined in ``__init__``.
         """
 
         n = int(n)
@@ -891,7 +892,7 @@ class PlanetPopulation(EclipsePopulation):
         EclipsePopulation.__init__(self, stars=stars,
                                    period=self.period, model=self.model,
                                    priorfactors=priorfactors, prob=tot_prob,
-                                   **kwargs)
+                                   lhoodcachefile=lhoodcachefile)
     @property
     def _properties(self):
         return ['rprs', 'Teff', 'logg'] + \
@@ -899,28 +900,88 @@ class PlanetPopulation(EclipsePopulation):
 
     
 class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
-    def __init__(self, filename=None, period=None, mags=None, colors=['JK'],
-                 mass=None, age=None, feh=None, starfield=None, colortol=0.1,
+    def __init__(self, period=None, mags=None, colors=('JK'), colortol=0.1,
+                 mass=None, age=None, feh=None, starmodel=None,
+                 starfield=None, 
                  band='Kepler', model='EBs', f_binary=0.4, n=2e4,
-                 MAfn=None, lhoodcachefile=None, starmodel=None,
+                 MAfn=None, lhoodcachefile=None,
                  **kwargs):
         """Population of EBs
 
-        Mostly a copy of HEBPopulation, with small modifications.
+        EB population is generated either by generating a population
+        of binary stars to match the observed colors, or by fixing a
+        primary star to have certain properties and then simulating
+        binary companions.
 
-        If file is passed, population is loaded from .h5 file.
+        Inherits from :class:`EclipsePopulation` and
+        :class:`stars.ColormatchMultipleStarPopulation`.
+        
+        :param period:
+            Orbital period
 
-        If file not passed, then a population will be generated.
-        If mass, age, and feh are passed, then the primary of
-        the population will be generated according to those distributions.
-        If distributions are not passed, then populations will be generated
-        according to provided starfield.
+        :param mags:
+            Observed apparent magnitudes.  Won't work if this is
+            ``None``, which is the default.
+        :type mags:
+            ``dict``
 
-        mass is primary mass.  mass, age, and feh can be distributions
-        (or tuples)
+        :param colors: (optional)
+            Colors to use to enforce match with observations.
+            e.g., ('JK', 'HK'), etc.  The more colors are provided
+            the longer it might take to generate an appropriate
+            population. 
+        :type colors:
+            ``tuple`` or ``list``
 
-        kwargs passed to ``ColormatchMultipleStarPopulation`` 
+        :param colortol: (optional)
+            Threshold within which simulated binary companions must
+            match observed colors.  Default is 0.1 mag.
 
+        :param mass, age, feh: (optional)
+            Mass, log10(age), and feh  of primary star;
+            either in ``(value, error)`` format
+            or as :class:`simpledist.Distribution` objects.
+
+        :param starmodel: (optional)
+            The preferred way to define the properties of the 
+            host star.  If MCMC has been run on this model,
+            then samples are just read off; if it hasn't,
+            then it will run it.
+        :type starmodel:
+            :class:`isochrones.StarModel`            
+            
+        :param starfield: (optional)
+            If ``mass`` or ``starmodel`` not provided, then primary masses will
+            get randomly selected from this starfield, assumed to be
+            a TRILEGAL simulation.  If string, then should be a filename
+            of an .h5 file containing the TRILEGAL simulation; can also
+            be a ``DataFrame`` directly (see
+            :class:`stars.ColormatchMultipleStarPopulation`).
+
+        :param band: (optional)
+            Photometric bandpass in which transit signal is observed.
+
+        :param model:  (optional)
+            Name of model.
+
+        :param f_binary: (optional)
+            Binary fraction to be assumed.  Will be one of the ``priorfactors``.
+
+        :param n: (optional)
+            Number of instances to simulate.  Default = 2e4.
+
+        :param MAfn: (optional)
+            :class:`transit_basic.MAInterpolationFunction` object.
+            If not passed, then one with default parameters will
+            be created.
+
+        :param lhoodcachefile: (optional)
+            Likelihood calculation cache file.
+                    
+        :param **kwargs:
+            Additional keyword arguments passed to
+            :class:`stars.ColormatchMultipleStarPopulation`
+            
         currently doesn't work if mags is None.
         """
 
@@ -929,9 +990,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         self.band = band
         self.lhoodcachefile = lhoodcachefile
 
-        if filename is not None:
-            self.load_hdf(filename)
-        elif mags is not None or mass is not None:
+        if mags is not None or mass is not None or starmodel is not None:
             #generates stars from ColormatchMultipleStarPopulation
             # and eclipses using calculate_eclipses
             self.generate(mags=mags, colors=colors, colortol=colortol,
@@ -946,7 +1005,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                  **kwargs):
         """Generates stars and eclipses
 
-        stars from ColormatchStellarPopulation; eclipses using calculate_eclipses
+        All arguments previous defined.
         """
         n = int(n)
         #if provided, period_long (self.period) 
@@ -1060,8 +1119,8 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
         EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
                                    period=self.period, model=self.model,
-                                   lhoodcachefile=self.lhoodcachefile,
-                                   priorfactors=priorfactors, prob=tot_prob)
+                                   priorfactors=priorfactors, prob=tot_prob,
+                                   lhoodcachefile=self.lhoodcachefile)
 
 
 class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
