@@ -779,7 +779,7 @@ class PlanetPopulation(EclipsePopulation):
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
                  starmodel=None,
                 Teff=None, logg=None, rbin_width=0.3,
-                MAfn=None):
+                MAfn=None, lhoodcachefile=None):
         """Generates Population
 
         All arguments defined in ``__init__``.
@@ -1980,6 +1980,9 @@ class PopulationSet(object):
                     pass
 
     def apply_dmaglim(self,dmaglim=None):
+        """
+        Applies a constraint that sets the 
+        """
         if 'bright blend limit' not in self.constraints:
             self.constraints.append('bright blend limit')
         for pop in self.poplist:
