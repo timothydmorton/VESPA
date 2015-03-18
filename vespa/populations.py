@@ -2119,15 +2119,76 @@ class PopulationSet(object):
 def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                        u11s=0.394, u21s=0.296, u12s=0.394, u22s=0.296,
                        Ps=None, period=None, logperkde=RAGHAVAN_LOGPERKDE,
-                       incs=None, eccs=None, band='i',
-                       mininc=None, maxecc=0.97, verbose=False,
-                       return_probability_only=False, return_indices=False,
-                       calc_mininc=True, MAfn=None):
+                       incs=None, eccs=None, 
+                       mininc=None, calc_mininc=True,
+                       maxecc=0.97, ecc_fn=draw_eccs,
+                       band='Kepler', 
+                       return_probability_only=False, return_indices=True,
+                       MAfn=None):
     """Returns random eclipse parameters for provided inputs
 
     If single period desired, pass 'period' keyword.
 
     M1s, M2s, R1s, R2s must be array_like
+
+    :param M1s, M2s, R1s, R2s, mag1s, mag2s: (array-like)
+        Primary and secondary properties (mass, radius, magnitude)
+   
+    :param u11s, u21s, u12s, u22s: (optional)
+        Limb darkening parameters (u11 = u1 for star 1, u21 = u2 for star 1, etc.)
+
+    :param Ps: (array-like, optional)
+        Orbital periods; same size as ``M1s``, etc.  
+        If only a single period is desired, use ``period``.
+        
+    :param period: (optional)
+        Orbital period; use this keyword if only a single period is desired.
+
+    :param logperkde: (optional)
+        If neither ``Ps`` nor ``period`` is provided, then periods will be
+        randomly generated according to this log-period distribution.
+        Default is taken from the Raghavan (2010) period distribution.
+
+    :param incs, eccs: (optional)
+        Inclinations and eccentricities.  If not passed, they will be generated.
+        Eccentricities will be generated according to ``ecc_fn``; inclinations
+        will be randomly generated out to ``mininc``.
+
+    :param mininc: (optional)
+        Minimum inclination to generate.  Useful if you want to enhance
+        efficiency by only generating mostly eclipsing, instead of mostly
+        non-eclipsing systems.  If not provided and ``calc_mininc`` is 
+        ``True``, then this will be calculated based on inputs.
+
+    :param calc_mininc: (optional)
+        Whether to calculate ``mininc`` based on inputs.  If truly isotropic
+        inclinations are desired, set this to ``False``.
+
+    :param maxecc: (optional)
+        Maximum eccentricity to generate.
+
+    :param ecc_fn: (callable, optional)
+        Orbital eccentricity generating function.  Must return ``n`` orbital 
+        eccentricities generated according to provided period(s)::
+
+            eccs = ecc_fn(n,Ps)
+
+        Defaults to :func:`stars.utils.draw_eccs`.
+
+    :param band: (optional)
+        Photometric bandpass in which eclipse is observed.
+        
+    :param return_probability_only: (optional)
+        If ``True``, then will return only the average eclipse probability
+        of population.
+
+    :param return_indices: (optional)
+       If ``True``, returns the indices of the original input arrays 
+       that the output ``DataFrame`` corresponds to.  *This behavior
+       will/should be changed to just return a ``DataFrame`` of the same
+       length as inputs...*
+    
+
     """
     if MAfn is None:
         logging.warning('MAInterpolationFunction not passed, so generating one...')
@@ -2165,9 +2226,9 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     simeccs = False
     if eccs is None:
         if not simPs and period is not None:
-            eccs = draw_eccs(n,period,maxecc=maxecc)
+            eccs = ecc_fn(n,period,maxecc=maxecc)
         else:
-            eccs = draw_eccs(n,Ps,maxecc=maxecc)
+            eccs = ecc_fn(n,Ps,maxecc=maxecc)
         simeccs = True
 
     bad_Ps = np.isnan(Ps)
