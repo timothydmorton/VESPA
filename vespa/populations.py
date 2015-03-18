@@ -434,7 +434,7 @@ class EclipsePopulation(StarPopulation):
             if cachefile is None:
                 cachefile = 'lhoodcache.dat'
 
-        lhoodcache = loadcache(cachefile)
+        lhoodcache = _loadcache(cachefile)
         key = hashcombine(self, trsig)
         if key in lhoodcache and not recalc:
             return lhoodcache[key] 
@@ -2443,8 +2443,8 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
 #########################
 ###### Utility functions
 
-def loadcache(cachefile):
-    """  
+def _loadcache(cachefile):
+    """ Returns a dictionary resulting from reading a likelihood cachefile
     """
     cache = {}
     if os.path.exists(cachefile):
