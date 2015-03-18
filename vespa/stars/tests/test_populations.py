@@ -1,9 +1,9 @@
 from __future__ import print_function, division
 
-from starutils.populations import Raghavan_BinaryPopulation
-from starutils.populations import MultipleStarPopulation
-from starutils.populations import BGStarPopulation_TRILEGAL
-from starutils.populations import ColormatchMultipleStarPopulation
+from ..populations import Raghavan_BinaryPopulation
+from ..populations import MultipleStarPopulation
+from ..populations import BGStarPopulation_TRILEGAL
+from ..populations import ColormatchMultipleStarPopulation
 
 import os, os.path
 import tempfile
