@@ -772,7 +772,8 @@ class StarPopulation(object):
         if measurement is not None:
             val,dval = measurement
             self.apply_constraint(MeasurementConstraint(getattr(self.stars,prop),
-                                                        val,dval,name=prop,thresh=thresh),
+                                                        val,dval,name=prop,
+                                                        thresh=thresh),
                                   selectfrac_skip=selectfrac_skip,
                                   distribution_skip=distribution_skip)
         else:
@@ -781,7 +782,8 @@ class StarPopulation(object):
                                   selectfrac_skip=selectfrac_skip,
                                   distribution_skip=distribution_skip)
 
-    def apply_trend_constraint(self,limit,dt, distribution_skip=True, **kwargs):
+    def apply_trend_constraint(self, limit, dt, distribution_skip=True, 
+                               **kwargs):
         """
         Constrains change in RV to be less than limit over time dt.
 

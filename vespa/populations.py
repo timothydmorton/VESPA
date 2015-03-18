@@ -1981,8 +1981,12 @@ class PopulationSet(object):
 
     def apply_dmaglim(self,dmaglim=None):
         """
-        Applies a constraint that sets the 
+        Applies a constraint that sets the maximum brightness for non-target star
+
+        :func:`stars.StarPopulation.set_dmaglim` not yet implemented.
+
         """
+        raise NotImplementedError
         if 'bright blend limit' not in self.constraints:
             self.constraints.append('bright blend limit')
         for pop in self.poplist:
@@ -1995,24 +1999,45 @@ class PopulationSet(object):
             pop.set_dmaglim(dmag)
         self.dmaglim = dmaglim
 
-    def apply_trend_constraint(self,limit,dt):
+    def apply_trend_constraint(self, limit, dt, **kwargs):
+        """
+        Applies constraint corresponding to RV trend non-detection to each population
+
+        See :func:`stars.StarPopulation.apply_trend_constraint`; 
+        all arguments passed to that function for each population.
+
+        """
         if 'RV monitoring' not in self.constraints:
             self.constraints.append('RV monitoring')
         for pop in self.poplist:
             if not hasattr(pop,'dRV'):
                 continue
-            pop.apply_trend_constraint(limit,dt)
+            pop.apply_trend_constraint(limit, dt, **kwargs)
         self.trend_limit = limit
         self.trend_dt = dt
 
-    def apply_secthresh(self,secthresh):
+    def apply_secthresh(self,secthresh, **kwargs):
+        """Applies secondary depth constraint to each population
+        
+        See :func:`EclipsePopulation.apply_secthresh`; 
+        all arguments passed to that function for each population.
+
+        """
+
         if 'secondary depth' not in self.constraints:
             self.constraints.append('secondary depth')
         for pop in self.poplist:
-            pop.apply_secthresh(secthresh)
+            pop.apply_secthresh(secthresh, **kwargs)
         self.secthresh = secthresh
 
     def constrain_property(self,prop,**kwargs):
+        """
+        Constrains property for each population
+
+        See :func:`stars.StarPopulation.constrain_property`;
+        all arguments passed to that function for each population.
+
+        """
         if prop not in self.constraints:
             self.constraints.append(prop)
         for pop in self.poplist:
@@ -2022,12 +2047,25 @@ class PopulationSet(object):
                 logging.info('%s model does not have property stars.%s (constraint not applied)' % (pop.model,prop))
 
     def replace_constraint(self,name,**kwargs):
+        """
+        Replaces removed constraint in each population.
+
+        See :func:`stars.StarPopulation.replace_constraint`
+
+        """
+
         for pop in self.poplist:
             pop.replace_constraint(name,**kwargs)
         if name not in self.constraints:
             self.constraints.append(name)
 
     def remove_constraint(self,*names):
+        """
+        Removes constraint from each population
+
+        See :func:`stars.StarPopulation.remove_constraint
+
+        """
         for name in names:
             for pop in self.poplist:
                 if name in pop.constraints:
@@ -2038,6 +2076,13 @@ class PopulationSet(object):
                 self.constraints.remove(name)
                     
     def apply_cc(self, cc, **kwargs):
+        """
+        Applies contrast curve constraint to each population
+
+        See :func:`stars.StarPopulation.apply_cc`;
+        all arguments passed to that function for each population.
+
+        """
         if type(cc)==type(''):
             pass
         if cc.name not in self.constraints:
@@ -2050,6 +2095,13 @@ class PopulationSet(object):
                     logging.info('%s cc not applied to %s model' % (cc.name,pop.model))
 
     def apply_vcc(self,vcc):
+        """
+        Applies velocity contrast curve constraint to each population
+
+        See :func:`stars.StarPopulation.apply_vcc`;
+        all arguments passed to that function for each population.
+
+        """
         if 'secondary spectrum' not in self.constraints:
             self.constraints.append('secondary spectrum')
         for pop in self.poplist:
