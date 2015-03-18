@@ -900,15 +900,16 @@ class PlanetPopulation(EclipsePopulation):
 
     
 class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
-    def __init__(self, period=None, mags=None, colors=('JK'), colortol=0.1,
+    def __init__(self, period=None, mags=None, colors=('JK',), colortol=0.1,
                  mass=None, age=None, feh=None, starmodel=None,
                  starfield=None, 
                  band='Kepler', model='EBs', f_binary=0.4, n=2e4,
                  MAfn=None, lhoodcachefile=None,
                  **kwargs):
-        """Population of EBs
+        """Population of Eclipsing Binaries (undiluted)
 
-        EB population is generated either by generating a population
+        Eclipsing Binary (EB) population is generated either
+        by generating a population
         of binary stars to match the observed colors, or by fixing a
         primary star to have certain properties and then simulating
         binary companions.
@@ -1124,27 +1125,94 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
 
 class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
-    def __init__(self, filename=None, period=None, mags=None, colors=['JK'], 
-                 mass=None, age=None, feh=None, starfield=None, colortol=0.1,
+    def __init__(self, period=None, mags=None, colors=('JK',), colortol=0.1,
+                 mass=None, age=None, feh=None, starmodel=None, 
+                 starfield=None, 
                  band='Kepler', model='HEBs', f_triple=0.12, n=2e4,
-                 MAfn=None, lhoodcachefile=None, starmodel=None, 
+                 MAfn=None, lhoodcachefile=None, 
                  **kwargs):
-        """Population of HEBs
+        """Population of Hierarchical Eclipsing Binaries
 
-        If file is passed, population is loaded from .h5 file.
+        All arguments the same as :class:`EBPopulation`; except
+        for ``f_triple``.
 
-        If file not passed, then a population will be generated.
-        If mass, age, and feh are passed, then the primary of
-        the population will be generated according to those distributions.
-        If distributions are not passed, then populations will be generated
-        according to provided starfield.
+        Hierarchical Eclipsing Binary (HEB) population is generated
+        either by generating a population
+        of binary stars to match the observed colors, or by fixing a
+        primary star to have certain properties and then simulating
+        binary companions.
 
-        mass is primary mass.  mass, age, and feh can be distributions
-        (or tuples)
+        Inherits from :class:`EclipsePopulation` and
+        :class:`stars.ColormatchMultipleStarPopulation`.
+        
+        :param period:
+            Orbital period
 
-        kwargs passed to ``ColormatchMultipleStarPopulation`` 
+        :param mags:
+            Observed apparent magnitudes.  Won't work if this is
+            ``None``, which is the default.
+        :type mags:
+            ``dict``
 
-        currently doesn't work if mags is None.
+        :param colors: (optional)
+            Colors to use to enforce match with observations.
+            e.g., ('JK', 'HK'), etc.  The more colors are provided
+            the longer it might take to generate an appropriate
+            population. 
+        :type colors:
+            ``tuple`` or ``list``
+
+        :param colortol: (optional)
+            Threshold within which simulated binary companions must
+            match observed colors.  Default is 0.1 mag.
+
+        :param mass, age, feh: (optional)
+            Mass, log10(age), and feh  of primary star;
+            either in ``(value, error)`` format
+            or as :class:`simpledist.Distribution` objects.
+
+        :param starmodel: (optional)
+            The preferred way to define the properties of the 
+            host star.  If MCMC has been run on this model,
+            then samples are just read off; if it hasn't,
+            then it will run it.
+        :type starmodel:
+            :class:`isochrones.StarModel`            
+            
+        :param starfield: (optional)
+            If ``mass`` or ``starmodel`` not provided, then primary masses will
+            get randomly selected from this starfield, assumed to be
+            a TRILEGAL simulation.  If string, then should be a filename
+            of an .h5 file containing the TRILEGAL simulation; can also
+            be a ``DataFrame`` directly (see
+            :class:`stars.ColormatchMultipleStarPopulation`).
+
+        :param band: (optional)
+            Photometric bandpass in which transit signal is observed.
+
+        :param model:  (optional)
+            Name of model.
+
+        :param f_triple: (optional)
+            Stellar Triple fraction to be assumed.
+            Will be one of the ``priorfactors``.
+
+        :param n: (optional)
+            Number of instances to simulate.  Default = 2e4.
+
+        :param MAfn: (optional)
+            :class:`transit_basic.MAInterpolationFunction` object.
+            If not passed, then one with default parameters will
+            be created.
+
+        :param lhoodcachefile: (optional)
+            Likelihood calculation cache file.
+                    
+        :param **kwargs:
+            Additional keyword arguments passed to
+            :class:`stars.ColormatchMultipleStarPopulation`
+            
+                
         """
 
         self.period = period
@@ -1152,9 +1220,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         self.band = band
         self.lhoodcachefile = lhoodcachefile
 
-        if filename is not None:
-            self.load_hdf(filename)
-        elif mags is not None or mass is not None:
+        if mags is not None or mass is not None or starmodel is not None:
             #generates stars from ColormatchMultipleStarPopulation
             # and eclipses using calculate_eclipses
             self.generate(mags=mags, colors=colors, colortol=colortol,
@@ -1178,7 +1244,6 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                  **kwargs):
         """Generates stars and eclipses
 
-        stars from ColormatchStellarPopulation; eclipses using calculate_eclipses
         """
         n = int(n)
         #if provided, period_short (self.period) 
@@ -1253,8 +1318,10 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
             df_long = pd.concat((df_long, new_df_long))
             df_short = pd.concat((df_short, new_df_short))
 
-            logging.info('{} eclipsing HEB systems generated (target {})'.format(len(stars),n))
-            logging.debug('{} nans in stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
+            logging.info('{} eclipsing HEB systems generated ' +
+                         '(target {})'.format(len(stars),n))
+            logging.debug('{} nans in '+
+                          'stars[dpri]'.format(np.isnan(stars['dpri']).sum()))
             logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
 
             if tot_prob is None:
@@ -1287,43 +1354,79 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                                                   f_triple=f_triple,
                                                   **pop_kwargs)
 
-        #self.prob = tot_prob
-        #self.dprob = tot_dprob #not really ever using this...?
-
         priorfactors = {'f_triple':f_triple}
 
         EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
                                    period=self.period, model=self.model,
                                    lhoodcachefile=self.lhoodcachefile,
-                                   priorfactors=priorfactors, prob=tot_prob)
-
-
-    #@property
-    #def _properties(self):
-    #    #still unclear how this gets _properties
-    #    # from both EclipsePopulation and ColormatchMultipleStarPopulation,
-    #    # but it seems to...
-
-    #    return super(HEBPopulation,self)._properties
-            
+                                   priorfactors=priorfactors, prob=tot_prob)            
 
 
 class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
                     BGStarPopulation):
-    def __init__(self, filename=None, period=None, mags=None,
+    def __init__(self, period=None, mags=None,
                  ra=None, dec=None, trilegal_filename=None,
                  n=2e4, ichrone=DARTMOUTH, band='Kepler',
+                 maxrad=10, f_binary=0.4, model='BEBs',
                  MAfn=None, lhoodcachefile=None,
-                 maxrad=10, f_binary=0.4, model='BEBs', **kwargs):
+                 **kwargs):
         """
+        Population of "Background" eclipsing binaries (BEBs)
 
-        Filename is for loading population from HDF
+        :param period:
+            Orbital period.
 
-        trilegal_filename holds BG star population
+        :param mags:
+            Observed apparent magnitudes of target (foreground)
+            star.  Must have at least magnitude in band
+            that eclipse is measured in (``band`` argument).
+        :type mags:
+            ``dict``
 
-        maxrad in arcsec
+        :param ra,dec: (optional)
+            Coordinates of star (to simulate field star population).
+            If ``trilegal_filename`` not provided, then TRILEGAL 
+            simulation will be generated.
 
-        isochrone is Dartmouth, by default (in starutils)
+        :param trilegal_filename: 
+            Name of file that contains TRILEGAL field star
+            simulation to use.  Should always be provided
+            if population is to be generated.  If file
+            does not exist, then TRILEGAL simulation
+            will be saved as this filename (use .h5 extension).
+
+        :param n: (optional)
+            Size of simulation.  Default is 2e4.
+
+        :param ichrone: (optional)
+            :class:`isochrones.Isochrone` object to use
+            to generate stellar models.
+
+        :param band: (optional)
+            Photometric bandpass in which eclipse signal is observed.
+
+        :param maxrad: (optional)
+            Maximum radius [arcsec] from target star to assign to BG stars.
+
+        :param f_binary: (optional)
+            Assumed binary fraction.  Will be part of ``priorfactors``.
+
+        :param model: (optional)
+            Model name.
+            
+        :param MAfn: (optional)
+            :class:`transit_basic.MAInterpolationFunction` object.
+            If not passed, then one with default parameters will
+            be created.
+
+        :param lhoodcachefile: (optional)
+            Likelihood calculation cache file.
+
+        :param **kwargs:
+            Additional keyword arguments passed to
+            :class:`stars.BGStarPopulation_TRILEGAL`.
+
+
         """
 
         self.period = period
@@ -1332,11 +1435,8 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
         self.lhoodcachefile = lhoodcachefile
         self.mags = mags
         
-        if filename is not None:
-            self.load_hdf(filename)
-
-        elif trilegal_filename is not None or (ra is not None
-                                               and dec is not None):
+        if trilegal_filename is not None or (ra is not None
+                                            and dec is not None):
             if self.band not in self.mags:
                 raise ValueError('{} band must be in mags.'.format(self.band))
 
