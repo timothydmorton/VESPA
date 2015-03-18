@@ -14,7 +14,7 @@ if not __VESPA_SETUP__:
     from .populations import PlanetPopulation
     from .populations import PopulationSet
 
-    from .populations import calculate_eclipses
+    #from .populations import calculate_eclipses
     
     #StarPopulation & children
     from .stars.populations import StarPopulation
