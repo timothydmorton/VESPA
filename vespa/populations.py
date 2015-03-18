@@ -1464,7 +1464,9 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
     def generate(self, trilegal_filename, ra=None, dec=None,
                  n=2e4, ichrone=DARTMOUTH, MAfn=None,
                  mags=None, maxrad=None, f_binary=0.4, **kwargs):
-
+        """
+        Generate population.
+        """
         n = int(n)
         
         #generate/load BG primary stars from TRILEGAL simulation
@@ -1596,26 +1598,96 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
             
 class PopulationSet(object):
-    def __init__(self, poplist=None, ra=None, dec=None,
+    def __init__(self, poplist=None, 
                  period=None, mags=None, n=2e4, 
+                 ra=None, dec=None, trilegal_filename=None,
                  mass=None, age=None, feh=None, 
-                 radius=None, rprs=None,
+                 radius=None, starmodel=None,
+                 rprs=None,
                  MAfn=None, colors=None,
-                 trilegal_filename=None,
                  Teff=None, logg=None, savefile=None,
-                 starmodel=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None,
-                 hide_exceptions=False, recalc=False,
+                 hide_exceptions=False,
                  fit_trap=True, do_only=None):
         """
+        A set of EclipsePopulations used to calculate a transit signal FPP
 
-        Poplist can be a list of EclipsePopulations, a string (filename),
-        or nothing, in which case the populations will be generated
+        :param poplist:
+            Can be either a list of :class:`EclipsePopulation` objects,
+            a filename (in which case a saved :class:`PopulationSet`
+            will be loaded), or ``None``, in which case the populations
+            will be generated.
 
-        mass, radius, age, and feh can be two-element tuples or Distributions
+        :param period:
+            Orbital period of signal.
 
-        rprs, Teff, logg should be single values.
+        :param mags:
+            Observed magnitudes of target star.
+        :type mags:
+            ``dict``
+
+        :param n:
+            Size of simulations.  Default is 2e4.
+            
+        :param ra, dec: (optional)
+            Target star position; passed to :class:`BEBPopulation`.
+
+        :param trilegal_filename:
+            Passed to :class:`BEBPopulation`.
+
+        :param mass, age, feh, radius: (optional)
+            Properties of target star.  Either in ``(value, error)`` form
+            or as :class:`simpledist.Distribution` objects.  Not necessary
+            if ``starmodel`` is passed.
+
+        :param starmodel: (optional)
+            The preferred way to define the properties of the 
+            host star.  If MCMC has been run on this model,
+            then samples are just read off; if it hasn't,
+            then it will run it.
+        :type starmodel:
+            :class:`isochrones.StarModel`
+
+        :param rprs:
+            R_planet/R_star.  Single-value estimate.
+
+        :param MAfn: (optional)
+            :class:`transit_basic.MAInterpolationFunction` object.
+            If not passed, then one with default parameters will
+            be created.
+        
+        :param colors: (optional)
+            Colors to use to constrain multiple star populations;
+            passed to :class:`EBPopulation` and :class:`HEBPopulation`.
+            Default will be ['JK', 'HK']
+
+        :param Teff, logg: (optional)
+            If ``starmodel`` not provided, then these can be used
+            (single values only) in order for :class:`PlanetPopulation`
+            to use the right limb darkening parameters.
+
+        :param savefile: (optional)
+            HDF file in which to save :class:`PopulationSet`.
+
+        :param heb_kws, eb_kws, beb_kws, pl_kws: (optional)
+            Keyword arguments to pass on to respective
+            :class:`EclipsePopulation` constructors.
+
+        :param hide_exceptions: (optional)
+            If ``True``, then exceptions generated during
+            population simulations will be passed, not raised.
+
+        :param fit_trap: (optional)
+            If ``True``, then population generation will also
+            call :func:`EclipsePopulation.fit_trapezoids` for each
+            model population.
+
+        :param do_only: (optional)
+            Can be defined in order to make only a subset of populations.
+            List or tuple should contain modelname shortcuts
+            (e.g., 'beb', 'heb', 'eb', or 'pl').
+            
 
         """
 
@@ -1630,11 +1702,11 @@ class PopulationSet(object):
                           heb_kws=heb_kws, eb_kws=eb_kws, 
                           beb_kws=beb_kws, pl_kws=pl_kws,
                           hide_exceptions=hide_exceptions,
-                          recalc=recalc, fit_trap=fit_trap,
+                          fit_trap=fit_trap,
                           do_only=do_only)
             
         elif type(poplist)==type(''):
-            return PopulationSet.load_hdf(poplist)
+            self = PopulationSet.load_hdf(poplist)
         else:
             self.poplist = poplist
 
@@ -1644,9 +1716,10 @@ class PopulationSet(object):
                  rprs=None, trilegal_filename=None, starmodel=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None, savefile=None,
-                 hide_exceptions=False, recalc=False, fit_trap=True,
+                 hide_exceptions=False, fit_trap=True,
                  do_only=None):
         """
+        Generates PopulationSet.
         """
         if do_only is None:
             do_only = ['beb','heb','eb','pl']
