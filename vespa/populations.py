@@ -2127,9 +2127,6 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
                        MAfn=None):
     """Returns random eclipse parameters for provided inputs
 
-    If single period desired, pass 'period' keyword.
-
-    M1s, M2s, R1s, R2s must be array_like
 
     :param M1s, M2s, R1s, R2s, mag1s, mag2s: (array-like)
         Primary and secondary properties (mass, radius, magnitude)
@@ -2183,11 +2180,28 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
         of population.
 
     :param return_indices: (optional)
-       If ``True``, returns the indices of the original input arrays 
-       that the output ``DataFrame`` corresponds to.  *This behavior
-       will/should be changed to just return a ``DataFrame`` of the same
-       length as inputs...*
-    
+        If ``True``, returns the indices of the original input arrays 
+        that the output ``DataFrame`` corresponds to.  **This behavior
+        will/should be changed to just return a ``DataFrame`` of the same
+        length as inputs...**
+
+    :param MAfn: (optional)
+        :class:`transit_basic.MAInterpolationFunction` object.
+        If not passed, then one with default parameters will
+        be created.
+        
+    :return:
+        * [``wany``: indices describing which of the original input
+          arrays the output ``DataFrame`` corresponds to.
+        * ``df``: ``DataFrame`` with the following columns:
+          ``[{band}_mag_tot, P, ecc, inc, w, dpri, dsec,
+             T14_pri, T23_pri, T14_sec, T23_sec, b_pri,
+             b_sec, {band}_mag_1, {band}_mag_2, fluxfrac_1,
+             fluxfrac_2, switched, u1_1, u2_1, u1_2, u2_2]``.
+             **N.B. that this will be shorter than your input arrays, 
+             because not everything will eclipse; this behavior 
+             will likely be changed in the future because it's confusing.**
+        * ``(prob, dprob)`` Eclipse probability with Poisson uncertainty
 
     """
     if MAfn is None:
