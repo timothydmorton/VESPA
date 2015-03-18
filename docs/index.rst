@@ -20,7 +20,21 @@ Or you can clone from github::
 
 The ``--user`` argument may be necessary if you don't have root privileges.
 
-``vespa`` consists of 
+Overview
+--------
+
+A false positive probability calculation in ``vespa`` is built of two basic
+components: a :class:`TransitSignal` and a :class:`PopulationSet`.  The 
+:class:`TransitSignal` holds the data about the transit signal photometry,
+and the :class:`PopulationSet` contains a set of simulated populations, both
+false positive scenarios (by default, this will be 
+:class:`EBPopulation`, :class:`HEBPopulation`, :class:`BEBPopulation`) and
+a true transiting planet population (:class:`PlanetPopulation`).   
+
+Each of these population objects derives from :class:`EclipsePopulation`,
+which in turn derives from :class:`StarPopulation`.  A :class:`StarPopulation`
+contains a simulated population of stars, and can be used 
+
 
 API Documentation
 -----------------
