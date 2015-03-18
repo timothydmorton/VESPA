@@ -59,6 +59,6 @@ setup(name = "VESPA",
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Astronomy'
         ],
-      install_requires=['cython','pandas>=0.13','simpledist>=0.1.11', 'emcee', 'hashutils>=0.0.3', 'isochrones>=0.7.1'],
+      install_requires=['cython','pandas>=0.13','simpledist>=0.1.11', 'emcee', 'hashutils>=0.0.3', 'isochrones>=0.7.1', 'acor'],
       zip_safe=False
 ) 
