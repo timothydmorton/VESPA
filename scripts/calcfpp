@@ -12,6 +12,7 @@ from vespa.populations import BEBPopulation
 
 from vespa.fpp import FPPCalculation
 
-parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
+if __name__=='__main__':
+    parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
 
-parser.add_argument('')
+    parser.add_argument('')
