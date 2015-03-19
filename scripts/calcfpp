@@ -38,7 +38,8 @@ if __name__=='__main__':
 
     #use kepler-based fp_specific
     
-    f = FPPCalculation.from_ini(args.inifile, n=args.n)
+    f = FPPCalculation.from_ini(args.inifile, recalc=args.recalc,
+                                n=args.n)
     f.FPPplots()
     print('FPP: {}'.format(f.FPP()))
 
