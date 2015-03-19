@@ -1,4 +1,52 @@
 #!/usr/bin/env python
+"""
+This script runs an FPP calculation for a provided
+transit signal.
+
+All parameters are defined in the ``.ini`` file,
+which is by default assumed to be named ``fpp.ini``
+in the current path, but can in principle be anything.
+
+The ``.ini`` file should be of the following form::
+
+    name = k2oi #anything
+    ra = 11:30:14.510 #can be decimal form too
+    dec = +07:35:18.21
+
+    period = 32.988 #days
+    rprs = 0.0534   #Rp/Rstar
+    photfile = lc_k2oi.csv #contains transit photometry
+
+    #provide Teff, feh, [logg optional] if spectrum available
+    #Teff = 3503, 80  #value, uncertainty
+    #feh = 0.09, 0.09
+    #logg = 4.89, 0.1
+
+    #observed magnitudes of target star
+    # If uncertainty provided, will be used to fit StarModel
+    [mags]
+    J = 9.763, 0.03
+    H = 9.135, 0.03
+    K = 8.899, 0.02
+    Kepler = 12.473
+      
+Running this script will create the following files,
+in the same directory as the ``.ini`` file:
+
+  * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
+  * ``starfield.h5``: the TRILEGAL field star simulation
+  * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
+  * ``popset.h5``: the :class:`vespa.PopulationSet` object
+    representing the model population simulations.
+  * ``eb.png, heb.png, beb.png, pl.png``: likelihood plots
+    for each model.
+  * ``trsig.png``: plot of the transit signal
+  * ``FPPsummary.png``: FPP summary plot.
+
+This script is not yet set up to incorporate observational constraints,
+but this will be easily doable in the near future.
+
+"""
 from __future__ import print_function, division
 
 import sys, os, re, time, os.path, glob
@@ -20,21 +68,8 @@ if __name__=='__main__':
     parser.add_argument('-i','--inifile', type=str, default='fpp.ini')
     parser.add_argument('-n','--n', type=int, default=20000)
     parser.add_argument('--recalc', action='store_true')
-    #parser.add_argument('kwargs', nargs=argparse.REMAINDER)
-
     
     args = parser.parse_args()
-
-    #kwargs = {}
-    #for k,v in args.kwargs.items():
-    #    try:
-    #        if float(v) % 1 == 0:
-    #            kwargs[k] = int(v)
-    #        else:
-    #            kwargs[k] = float(v)
-    #    except:
-    #        kwargs[k] = v    
-    #print(kwargs)
 
     #use kepler-based fp_specific
     

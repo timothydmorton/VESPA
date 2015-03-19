@@ -687,7 +687,7 @@ class PlanetPopulation(EclipsePopulation):
                  mass=None, radius=None, Teff=None, logg=None,
                  starmodel=None,
                  band='Kepler', model='Planets', n=2e4,
-                 fp_specific=0.01, u1=None, u2=None,
+                 fp_specific=None, u1=None, u2=None,
                  rbin_width=0.3,
                  MAfn=None, lhoodcachefile=None):
         """Population of Transiting Planets
@@ -774,7 +774,7 @@ class PlanetPopulation(EclipsePopulation):
                           rbin_width=rbin_width,
                           u1=u1, u2=u2, Teff=Teff, logg=logg,
                           MAfn=MAfn,lhoodcachefile=lhoodcachefile)
-
+            
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
                  starmodel=None,
@@ -886,7 +886,11 @@ class PlanetPopulation(EclipsePopulation):
         #make OrbitPopulation?
 
         #finish below.
-                
+
+        if fp_specific is None:
+            rp = stars['radius_2'].mean() * RSUN/REARTH
+            fp_specific = fp_fressin(rp)
+            
         priorfactors = {'fp_specific':fp_specific}
 
         EclipsePopulation.__init__(self, stars=stars,
@@ -2457,6 +2461,26 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
 
 #########################
 ###### Utility functions
+
+def fp_fressin(rp,dr=None):
+    if dr is None:
+        dr = rp*0.3
+    fp = quad(fressin_occurrence,rp-dr,rp+dr)[0]
+    return max(fp, 0.001) #to avoid zero
+
+def fressin_occurrence(rp):
+    """Occurrence rates per bin from Fressin+ (2013)
+    """
+    rp = np.atleast_1d(rp)
+
+    sq2 = np.sqrt(2)
+    bins = np.array([1/sq2,1,sq2,2,2*sq2,
+                     4,4*sq2,8,8*sq2,
+                     16,16*sq2])
+    rates = np.array([0,0.155,0.155,0.165,0.17,0.065,0.02,0.01,0.012,0.01,0.002,0])
+
+    return rates[np.digitize(rp,bins)]
+
 
 def _loadcache(cachefile):
     """ Returns a dictionary resulting from reading a likelihood cachefile
