@@ -44,7 +44,7 @@ setup(name = "VESPA",
       packages = ['vespa', 'vespa/stars',
                   'vespa/orbits'],
       package_data = {'vespa': ['data/*'],
-                      'vespa/tests':['*.ini','*.h5','*.pkl']
+                      'vespa/tests':['*.ini','*.h5','*.pkl'],
                       'vespa/stars': ['data/*'],
                       'vespa/orbits':['data/*']},
       ext_modules = transit_utils,
