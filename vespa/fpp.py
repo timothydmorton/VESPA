@@ -94,12 +94,14 @@ class FPPCalculation(object):
         """        
         config = ConfigObj(ini_file)
 
+        #all files will be relative to this
+        folder = os.path.abspath(os.path.dirname(ini_file))
+        
         #required items
         name = config['name']
         ra, dec = config['ra'], config['dec']
         period = float(config['period'])
         rprs = float(config['rprs'])
-        photfile = config['photfile']
         
         mags = {k:(float(v[0]) if len(v)==2 else float(v))
                 for k,v in config['mags'].items()}
@@ -115,27 +117,32 @@ class FPPCalculation(object):
         if 'starmodel' in config:
             starmodel_file = config['starmodel']
         else:
-            starmodel_file = 'starmodel.h5'
+            starmodel_file = os.path.join(folder,'starmodel.h5')
 
         if 'popset' in config:
             popset_file = config['popset']
         else:
-            popset_file = 'popset.h5'
+            popset_file = os.path.join(folder,'popset.h5')
 
         if 'starfield' in config:
             trilegal_file = config['starfield']
         else:
-            trilegal_file = 'starfield.h5'
+            trilegal_file = os.path.join(folder,'starfield.h5')
 
         if 'trsig' in config:
             trsig_file = config['trsig']
         else:
-            trsig_file = 'trsig.pkl'
+            trsig_file = os.path.join(folder,'trsig.pkl')
             
         #create TransitSignal
         try:
             trsig = pickle.load(open(trsig_file),'rb')
         except:
+            if 'photfile' not in config:
+                raise AttributeError('If transit pickle file (trsig.pkl)'+
+                                     'not present, "photfile" must be'+
+                                     'defined.')
+            photfile = os.path.join(folder,config['photfile'])
             try:
                 ts, fs, dfs = np.loadtxt(photfile, unpack=True)
             except:
@@ -175,7 +182,7 @@ class FPPCalculation(object):
                                    savefile=popset_file, **kwargs)
             
         
-        return cls(trsig, popset)
+        return cls(trsig, popset, folder=folder)
                         
     def __getattr__(self, attr):
         if attr != 'popset':

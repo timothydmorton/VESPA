@@ -1017,10 +1017,11 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                       'period_long':self.period}
 
         spec_starmodel = starmodel is not None
-        for prop in ['Teff','feh']:
-            if prop not in starmodel.properties:
-                spec_starmodel = False
-            
+
+        if spec_starmodel:
+            for prop in ['Teff','feh']:
+                if prop not in starmodel.properties:
+                    spec_starmodel = False
         if spec_starmodel:
             del pop_kwargs['colors']
             del pop_kwargs['colortol']
@@ -1259,10 +1260,12 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                       'period_short':self.period}
 
         spec_starmodel = starmodel is not None
-        for prop in ['Teff','feh']:
-            if prop not in starmodel.properties:
-                spec_starmodel = False
                 
+        if spec_starmodel:
+            for prop in ['Teff','feh']:
+                if prop not in starmodel.properties:
+                    spec_starmodel = False
+                    
         if spec_starmodel:
             del pop_kwargs['colors']
             del pop_kwargs['colortol']
