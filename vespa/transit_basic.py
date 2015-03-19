@@ -759,8 +759,8 @@ def ellpic_bulirsch(n,k):
             return 0.5*np.pi*(c*m0+d)/(m0*(m0+p))
 
 
-def traptransit(ts,p):
-    return traptransit(ts,p)
+#def traptransit(ts,p):
+#    return traptransit(ts,p)
 
 def fit_traptransit(ts,fs,p0):
     pfit,success = leastsq(traptransit_resid,p0,args=(ts,fs))
