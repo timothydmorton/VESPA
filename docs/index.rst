@@ -61,8 +61,23 @@ as follows.
 
 	 %  calcfpp -n 1000
 
-This will take a few minutes the first time you run it (though the
-default simulation size is ``n=20000``, which would take longer).
+This will take a few minutes the first time you run it (note the
+default simulation size is ``n=20000``, which would take longer), and
+will output the FPP to the command line, as well as producing
+diagnostic plots and a ``results.txt`` file with the quantitative
+summary of the calculation.  In addition, this will produce a number
+of data files, all of which will by default get put in the same
+directory as your ``fpp.ini`` file.:
+
+  * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
+  * ``starfield.h5``: the TRILEGAL field star simulation
+  * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
+  * ``popset.h5``: the :class:`vespa.PopulationSet` object
+    representing the model population simulations.
+
+Once these files have created, it is faster to re-run the calculation
+again.  This command-line utility script has not yet been set up to be
+able to also include 
 
 
 Overview
