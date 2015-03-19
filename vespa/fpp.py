@@ -126,14 +126,24 @@ class FPPCalculation(object):
             trilegal_file = config['starfield']
         else:
             trilegal_file = 'starfield.h5'
-        
+
+        if 'trsig' in config:
+            trsig_file = config['trsig']
+        else:
+            trsig_file = 'trsig.pkl'
+            
         #create TransitSignal
         try:
-            ts, fs, dfs = np.loadtxt(photfile, unpack=True)
+            trsig = pickle.load(open(trsig_file),'rb')
         except:
-            ts, fs, dfs = np.loadtxt(photfile, delimiter=',', unpack=True)
-        trsig = TransitSignal(ts, fs, dfs, P=period, name=name)
-            
+            try:
+                ts, fs, dfs = np.loadtxt(photfile, unpack=True)
+            except:
+                ts, fs, dfs = np.loadtxt(photfile, delimiter=',', unpack=True)
+            trsig = TransitSignal(ts, fs, dfs, P=period, name=name)
+            trsig.MCMC()
+            trsig.save(trsig_file)
+                        
         #create StarModel
         try:
             starmodel = StarModel.load_hdf(starmodel_file)
