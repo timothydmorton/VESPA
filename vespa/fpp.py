@@ -16,6 +16,8 @@ from .transitsignal import TransitSignal
 from .plotutils import setfig
 from .hashutils import hashcombine
 
+from isochrones import StarModel
+from .stars.populations import DARTMOUTH
 
 class FPPCalculation(object):
     def __init__(self, trsig, popset, folder='.'):
@@ -51,6 +53,8 @@ class FPPCalculation(object):
             #feh = 0.09, 0.09
             #logg = 4.89, 0.1
 
+            starmodelfile = starmodel.h5
+            
             [mags]
             B = 15.005, 0.06
             V = 13.496, 0.05
@@ -65,20 +69,86 @@ class FPPCalculation(object):
             W3 = 8.552, 0.025
             Kepler = 12.473
 
+        Photfile must be a text file with columns ``(days_from_midtransit,
+        flux, flux_err)``.  Both whitespace- and comma-delimited
+        will be tried, using ``np.loadtxt``.
+
         Any number of magnitudes can be defined; if errors are included
         then they will be used in a :class:`isochrones.StarModel` fit.
 
         Spectroscopic parameters (``Teff, feh, logg``) are optional.
+        If included, then they will also be included in
+        :class:`isochrones.StarModel` fit.
+
+        If ``starmodelfile`` is not provided, then :class:`isochrones.StarModel`
+        will be saved to ``./starmodel.h5``.  If ``popsetfile`` is not provided,
+        it will be saved to ``./popset.h5``.  
         
-        """
+
+        :param ini_file:
+            Input configuration file.
+
+        :param **kwargs:
+            Keyword arguments passed to :class:`PopulationSet`.
+        
+        """        
         config = ConfigObj(ini_file)
 
         #required items
         name = config['name']
         ra, dec = config['ra'], config['dec']
         period = float(config['period'])
-        mags = {k:float(v[0]) for k,v in config['mags'] if len(v)==2 else k:float(v)}
-        return mags
+        rprs = float(config['rprs'])
+        photfile = config['photfile']
+        
+        mags = {k:(float(v[0]) if len(v)==2 else float(v))
+                for k,v in config['mags'].items()}
+        mag_err = {k: float(v[1]) for k,v in config['mags'].items()
+                   if len(v)==2}
+
+        #optional
+        Teff = config['Teff'] if 'Teff' in config else None
+        feh = config['feh'] if 'feh' in config else None
+        logg = config['logg'] if 'logg' in config else None
+
+        if 'starmodelfile' in config:
+            starmodelfile = config['starmodelfile']
+        else:
+            starmodelfile = 'starmodel.h5'
+
+        if 'popsetfile' in config:
+            starmodelfile = config['popsetfile']
+        else:
+            starmodelfile = 'popset.h5'
+        
+        
+        #create TransitSignal
+        try:
+            ts, fs, dfs = np.loadtxt(photfile, unpack=True)
+        except:
+            ts, fs, dfs = np.loadtxt(photfile, delimiter=',', unpack=True)
+        trsig = TransitSignal(ts, fs, dfs, P=period, name=name)
+            
+        #create StarModel
+        try:
+            starmodel = StarModel.load_hdf(starmodelfile)
+        except:
+            props = {b:(mags[b], mag_err[b]) for b in mag_err.keys()}
+            props['Teff'] = Teff if Teff is not None
+            props['feh'] = feh if feh is not None
+            props['logg'] = logg if logg is not None
+
+            logging.info('Fitting StarModel to {}...'.format(props))
+            starmodel = StarModel(DARTMOUTH, **props)
+            starmodel.fit_mcmc()
+            starmodel.save_hdf(starmodelfile)
+            logging.info('StarModel fit done.')
+
+        #create PopulationSet
+        
+            
+        
+        return starmodel
                         
     def __getattr__(self, attr):
         if attr != 'popset':
