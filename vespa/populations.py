@@ -1767,6 +1767,7 @@ class PopulationSet(object):
                 hebpop = HEBPopulation(mass=mass, age=age, feh=feh, 
                                        colors=colors, period=period,
                                        starmodel=starmodel,
+                                       starfield=trilegal_filename,
                                        mags=mags, MAfn=MAfn, n=n, **heb_kws)
                 if fit_trap:
                     hebpop.fit_trapezoids(MAfn=MAfn)
@@ -1782,6 +1783,7 @@ class PopulationSet(object):
                 ebpop = EBPopulation(mass=mass, age=age, feh=feh, 
                                      colors=colors, period=period,
                                      starmodel=starmodel,
+                                     starfield=trilegal_filename,
                                      mags=mags, MAfn=MAfn, n=n, **eb_kws)
                 if fit_trap:
                     ebpop.fit_trapezoids(MAfn=MAfn)

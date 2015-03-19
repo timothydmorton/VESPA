@@ -136,7 +136,7 @@ class FPPCalculation(object):
             
         #create StarModel
         try:
-            starmodel = StarModel.load_hdf(starmodelfile)
+            starmodel = StarModel.load_hdf(starmodel_file)
         except:
             props = {b:(mags[b], mag_err[b]) for b in mag_err.keys()}
             if Teff is not None:
@@ -149,12 +149,13 @@ class FPPCalculation(object):
             logging.info('Fitting StarModel to {}...'.format(props))
             starmodel = StarModel(DARTMOUTH, **props)
             starmodel.fit_mcmc()
-            starmodel.save_hdf(starmodelfile)
+            starmodel.save_hdf(starmodel_file)
             logging.info('StarModel fit done.')
 
         #create PopulationSet
         try:
-            popset = PopulationSet.load_hdf(popsetfile)
+            popset = PopulationSet.load_hdf(popset_file)
+            popset.FPP() #should there be a better way to check this?
         except:
             popset = PopulationSet(period=period, mags=mags,
                                    ra=ra, dec=dec,
