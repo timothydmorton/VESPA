@@ -1006,7 +1006,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                  **kwargs):
         """Generates stars and eclipses
 
-        All arguments previous defined.
+        All arguments previously defined.
         """
         n = int(n)
         #if provided, period_long (self.period) 
@@ -1016,7 +1016,12 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                       'starfield':starfield,
                       'period_long':self.period}
 
-        if starmodel is not None:
+        spec_starmodel = starmodel is not None
+        for prop in ['Teff','feh']:
+            if prop not in starmodel.properties:
+                spec_starmodel = False
+            
+        if spec_starmodel:
             del pop_kwargs['colors']
             del pop_kwargs['colortol']
             del pop_kwargs['starfield']
@@ -1034,7 +1039,7 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         while len(stars) < n:
             n_adapt = int(n_adapt)
 
-            if starmodel is not None:
+            if spec_starmodel:
                 pop = Spectroscopic_MultipleStarPopulation(starmodel=starmodel,
                                                            f_triple=0,
                                                            f_binary=1,
@@ -1253,7 +1258,12 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
                       'starfield':starfield,
                       'period_short':self.period}
 
-        if starmodel is not None:
+        spec_starmodel = starmodel is not None
+        for prop in ['Teff','feh']:
+            if prop not in starmodel.properties:
+                spec_starmodel = False
+                
+        if spec_starmodel:
             del pop_kwargs['colors']
             del pop_kwargs['colortol']
             del pop_kwargs['starfield']
@@ -1272,7 +1282,7 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         while len(stars) < n:
             n_adapt = int(n_adapt)
 
-            if starmodel is not None:
+            if spec_starmodel:
                 pop = Spectroscopic_MultipleStarPopulation(starmodel=starmodel,
                                                            f_triple=1,
                                                            n=n_adapt,

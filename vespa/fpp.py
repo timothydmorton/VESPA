@@ -111,16 +111,21 @@ class FPPCalculation(object):
         feh = config['feh'] if 'feh' in config else None
         logg = config['logg'] if 'logg' in config else None
 
-        if 'starmodelfile' in config:
-            starmodelfile = config['starmodelfile']
+        #Load filenames if other than default
+        if 'starmodel' in config:
+            starmodel_file = config['starmodel']
         else:
-            starmodelfile = 'starmodel.h5'
+            starmodel_file = 'starmodel.h5'
 
-        if 'popsetfile' in config:
-            starmodelfile = config['popsetfile']
+        if 'popset' in config:
+            popset_file = config['popset']
         else:
-            starmodelfile = 'popset.h5'
-        
+            popset_file = 'popset.h5'
+
+        if 'starfield' in config:
+            trilegal_file = config['starfield']
+        else:
+            trilegal_file = 'starfield.h5'
         
         #create TransitSignal
         try:
@@ -134,9 +139,12 @@ class FPPCalculation(object):
             starmodel = StarModel.load_hdf(starmodelfile)
         except:
             props = {b:(mags[b], mag_err[b]) for b in mag_err.keys()}
-            props['Teff'] = Teff if Teff is not None
-            props['feh'] = feh if feh is not None
-            props['logg'] = logg if logg is not None
+            if Teff is not None:
+                props['Teff'] = Teff
+            if feh is not None:
+                props['feh'] = feh
+            if logg is not None:
+                props['logg'] = logg
 
             logging.info('Fitting StarModel to {}...'.format(props))
             starmodel = StarModel(DARTMOUTH, **props)
@@ -145,10 +153,18 @@ class FPPCalculation(object):
             logging.info('StarModel fit done.')
 
         #create PopulationSet
-        
+        try:
+            popset = PopulationSet.load_hdf(popsetfile)
+        except:
+            popset = PopulationSet(period=period, mags=mags,
+                                   ra=ra, dec=dec,
+                                   trilegal_filename=trilegal_file,
+                                   starmodel=starmodel,
+                                   rprs=rprs,
+                                   savefile=popset_file, **kwargs)
             
         
-        return starmodel
+        return cls(trsig, popset)
                         
     def __getattr__(self, attr):
         if attr != 'popset':
