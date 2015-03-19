@@ -165,7 +165,7 @@ class FPPCalculation(object):
         #create PopulationSet
         try:
             popset = PopulationSet.load_hdf(popset_file)
-            popset.FPP() #should there be a better way to check this?
+            popset['pl'] #should there be a better way to check this?
         except:
             popset = PopulationSet(period=period, mags=mags,
                                    ra=ra, dec=dec,
