@@ -106,7 +106,7 @@ class TransitSignal(object):
             lo = 1 - 3*self.depthfit[0]
             hi = 1 + 2*self.depthfit[0]
         else:
-try            lo = 1
+            lo = 1
             hi = 1
 
         sig = qstd(self.fs,0.005)
