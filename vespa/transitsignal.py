@@ -221,7 +221,7 @@ class TransitSignal(object):
         durs,deps,logdeps,slopes = (durs[inds],deps[inds],logdeps[inds],
                                               slopes[inds])
 
-        self.durs,self.logdeps,self.slopes = (durs,logdeps,slopes)
+        self.durs,self.deps,self.logdeps,self.slopes = (durs,deps,logdeps,slopes)
 
         self._make_kde(conf=conf)
 
