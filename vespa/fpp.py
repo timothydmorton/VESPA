@@ -5,15 +5,16 @@ import os, os.path
 import logging
 import cPickle as pickle
 
+from configobj import ConfigObj
+
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
 from .populations import PopulationSet
 from .transitsignal import TransitSignal
 
-from plotutils import setfig
-from hashutils import hashcombine
-
+from .plotutils import setfig
+from .hashutils import hashcombine
 
 
 class FPPCalculation(object):
@@ -31,6 +32,54 @@ class FPPCalculation(object):
         for pop in self.popset.poplist:
             pop.lhoodcachefile = lhoodcachefile
 
+    @classmethod
+    def from_ini(cls, ini_file, **kwargs):
+        """
+        To enable simple usage, initializes a FPPCalculation from a .ini file
+
+        File must be of the following form::
+
+            name = k2oi
+            ra = 11:30:14.510
+            dec = +07:35:18.21
+
+            period = 32.988 #days
+            rprs = 0.0534   #Rp/Rstar
+            photfile = lc_k2oi.csv
+
+            #Teff = 3503, 80
+            #feh = 0.09, 0.09
+            #logg = 4.89, 0.1
+
+            [mags]
+            B = 15.005, 0.06
+            V = 13.496, 0.05
+            g = 14.223, 0.05
+            r = 12.858, 0.04
+            i = 11.661, 0.08
+            J = 9.763, 0.03
+            H = 9.135, 0.03
+            K = 8.899, 0.02
+            W1 = 8.769, 0.023
+            W2 = 8.668, 0.02
+            W3 = 8.552, 0.025
+            Kepler = 12.473
+
+        Any number of magnitudes can be defined; if errors are included
+        then they will be used in a :class:`isochrones.StarModel` fit.
+
+        Spectroscopic parameters (``Teff, feh, logg``) are optional.
+        
+        """
+        config = ConfigObj(ini_file)
+
+        #required items
+        name = config['name']
+        ra, dec = config['ra'], config['dec']
+        period = float(config['period'])
+        mags = {k:float(v[0]) for k,v in config['mags'] if len(v)==2 else k:float(v)}
+        return mags
+                        
     def __getattr__(self, attr):
         if attr != 'popset':
             return getattr(self.popset,attr)
