@@ -127,8 +127,9 @@ class TransitSignal(object):
         else:
             wok = np.where(~np.isnan(self.fs))
 
-        if not os.path.exists(savedir):
-            os.mkdir(savedir)
+        if savedir is not None:
+            if not os.path.exists(savedir):
+                os.mkdir(savedir)
 
         alreadydone = True
         alreadydone &= savedir is not None
