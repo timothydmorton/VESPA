@@ -1,18 +1,45 @@
 #!/usr/bin/env python
+from __future__ import print_function, division
 
-import matplotlib.pyplot as plt
 import sys, os, re, time, os.path, glob
 import argparse
 import logging
 
-from vespa.populations import PlanetPopulation
-from vespa.populations import EBPopulation
-from vespa.populations import HEBPopulation
-from vespa.populations import BEBPopulation
-
 from vespa.fpp import FPPCalculation
+
+import warnings
+warnings.simplefilter("error")
+warnings.simplefilter("ignore", DeprecationWarning)
+
+import logging
+rootLogger = logging.getLogger()
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
+    
+    parser.add_argument('-i','--inifile', type=str, default='fpp.ini')
+    parser.add_argument('-n','--n', type=int, default=20000)
+    parser.add_argument('--recalc', action='store_true')
+    #parser.add_argument('kwargs', nargs=argparse.REMAINDER)
 
-    parser.add_argument('')
+    
+    args = parser.parse_args()
+
+    #kwargs = {}
+    #for k,v in args.kwargs.items():
+    #    try:
+    #        if float(v) % 1 == 0:
+    #            kwargs[k] = int(v)
+    #        else:
+    #            kwargs[k] = float(v)
+    #    except:
+    #        kwargs[k] = v    
+    #print(kwargs)
+
+    #use kepler-based fp_specific
+    
+    f = FPPCalculation.from_ini(args.inifile, n=args.n)
+    f.FPPplots()
+    print('FPP: {}'.format(f.FPP()))
+
+

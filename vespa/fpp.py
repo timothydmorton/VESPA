@@ -35,7 +35,7 @@ class FPPCalculation(object):
             pop.lhoodcachefile = lhoodcachefile
 
     @classmethod
-    def from_ini(cls, ini_file, **kwargs):
+    def from_ini(cls, ini_file='fpp.ini', recalc=False, **kwargs):
         """
         To enable simple usage, initializes a FPPCalculation from a .ini file
 
@@ -53,8 +53,6 @@ class FPPCalculation(object):
             #feh = 0.09, 0.09
             #logg = 4.89, 0.1
 
-            starmodelfile = starmodel.h5
-            
             [mags]
             B = 15.005, 0.06
             V = 13.496, 0.05
@@ -71,7 +69,10 @@ class FPPCalculation(object):
 
         Photfile must be a text file with columns ``(days_from_midtransit,
         flux, flux_err)``.  Both whitespace- and comma-delimited
-        will be tried, using ``np.loadtxt``.
+        will be tried, using ``np.loadtxt``.  Photfile need not be there
+        if there is a pickled :class:`TransitSignal` saved in the same
+        directory as ``ini_file``, named ``trsig.pkl`` (or another name
+        as defined by ``trsig`` keyword in ``.ini`` file). 
 
         Any number of magnitudes can be defined; if errors are included
         then they will be used in a :class:`isochrones.StarModel` fit.
@@ -87,6 +88,9 @@ class FPPCalculation(object):
 
         :param ini_file:
             Input configuration file.
+
+        :param recalc:
+            Whether to re-calculate :class:`PopulationSet`.  
 
         :param **kwargs:
             Keyword arguments passed to :class:`PopulationSet`.
@@ -151,7 +155,8 @@ class FPPCalculation(object):
             trsig.MCMC()
             trsig.save(trsig_file)
                         
-        #create StarModel
+        #create StarModel--- make this recalculate
+        # if props don't match existing ones.
         try:
             starmodel = StarModel.load_hdf(starmodel_file)
         except:
@@ -171,8 +176,10 @@ class FPPCalculation(object):
 
         #create PopulationSet
         try:
+            if recalc:
+                raise RuntimeError #just to get to except block
             popset = PopulationSet.load_hdf(popset_file)
-            popset['pl'] #should there be a better way to check this?
+            popset['pl'] #should there be a better way to check this? (yes)
         except:
             popset = PopulationSet(period=period, mags=mags,
                                    ra=ra, dec=dec,
