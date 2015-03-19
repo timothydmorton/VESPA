@@ -27,6 +27,7 @@ if not __VESPA_SETUP__:
     from .populations import PopulationSet
 
     #from .populations import calculate_eclipses
+    from .transitsignal import TransitSignal
     
     #StarPopulation & children
     from .stars.populations import StarPopulation
