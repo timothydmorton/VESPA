@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+import matplotlib.pyplot as plt
+import sys, os, re, time, os.path, glob
+import argparse
+import logging
+
+from vespa.populations import PlanetPopulation
+from vespa.populations import EBPopulation
+from vespa.populations import HEBPopulation
+from vespa.populations import BEBPopulation
+
+from vespa.fpp import FPPCalculation
+
+parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
+
+parser.add_argument('')
