@@ -11,6 +11,7 @@ from matplotlib import cm
 
 
 from scipy.stats import gaussian_kde
+from scipy.integrate import quad
 from sklearn.neighbors import KernelDensity
 from sklearn.grid_search import GridSearchCV
 
