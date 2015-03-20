@@ -36,6 +36,9 @@ in the same directory as the ``.ini`` file:
   * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
   * ``starfield.h5``: the TRILEGAL field star simulation
   * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
+  * ``starmodel_triangle_physical.png,
+     starmodel_triangle_observed.png``:
+     :class:`isochrones.StarModel` triangle plots.
   * ``popset.h5``: the :class:`vespa.PopulationSet` object
     representing the model population simulations.
   * ``eb.png, heb.png, beb.png, pl.png``: likelihood plots
@@ -53,29 +56,71 @@ import sys, os, re, time, os.path, glob
 import argparse
 import logging
 
-from vespa.fpp import FPPCalculation
+from vespa import FPPCalculation
+from isochrones import StarModel
 
 import warnings
 warnings.simplefilter("error")
 warnings.simplefilter("ignore", DeprecationWarning)
 
 import logging
-rootLogger = logging.getLogger()
+logger = logging.getLogger()
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
     
+    parser.add_argument('folders', nargs='*', default=['.'])
     parser.add_argument('-i','--inifile', type=str, default='fpp.ini')
     parser.add_argument('-n','--n', type=int, default=20000)
     parser.add_argument('--recalc', action='store_true')
+
+
+    parser.add_argument(
+        '-v', '--verbose',
+        action='count',
+        default=0,
+        help="Increase verbosity.")
+
+    parser.add_argument(
+        '-q', '--quiet',
+        action='count',
+        default=0,
+        help='Decrease verbosity.')
+
     
     args = parser.parse_args()
 
-    #use kepler-based fp_specific
-    
-    f = FPPCalculation.from_ini(args.inifile, recalc=args.recalc,
-                                n=args.n)
-    f.FPPplots()
-    print('FPP: {}'.format(f.FPP()))
+    logger = logging.getLogger()    
+    verbosity = args.verbose - args.quiet
+    if verbosity == 1:
+        logger.setLevel(logging.INFO)
+    elif verbosity==2:
+        logger.setLevel(logging.DEBUG)
+    elif verbosity==0:
+        logger.setLevel(logging.WARNING)
+    elif verbosity==-1:
+        logger.setLevel(logging.ERROR)
+    elif verbosity==-2:
+        logger.setLevel(logging.CRITICAL)
+        
+        
+            
+    for folder in args.folders:
+        inifile = os.path.join(folder, args.inifile)
+
+        f = FPPCalculation.from_ini(inifile, recalc=args.recalc,
+                                    n=args.n)
+        f.FPPplots()
+
+        starmodel_file = os.path.join(folder, 'starmodel.h5')
+        triangle_file1 = os.path.join(folder, 'starmodel_triangle_physical.png')
+        triangle_file2 = os.path.join(folder, 'starmodel_triangle_observed.png')
+        if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
+            starmodel = StarModel.load_hdf(starmodel_file)
+            triangle_base = os.path.join(folder, 'starmodel_triangle')
+            starmodel.triangle_plots(triangle_base)
+
+
+        print('FPP for {}: {}'.format(f.name,f.FPP()))
 
 

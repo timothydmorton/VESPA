@@ -59,21 +59,32 @@ as follows.
 
   * Run the following from the command line::
 
-	 %  calcfpp -n 1000
+	 %  calcfpp -v -n 1000
 
 This will take a few minutes the first time you run it (note the
 default simulation size is ``n=20000``, which would take longer), and
 will output the FPP to the command line, as well as producing
 diagnostic plots and a ``results.txt`` file with the quantitative
-summary of the calculation.  In addition, this will produce a number
-of data files, all of which will by default get put in the same
-directory as your ``fpp.ini`` file.:
+summary of the calculation.  (The ``-v`` option tells the script to be
+verbose and tell you what it's doing.)  In addition, this will produce
+a number of data files, all of which will by default get put in the
+same directory as your ``fpp.ini`` file.:
 
   * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
   * ``starfield.h5``: the TRILEGAL field star simulation
   * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
   * ``popset.h5``: the :class:`vespa.PopulationSet` object
     representing the model population simulations.
+
+The diagnostic plots that will be generated will be:
+
+  *  ``trsig.png``: A plot of the transit signal
+  * ``eb.png``, ``heb.png``, ``beb.png``, ``pl.png``: plots
+    illustrating the likelihood of each model.
+  *  ``FPPsummary.png``: A summary figure of the FPP results.
+  * ``starmodel_triangle_physical.png,
+     starmodel_triangle_observed.png``: triange plots of the
+     :class:`isochrones.StarModel` fits.
 
 Once these files have created, it is faster to re-run the calculation
 again.  This command-line utility script has not yet been set up to be

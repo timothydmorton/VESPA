@@ -92,11 +92,11 @@ class ContrastCurveConstraint(FunctionLowerLimit):
         logging.info('%s updated with new rsky values.' % self.name)
 
 class ContrastCurveFromFile(ContrastCurve):
-    def __init__(self,filename,band,mag=None):
+    def __init__(self,filename,band,mag=None, **kwargs):
         rs,dmags = np.loadtxt(filename,unpack=True)
         if rs[0] > 2:
             rs /= 1000.
-        ContrastCurve.__init__(self,rs,dmags,band,mag)
+        ContrastCurve.__init__(self,rs,dmags,band,mag, **kwargs)
         self.filename = filename
 
 

@@ -1,7 +1,7 @@
 from __future__ import print_function, division
 
 import numpy as np
-import os, os.path
+import os, os.path, re
 import logging
 import cPickle as pickle
 
@@ -12,6 +12,8 @@ from matplotlib import cm
 
 from .populations import PopulationSet
 from .transitsignal import TransitSignal
+
+from .stars.contrastcurve import ContrastCurveFromFile
 
 from .plotutils import setfig
 from .hashutils import hashcombine
@@ -35,7 +37,8 @@ class FPPCalculation(object):
             pop.lhoodcachefile = lhoodcachefile
 
     @classmethod
-    def from_ini(cls, ini_file='fpp.ini', recalc=False, **kwargs):
+    def from_ini(cls, ini_file='fpp.ini', recalc=False,
+                 **kwargs):
         """
         To enable simple usage, initializes a FPPCalculation from a .ini file
 
@@ -48,11 +51,15 @@ class FPPCalculation(object):
             period = 32.988 #days
             rprs = 0.0534   #Rp/Rstar
             photfile = lc_k2oi.csv
+            maxrad = 10 #exclusion radius [arcsec]
 
+            #This variable defines contrast curves
+            #ccfiles = Keck_J.cc, Lick_J.cc
+                        
             #Teff = 3503, 80
             #feh = 0.09, 0.09
             #logg = 4.89, 0.1
-
+            
             [mags]
             B = 15.005, 0.06
             V = 13.496, 0.05
@@ -94,7 +101,15 @@ class FPPCalculation(object):
 
         :param **kwargs:
             Keyword arguments passed to :class:`PopulationSet`.
+
+        Creates:
         
+            * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
+            * ``starfield.h5``: the TRILEGAL field star simulation
+            * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
+            * ``popset.h5``: the :class:`vespa.PopulationSet` object
+               representing the model population simulations.
+                    
         """        
         config = ConfigObj(ini_file)
 
@@ -106,6 +121,7 @@ class FPPCalculation(object):
         ra, dec = config['ra'], config['dec']
         period = float(config['period'])
         rprs = float(config['rprs'])
+        maxrad = float(config['maxrad'])
         
         mags = {k:(float(v[0]) if len(v)==2 else float(v))
                 for k,v in config['mags'].items()}
@@ -117,9 +133,12 @@ class FPPCalculation(object):
         feh = config['feh'] if 'feh' in config else None
         logg = config['logg'] if 'logg' in config else None
 
-        #Load filenames if other than default
+        #Load filenames if other than default;
+        # if not absolute paths; make them relative 
         if 'starmodel' in config:
             starmodel_file = config['starmodel']
+            if not os.path.isabs(starmodel_file):
+                starmodel_file = os.path.join(folder, starmodel_file)
         else:
             starmodel_file = os.path.join(folder,'starmodel.h5')
 
@@ -127,21 +146,28 @@ class FPPCalculation(object):
             popset_file = config['popset']
         else:
             popset_file = os.path.join(folder,'popset.h5')
+            if not os.path.isabs(popset_file):
+                popset_file = os.path.join(folder, popset_file)
 
         if 'starfield' in config:
             trilegal_file = config['starfield']
         else:
             trilegal_file = os.path.join(folder,'starfield.h5')
+            if not os.path.isabs(trilegal_file):
+                trilegal_file = os.path.join(folder, trilegal_file)
 
         if 'trsig' in config:
             trsig_file = config['trsig']
         else:
             trsig_file = os.path.join(folder,'trsig.pkl')
+            if not os.path.isabs(trsig_file):
+                trsig_file = os.path.join(folder, trsig_file)
+        
             
         #create TransitSignal
-        try:
-            trsig = pickle.load(open(trsig_file),'rb')
-        except:
+        if os.path.exists(trsig_file):
+            trsig = pickle.load(open(trsig_file,'rb'))
+        else:
             if 'photfile' not in config:
                 raise AttributeError('If transit pickle file (trsig.pkl)'+
                                      'not present, "photfile" must be'+
@@ -189,8 +215,30 @@ class FPPCalculation(object):
                                    savefile=popset_file, **kwargs)
             
         
-        return cls(trsig, popset, folder=folder)
-                        
+        fpp = cls(trsig, popset, folder=folder)
+
+        fpp.set_maxrad(maxrad)
+
+        #apply contrast curve constraints if present
+        if 'ccfiles' in config:
+            for ccfile in ccfiles:
+                if not os.path.isabs(ccfile):
+                    ccfile = os.path.join(folder, ccfile)
+                m = re.search('(\w+)_(\w+)\.cc',os.path.basename(ccfile))
+                if not m:
+                    logging.warning('Invalid CC filename ({}); '+
+                                     'skipping.'.format(ccfile))
+                    continue
+                else:
+                    band = m.group(2)
+                    inst = m.group(1)
+                    name = '{} {}-band'.format(inst, band)
+                    cc = ContrastCurveFromFile(ccfile, band, name=name)
+                    fpp.apply_cc(cc)
+        
+        return fpp
+
+                   
     def __getattr__(self, attr):
         if attr != 'popset':
             return getattr(self.popset,attr)
