@@ -52,15 +52,15 @@ but this will be easily doable in the near future.
 """
 from __future__ import print_function, division
 
+import matplotlib
+matplotlib.use('Agg')
+
 import sys, os, re, time, os.path, glob
 import argparse
 import logging
 
 from vespa import FPPCalculation
 from isochrones import StarModel
-
-import matplotlib
-matplotlib.use('Agg')
 
 import warnings
 warnings.simplefilter("error")
