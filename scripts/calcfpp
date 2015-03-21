@@ -59,6 +59,9 @@ import logging
 from vespa import FPPCalculation
 from isochrones import StarModel
 
+import matplotlib
+matplotlib.use('Agg')
+
 import warnings
 warnings.simplefilter("error")
 warnings.simplefilter("ignore", DeprecationWarning)
