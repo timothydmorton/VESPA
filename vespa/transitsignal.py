@@ -63,6 +63,7 @@ class TransitSignal(object):
 
         self.hasMCMC=False
 
+    #make this save_hdf
     def save(self, filename):
         fout = open(filename, 'wb')
         pickle.dump(self, fout)
