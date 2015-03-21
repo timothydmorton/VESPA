@@ -121,7 +121,6 @@ class FPPCalculation(object):
         ra, dec = config['ra'], config['dec']
         period = float(config['period'])
         rprs = float(config['rprs'])
-        maxrad = float(config['maxrad'])
         
         mags = {k:(float(v[0]) if len(v)==2 else float(v))
                 for k,v in config['mags'].items()}
@@ -217,10 +216,12 @@ class FPPCalculation(object):
         
         fpp = cls(trsig, popset, folder=folder)
 
+        maxrad = float(config['constraints']['maxrad'])
+
         fpp.set_maxrad(maxrad)
 
         #apply contrast curve constraints if present
-        if 'ccfiles' in config:
+        if 'ccfiles' in config['constraints']:
             for ccfile in ccfiles:
                 if not os.path.isabs(ccfile):
                     ccfile = os.path.join(folder, ccfile)
