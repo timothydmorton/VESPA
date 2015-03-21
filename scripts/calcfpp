@@ -111,14 +111,17 @@ if __name__=='__main__':
     for folder in args.folders:
         inifile = os.path.join(folder, args.inifile)
 
+        logging.info('Loading(/creating) FPPCalculation object...')
         f = FPPCalculation.from_ini(inifile, recalc=args.recalc,
                                     n=args.n)
+        logging.info('Making FPP plots...')
         f.FPPplots()
 
         starmodel_file = os.path.join(folder, 'starmodel.h5')
         triangle_file1 = os.path.join(folder, 'starmodel_triangle_physical.png')
         triangle_file2 = os.path.join(folder, 'starmodel_triangle_observed.png')
         if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
+            logging.info('Making StarModel triangle plots...')
             starmodel = StarModel.load_hdf(starmodel_file)
             triangle_base = os.path.join(folder, 'starmodel_triangle')
             starmodel.triangle_plots(triangle_base)
