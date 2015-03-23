@@ -76,8 +76,12 @@ class StarPopulation(object):
 
     You can save and re-load :class:`StarPopulation` objects
     using :func:`StarPopulation.save_hdf` and 
-    :func:`StarPopulation.load_hdf`.  **Support for saving 
-    constraints is planned and partially implemented but untested.**
+    :func:`StarPopulation.load_hdf`.
+
+    .. warning::
+
+        Support for saving constraints is planned and
+        partially implemented but untested.
 
     Any subclass must be able to be initialized with no arguments,
     with no calculations being done; this enables the way that
@@ -1695,6 +1699,9 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
     Star systems are generated either according to provided
     primary masses ``mA``, or by drawing primary masses
     from provided TRILEGAL simulation (``starfield``).
+
+    If the properties of the primary star are constrained
+    via spectroscopy, consider using :class:`Spectroscopic_MultipleStarPopulation`.
 
     :param mags: (optional)
         Dictionary of magnitudes of total system.

@@ -22,6 +22,26 @@ from isochrones import StarModel
 from .stars.populations import DARTMOUTH
 
 class FPPCalculation(object):
+    """
+    An object to organize an FPP calculation.
+
+    See :func:`FPPCalculation.from_ini` for how to initialize
+    using a config file.  
+
+    :param trsig:
+        :class:`TransitSignal` object representing the signal
+        being modeled.        
+
+    :param popset:
+        :class:`PopulationSet` object representing the set
+        of models being considered as an explanation for
+        the signal.
+
+    :param folder: (optional)
+        Folder where likelihood cache, results file, plots, etc.
+        are written by default.  
+        
+    """
     def __init__(self, trsig, popset, folder='.'):
         self.trsig = trsig
         self.name = trsig.name
@@ -51,7 +71,6 @@ class FPPCalculation(object):
             period = 32.988 #days
             rprs = 0.0534   #Rp/Rstar
             photfile = lc_k2oi.csv
-            maxrad = 10 #exclusion radius [arcsec]
 
             #This variable defines contrast curves
             #ccfiles = Keck_J.cc, Lick_J.cc
@@ -74,6 +93,9 @@ class FPPCalculation(object):
             W3 = 8.552, 0.025
             Kepler = 12.473
 
+            [constraints]
+            maxrad = 10 #exclusion radius [arcsec]
+
         Photfile must be a text file with columns ``(days_from_midtransit,
         flux, flux_err)``.  Both whitespace- and comma-delimited
         will be tried, using ``np.loadtxt``.  Photfile need not be there
@@ -89,8 +111,9 @@ class FPPCalculation(object):
         :class:`isochrones.StarModel` fit.
 
         If ``starmodelfile`` is not provided, then :class:`isochrones.StarModel`
-        will be saved to ``./starmodel.h5``.  If ``popsetfile`` is not provided,
-        it will be saved to ``./popset.h5``.  
+        will be saved to ``starmodel.h5`` in the same directory as ``fpp.ini``;
+        If ``popsetfile`` is not provided, it will be saved to ``popset.h5``,
+        in the same directory.  
         
 
         :param ini_file:
@@ -108,7 +131,7 @@ class FPPCalculation(object):
             * ``starfield.h5``: the TRILEGAL field star simulation
             * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
             * ``popset.h5``: the :class:`vespa.PopulationSet` object
-               representing the model population simulations.
+              representing the model population simulations.
                     
         """        
         config = ConfigObj(ini_file)
@@ -253,17 +276,63 @@ class FPPCalculation(object):
             return getattr(self.popset,attr)
 
     def save(self, overwrite=True):
+        """
+        Saves PopulationSet and TransitSignal.
+
+        Shouldn't need to use this if you're using
+        :func:`FPPCalculation.from_ini`.
+        
+        Saves :class`PopulationSet` to ``[folder]/popset.h5]``
+        and :class:`TransitSignal` to ``[folder]/trsig.pkl``.
+
+        :param overwrite: (optional)
+            Whether to overwrite existing files.
+        
+        """
         self.save_popset(overwrite=overwrite)
         self.save_signal()
 
     @classmethod
     def load(cls, folder):
+        """
+        Loads PopulationSet from folder
+
+        ``popset.h5`` and ``trsig.pkl`` must exist in folder.
+
+        Again, using :func:`FPPCalculation.from_ini` may be
+        better to use.
+
+        :param folder:
+            Folder from which to load.
+        """
         popset = PopulationSet(os.path.join(folder,'popset.h5'))
         sigfile = os.path.join(folder,'trsig.pkl')
         trsig = pickle.load(open(sigfile, 'rb'))
         return cls(trsig, popset, folder=folder)
 
     def FPPplots(self, folder=None, format='png', tag=None, **kwargs):
+        """
+        Make FPP diagnostic plots
+
+        Makes likelihood "fuzz plot" for each model, a FPP summary figure,
+        a plot of the :class:`TransitSignal`, and writes a ``results.txt``
+        file.
+
+        :param folder: (optional)
+            Destination folder for plots/``results.txt``.  Default
+            is ``self.folder``.
+
+        :param format: (optional)
+            Desired format of figures.  e.g. ``png``, ``pdf``...
+
+        :param tag: (optional)
+            If this is provided (string), then filenames will have
+            ``_[tag]`` appended to the filename, before the extension.
+
+        :param **kwargs:
+            Additional keyword arguments passed to :func:`PopulationSet.lhoodplots`.
+            
+        """
         if folder is None:
             folder = self.folder
 
@@ -273,6 +342,26 @@ class FPPCalculation(object):
         self.write_results(folder=folder)
 
     def plotsignal(self,fig=None,saveplot=True,folder=None,figformat='png',**kwargs):
+        """
+        Plots TransitSignal
+
+        Calls :func:`TransitSignal.plot`, saves to provided folder.
+
+        :param fig: (optional)
+            Argument for :func:`plotutils.setfig`.
+
+        :param saveplot: (optional)
+            Whether to save figure.
+
+        :param folder: (optional)
+            Folder to which to save plot
+
+        :param figformat: (optional)
+            Desired format for figure.
+
+        :param **kwargs:
+            Additional keyword arguments passed to :func:`TransitSignal.plot`.
+        """
         if folder is None:
             folder = self.folder
 
@@ -282,6 +371,14 @@ class FPPCalculation(object):
             plt.close()
 
     def write_results(self,folder=None):
+        """
+        Writes text file of calculation summary.
+
+        :param folder: (optional)
+            Folder to which to write ``results.txt``.
+
+            
+        """
         if folder is None:
             folder = self.folder
         fout = open(folder+'/'+'results.txt','w')
@@ -303,18 +400,47 @@ class FPPCalculation(object):
         fout.close()
 
     def save_popset(self,filename='popset.h5',**kwargs):
+        """Saves the PopulationSet
+
+        Calls :func:`PopulationSet.save_hdf`.
+        """
         self.popset.save_hdf(os.path.join(self.folder,filename))
 
-    def save_signal(self,filename='trsig.pkl'):
-        f = open(os.path.join(self.folder,filename), 'wb')
-        pickle.dump(self.trsig, f)
-        f.close()
+    def save_signal(self,filename=None):
+        """
+        Saves TransitSignal.
 
+        Calls :func:`TransitSignal.save`; default filename is
+        ``trsig.pkl`` in ``self.folder``.
+        """
+        if filename is None:
+            filename = os.path.join(self.folder,'trsig.pkl')
+        self.trsig.save(filename)
 
-    def FPPsummary(self,fig=None,figsize=(10,8),folder='.',saveplot=False,
+    def FPPsummary(self,fig=None,figsize=(10,8),saveplot=False,folder='.',
                    starinfo=True,siginfo=True,
                    priorinfo=True,constraintinfo=True,
                    tag=None,simple=False,figformat='png'):
+        """
+        Makes FPP summary plot
+
+        .. note::
+
+            This is due for updates/improvements.
+        
+        :param fig, figsize: (optional)
+            Arguments for :func:`plotutils.setfig`.
+
+        :param saveplot: (optional)
+            Whether to save figure.  Default is ``False``.
+        
+        :param folder: (optional)
+            Folder to which to save plot; default is current working dir.
+
+        :param figformat: (optional)
+            Desired format of saved figure.
+            
+        """
         if simple:
             starinfo = False
             siginfo = False
@@ -493,13 +619,15 @@ class FPPCalculation(object):
 
 
     def lhoodplots(self,folder='.',tag=None,figformat='png',**kwargs):
+        """
+        Make a plot of the likelihood for each model in PopulationSet
+
+        """
         Ltot = 0
-        #print('backend being used for lhoodplots: %s' % matplotlib.rcParams['backend'])
-        #for model in ['eb','heb','bgeb','bgpl','pl']:
+
         for model in self.popset.modelnames:
             Ltot += self.prior(model)*self.lhood(model)
         
-        #for model in ['eb','heb','bgeb','bgpl','pl']:
         for model in self.popset.shortmodelnames:
             self.lhoodplot(model,Ltot=Ltot,**kwargs)
             if tag is None:
@@ -509,18 +637,19 @@ class FPPCalculation(object):
             plt.close()
 
     def lhoodplot(self,model,suptitle='',**kwargs):
+        """
+        Make a plot of the likelihood for a given model.
+        """
         if suptitle=='':
             suptitle = self[model].model
         self[model].lhoodplot(self.trsig,colordict=self.popset.colordict,
                               suptitle=suptitle,**kwargs)
 
-    def calc_lhoods(self,verbose=True,**kwargs):
-        if verbose:
-            logging.info('Calculating likelihoods...')
+    def calc_lhoods(self,**kwargs):
+        logging.info('Calculating likelihoods...')
         for pop in self.popset.poplist:
             L = pop.lhood(self.trsig,**kwargs)
-            if verbose:
-                logging.info('%s: %.2e' % (pop.model,L))
+            logging.info('%s: %.2e' % (pop.model,L))
 
     def __hash__(self):
         return hashcombine(self.popset, self.trsig)
@@ -529,18 +658,23 @@ class FPPCalculation(object):
         return self.popset[model]
 
     def prior(self,model):
+        """
+        Return the prior for a given model.
+        """
         return self[model].prior
 
     def lhood(self,model,**kwargs):
+        """
+        Return the likelihood for a given model.
+        """
         return self[model].lhood(self.trsig,
                                  **kwargs)
 
-    def Pval(self,skipmodels=None,verbose=False):
+    def Pval(self,skipmodels=None):
         Lfpp = 0
         if skipmodels is None:
             skipmodels = []
-        if verbose:
-            logging.info('evaluating likelihoods for %s' % self.trsig.name)
+        logging.info('evaluating likelihoods for %s' % self.trsig.name)
         
         for model in self.popset.modelnames:
             if model=='Planets':
@@ -549,25 +683,25 @@ class FPPCalculation(object):
                 prior = self.prior(model)
                 lhood = self.lhood(model)
                 Lfpp += prior*lhood
-                if verbose:
-                    logging.info('%s: %.2e = %.2e (prior) x %.2e (lhood)' % (model,prior*lhood,prior,lhood))
+                logging.info('%s: %.2e = %.2e (prior) x %.2e (lhood)' % (model,prior*lhood,prior,lhood))
         prior = self.prior('pl')
         lhood = self.lhood('pl')
         Lpl = prior*lhood
-        if verbose:
-            logging.info('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
+        logging.info('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
         return Lpl/Lfpp/self['pl'].priorfactors['fp_specific']
 
-    def fpV(self,FPPV=0.005,skipmodels=None,verbose=False):
-        P = self.Pval(skipmodels=skipmodels,verbose=verbose)
+    def fpV(self,FPPV=0.005,skipmodels=None):
+        P = self.Pval(skipmodels=skipmodels)
         return (1-FPPV)/(P*FPPV)
 
-    def FPP(self,skipmodels=None,verbose=False):
+    def FPP(self,skipmodels=None):
+        """
+        Return the false positive probability (FPP)
+        """
         Lfpp = 0
         if skipmodels is None:
             skipmodels = []
-        if verbose:
-            logging.info('evaluating likelihoods for %s' % self.trsig.name)
+        logging.info('evaluating likelihoods for %s' % self.trsig.name)
         for model in self.popset.modelnames:
             if model=='Planets':
                 continue
@@ -575,12 +709,10 @@ class FPPCalculation(object):
                 prior = self.prior(model)
                 lhood = self.lhood(model)
                 Lfpp += prior*lhood
-                if verbose:
-                    logging.info('%s: %.2e = %.2e (prior) x %.2e (lhood)' % (model,prior*lhood,prior,lhood))
+                logging.info('%s: %.2e = %.2e (prior) x %.2e (lhood)' % (model,prior*lhood,prior,lhood))
         prior = self.prior('pl')
         lhood = self.lhood('pl')
         Lpl = prior*lhood
-        if verbose:
-            logging.info('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
+        logging.info('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
         return 1 - Lpl/(Lpl + Lfpp)
 

@@ -1623,6 +1623,10 @@ class PopulationSet(object):
     """
     A set of EclipsePopulations used to calculate a transit signal FPP
 
+    This can be initialized with a list of :class:`EclipsePopulation` objects
+    that have been pre-generated, or it can be passed the arguments required
+    to generate the default list of :class:`EclipsePopulation`s.
+    
     :param poplist:
         Can be either a list of :class:`EclipsePopulation` objects,
         a filename (in which case a saved :class:`PopulationSet`

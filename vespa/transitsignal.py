@@ -91,7 +91,12 @@ class TransitSignal(object):
 
     def save_hdf(self, filename, path=''):
         """
-        Save transitsignal info using HDF...not yet implemented. 
+        Save transitsignal info using HDF...not yet implemented.
+
+        .. note::
+
+           Refactoring plan is to re-write saving to use HDF
+           instead of pickle.
         """
         raise NotImplementedError
         
@@ -106,6 +111,9 @@ class TransitSignal(object):
 
     #eventually make this save_hdf
     def save(self, filename):
+        """
+        Calls save_pkl function.
+        """
         self.save_pkl(filename)
         
     def __eq__(self,other):

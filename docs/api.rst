@@ -1,20 +1,21 @@
 .. _api:
 
-API
-===
+High-level API
+===========
 
 .. module:: vespa
 
-This page details some of the most important methods and classes
-provided by the ``vespa`` module.  Please note that this documentation
-is a work in progress, and not yet complete.  The simplest entry point
-into these calculations is the ``calcfpp`` command-line script, which
-creates a :class:`FPPCalculation` object using
-:func:`FPPCalculation.from_ini`.  The basic object representing an
-eclipse model (either planetary or stellar) is
-:class:`EclipsePopulation`, which subclasses the more general
-:class:`StarPopulation`, which in turn uses :class:`OrbitPopulation`
-or :class:`TripleOrbitPopulation` to simulate randome orbits.
+This page details the top-level classes that provide access to the
+``vespa`` module.  The simplest entry point into these calculations is
+the ``calcfpp`` command-line script, which creates a
+:class:`FPPCalculation` object using :func:`FPPCalculation.from_ini`,
+and creates a bunch of data files/diagnostic plots.  A
+:class:`FPPCalculation` is made up of a :class:`PopulationSet` and a
+:class:`TransitSignal`.
+
+For more details on the guts of the population objects that make
+up a :class:`PopulationSet`, please see the
+documentation on Eclipse Populations, Star Populations, and Orbit Populations.
 
 FPPCalculation
 -----------------
@@ -22,38 +23,18 @@ FPPCalculation
 .. autoclass:: vespa.FPPCalculation
    :members:
 
-Eclipse Populations
+PopulationSet
 -----------------
 
-.. autoclass:: vespa.EclipsePopulation
-   :members:
+This object is essentially an organized list of
+:class:`EclipsePopulation` objects.  
 
-Undiluted Eclipsing Binary
-^^^^^^^^^^^^^^^
+.. autoclass:: vespa.PopulationSet
+  :members:
 
-.. autoclass:: vespa.EBPopulation
-   :members:
+TransitSignal
+----------------
 
-Hierarchical-triple Eclipsing Binary
-^^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: vespa.HEBPopulation
-   :members:
-
-Background Eclipsing Binary
-^^^^^^^^^^^^^^^^^
-
-.. autoclass:: vespa.BEBPopulation
-   :members:
-
-Transiting Planet
-^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: vespa.PlanetPopulation
-   :members:
-
-General Star Populations
------------------
-
-.. autoclass:: vespa.StarPopulation
-   :members:
+.. autoclass:: vespa.TransitSignal
+  :members:
+     
