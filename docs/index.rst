@@ -4,22 +4,53 @@ vespa
 ``vespa`` is a Python package built to enable automated false positive
 probability (FPP) analysis of transiting planet signals. It implements
 the latest version of the general procedure described in detail in
-`Morton (2012) <http://adsabs.harvard.edu/abs/2012ApJ...761....6M>`_.
+`Morton (2012) <http://adsabs.harvard.edu/abs/2012ApJ...761....6M>`_,
+and is being actively developed on `GitHub
+<http://github.com/timothydmorton/vespa>`_.  It also makes use of the
+`isochrones <http://isochrones.rtfd.org>`_ package.
+
+.. note::
+
+   This documentation is a work in progress and far from
+   complete.  Please feel free to `raise an issue on GitHub
+   <http://github.com/timothydmorton/vespa/issues>`_ with any questions
+   you may have about the code.
 
 Installation
-------------
+-----------
 
 To install, you can get the most recently released version from PyPI::
 
     pip install vespa [--user]
 
-Or you can clone from github::
+Or you can clone the repository::
 
     git clone https://github.com/timothydmorton/vespa.git
     cd vespa
     python setup.py install [--user]
 
 The ``--user`` argument may be necessary if you don't have root privileges.
+
+Overview
+----------
+   
+A false positive probability calculation in ``vespa`` is built of two
+basic components: a :class:`TransitSignal` and a
+:class:`PopulationSet`, joined together in a :class:`FPPCalculation`
+object.  The :class:`TransitSignal` holds the data about the transit
+signal photometry, and the :class:`PopulationSet` contains a set of
+simulated populations, one :class:`EclipsePopulation` for each
+astrophysical model that is considered as a possible origin for the
+observed transit-like signal.  By default, the populations included
+will be :class:`PlanetPopulation` and three astrophysical false
+positive scenarios: an :class:`EBPopulation`, an
+:class:`HEBPopulation`, and a :class:`BEBPopulation`.
+
+The :class:`EclipsePopulation` object derives from the more general
+:class:`StarPopulation`, which is useful beyond false positive
+calculations, such as for generating a hypothetical population of
+binary companions for a given star in order to help quantify
+completeness to stellar companions of an imaging survey.
 
 Basic Usage
 -----------
@@ -32,7 +63,7 @@ as follows.
   where out-of-transit is normalized to unity], and ``flux_err``.
   The file should not have a header row (no titles); and can be either
   whitespace or comma-delimited (will be ingested by
-  :func:`np.loadtxt`).
+  :func:`np.loadtxt`).  
 
   * Make a config file of the following form and save as ``fpp.ini``::
 
@@ -57,18 +88,21 @@ as follows.
             K = 8.899, 0.02
             Kepler = 12.473
 
+	    [constraints]
+	    maxrad = 12  # aperture radius [arcsec] 
+
   * Run the following from the command line::
 
-	 %  calcfpp -v -n 1000
+	 $  calcfpp -v -n 1000
 
 This will take a few minutes the first time you run it (note the
-default simulation size is ``n=20000``, which would take longer), and
-will output the FPP to the command line, as well as producing
-diagnostic plots and a ``results.txt`` file with the quantitative
-summary of the calculation.  (The ``-v`` option tells the script to be
-verbose and tell you what it's doing.)  In addition, this will produce
-a number of data files, all of which will by default get put in the
-same directory as your ``fpp.ini`` file.:
+default simulation size is ``n=20000``, which would take longer but be
+more reliable), and will output the FPP to the command line, as well
+as producing diagnostic plots and a ``results.txt`` file with the
+quantitative summary of the calculation.  (The ``-v`` option tells the
+script to be verbose and tell you what it's doing.)  In addition, this
+will produce a number of data files in the same directory as your
+``fpp.ini`` file:
 
   * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
   * ``starfield.h5``: the TRILEGAL field star simulation
@@ -76,42 +110,19 @@ same directory as your ``fpp.ini`` file.:
   * ``popset.h5``: the :class:`vespa.PopulationSet` object
     representing the model population simulations.
 
-The diagnostic plots that will be generated will be:
+It will also generate the following diagnostic plots:
 
   *  ``trsig.png``: A plot of the transit signal
   * ``eb.png``, ``heb.png``, ``beb.png``, ``pl.png``: plots
     illustrating the likelihood of each model.
   *  ``FPPsummary.png``: A summary figure of the FPP results.
-  * ``starmodel_triangle_physical.png,
-     starmodel_triangle_observed.png``: triange plots of the
+  *  ``starmodel_triangle_physical.png,
+     starmodel_triangle_observed.png``:
+     triangle plots of the
      :class:`isochrones.StarModel` fits.
 
-Once these files have created, it is faster to re-run the calculation
-again.  This command-line utility script has not yet been set up to be
-able to also include 
-
-
-Overview
---------
-
-A false positive probability calculation in ``vespa`` is built of two
-basic components: a :class:`TransitSignal` and a
-:class:`PopulationSet`, joined together in a :class:`FPPCalculation`
-object.  The :class:`TransitSignal` holds the data about the transit
-signal photometry, and the :class:`PopulationSet` contains a set of
-simulated populations, one :class:`EclipsePopulation` for each
-astrophysical model that is considered as a possible origin for the
-observed transit-like signal.  By default, the populations included
-will be :class:`PlanetPopulation` and three astrophysical false
-positive scenarios: an :class:`EBPopulation`, an
-:class:`HEBPopulation`, and a :class:`BEBPopulation`.
-
-The :class:`EclipsePopulation` object derives from the more general
-:class:`StarPopulation`, which is useful beyond false positive
-calculations, such as for generating a hypothetical population of
-binary companions for a given star in order to help quantify
-completeness to stellar companions of an imaging survey.  
-
+Once these files have been created, it is faster to re-run the
+calculation again, even if you change the constraints.
 
 
 API Documentation
@@ -119,5 +130,5 @@ API Documentation
 
 .. toctree::
    :maxdepth: 2
-	fpp
-	api
+
+   api

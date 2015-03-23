@@ -165,25 +165,31 @@ class FPPCalculation(object):
             
         #create TransitSignal
         if os.path.exists(trsig_file):
+            logging.info('Loading transit signal from {}...'.format(trsig_file))
             trsig = pickle.load(open(trsig_file,'rb'))
         else:
             if 'photfile' not in config:
                 raise AttributeError('If transit pickle file (trsig.pkl)'+
                                      'not present, "photfile" must be'+
                                      'defined.')
+            logging.info('Reading transit signal photometry ' +
+                         'from {}...'.format(photfile))
             photfile = os.path.join(folder,config['photfile'])
             try:
                 ts, fs, dfs = np.loadtxt(photfile, unpack=True)
             except:
                 ts, fs, dfs = np.loadtxt(photfile, delimiter=',', unpack=True)
+            
             trsig = TransitSignal(ts, fs, dfs, P=period, name=name)
+            logging.info('Fitting transitsignal with MCMC...')
             trsig.MCMC()
             trsig.save(trsig_file)
                         
         #create StarModel--- make this recalculate
-        # if props don't match existing ones.
+        # if props don't match existing ones?
         try:
             starmodel = StarModel.load_hdf(starmodel_file)
+            logging.info('Starmodel loaded from {}.'.format(starmodel_file))
         except:
             props = {b:(mags[b], mag_err[b]) for b in mag_err.keys()}
             if Teff is not None:
@@ -205,6 +211,7 @@ class FPPCalculation(object):
                 raise RuntimeError #just to get to except block
             popset = PopulationSet.load_hdf(popset_file)
             popset['pl'] #should there be a better way to check this? (yes)
+            logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
             popset = PopulationSet(period=period, mags=mags,
                                    ra=ra, dec=dec,
@@ -222,7 +229,7 @@ class FPPCalculation(object):
 
         #apply contrast curve constraints if present
         if 'ccfiles' in config['constraints']:
-            ccfiles = config['constraints']['ccfiles']
+            ccfiles = list(config['constraints']['ccfiles'])
             for ccfile in ccfiles:
                 if not os.path.isabs(ccfile):
                     ccfile = os.path.join(folder, ccfile)

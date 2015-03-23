@@ -11,8 +11,8 @@ from scipy.stats import gaussian_kde
 
 import acor
 
-from plotutils import setfig
-from hashutils import hashcombine, hasharray
+from .plotutils import setfig
+from .hashutils import hashcombine, hasharray
 
 from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC
 from .statutils import kdeconf, qstd, conf_interval
@@ -22,9 +22,37 @@ def load_pkl(filename):
     return pickle.load(fin)
 
 class TransitSignal(object):
-    """a phased-folded transit signal with the epoch of the transit at 0, and 'continuum' set at 1
+    """A phased-folded transit signal.
+
+    Epoch of the transit at 0, 'continuum' set at 1.
+    
+    :param ts, fs, dfs:
+        Times (days from mid-transit), fluxes (relative to 1),
+        flux uncertainties.  dfs optional
+
+    :param P:
+        Orbital period.
+
+    :param p0: (optional)
+        Initial guess for least-squares trapezoid fit.
+        If not provided, then some decent guess will be made
+        (which is better on made-up data than real...)
+
+    :param name: (optional)
+        Name of the signal.
+
+    :param maxslope: (optional)
+        Upper limit to use for "slope" parameter (T/tau)
+        in the MCMC fitting of signal.  Default is 30.
+
+
+    .. note:: The implementation of this object can use some refactoring;
+         as it is directly translated from some older code.  As
+         such, not all methods/attributes are well documented.
+
+         
     """
-    def __init__(self,ts,fs,dfs=None,P=None,p0=None,name='',maxslope=None):
+    def __init__(self,ts,fs,dfs=None,P=None,p0=None,name='',maxslope=30):
 
         ts = np.atleast_1d(ts)
         fs = np.atleast_1d(fs)
@@ -35,8 +63,6 @@ class TransitSignal(object):
         self.name = name
         self.P = P
 
-        if maxslope is None:
-            maxslope = 30
         self.maxslope = maxslope
         if type(P) == type(np.array([1])):
             self.P = P[0]
@@ -63,12 +89,25 @@ class TransitSignal(object):
 
         self.hasMCMC=False
 
-    #make this save_hdf
-    def save(self, filename):
+    def save_hdf(self, filename, path=''):
+        """
+        Save transitsignal info using HDF...not yet implemented. 
+        """
+        raise NotImplementedError
+        
+    
+    def save_pkl(self, filename):
+        """
+        Pickles TransitSignal.
+        """
         fout = open(filename, 'wb')
         pickle.dump(self, fout)
         fout.close()
 
+    #eventually make this save_hdf
+    def save(self, filename):
+        self.save_pkl(filename)
+        
     def __eq__(self,other):
         return hash(self) == hash(other)
 
@@ -85,6 +124,31 @@ class TransitSignal(object):
         
     def plot(self, fig=None, plot_trap=False, name=False, trap_color='g',
              trap_kwargs=None, **kwargs):
+        """
+        Makes a simple plot of signal
+
+        :param fig: (optional)
+            Argument for :func:`plotutils.setfig`.
+
+        :param plot_trap: (optional)
+            Whether to plot the (best-fit least-sq) trapezoid fit.
+
+        :param name: (optional)
+            Whether to annotate plot with the name of the signal;
+            can be ``True`` (in which case ``self.name`` will be
+            used), or any arbitrary string.
+
+        :param trap_color: (optional)
+            Color of trapezoid fit line.
+
+        :param trap_kwargs: (optional)
+            Keyword arguments to pass to trapezoid fit line.
+
+        :param **kwargs: (optional)
+            Additional keyword arguments passed to ``plt.plot``.
+
+            
+        """
 
         setfig(fig)
         
@@ -121,7 +185,15 @@ class TransitSignal(object):
     def MCMC(self, niter=500, nburn=200, nwalkers=200, threads=1,
              fit_partial=False, width=3, savedir=None, refit=False,
              thin=10, conf=0.95, maxslope=30, debug=False, p0=None):
+        """
+        Fit transit signal to trapezoid model using MCMC
 
+        .. note:: As currently implemented, this method creates a
+            bunch of attributes relevant to the MCMC fit; I plan
+            to refactor this to define those attributes as properties
+            so as not to have their creation hidden away here.  I plan
+            to refactor how this works.
+        """
         if fit_partial:
             wok = np.where((np.absolute(self.ts-self.center) < (width*self.dur)) &
                            ~np.isnan(self.fs))

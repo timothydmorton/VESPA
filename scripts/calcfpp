@@ -111,10 +111,8 @@ if __name__=='__main__':
     for folder in args.folders:
         inifile = os.path.join(folder, args.inifile)
 
-        logging.info('Loading(/creating) FPPCalculation object...')
         f = FPPCalculation.from_ini(inifile, recalc=args.recalc,
                                     n=args.n)
-        logging.info('Making FPP plots...')
         f.FPPplots()
 
         starmodel_file = os.path.join(folder, 'starmodel.h5')
