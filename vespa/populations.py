@@ -60,73 +60,75 @@ MEARTH = const.M_earth.cgs.value
 
 
 class EclipsePopulation(StarPopulation):
+    """Base class for populations of eclipsing things.
+
+    This is the base class for populations of various scenarios
+    that could explain a tranist signal; that is, 
+    astrophysical false positives or transiting planets.
+
+    Once set up properly, :func:`EclipsePopulation.fit_trapezoids`
+    can be used to fit the trapezoidal shape parameters, after
+    which the likelihood of a transit signal under the model
+    may be calculated.
+
+    Subclasses :class:`StarPopulation`, which enables
+    all the functionality of observational constraints.
+
+    if prob is not passed; should be able to calculated from given
+    star/orbit properties.
+
+    As with :class:`StarPopulation`, any subclass must be able 
+    to be initialized with no arguments passed, in order for
+    :func:`StarPopulation.load_hdf` to work properly.
+
+    :param stars:
+        ``DataFrame`` with star properties.  Must contain
+        ``M_1, M_2, R_1, R_2, u1_1, u1_2, u2_1, u2_2``.
+        Also, either the ``period`` keyword argument must be provided
+        or a ``period`` column should be in ``stars``.
+        ``stars`` must also have the eclipse parameters:
+        `'inc, ecc, w, dpri, dsec, b_sec, b_pri, fluxfrac_1, fluxfrac_2``.
+
+    :param period: (optional)
+        Orbital period.  If not provided, then ``stars`` must
+        have period column.
+
+    :param model: (optional)
+        Name of the model.
+
+    :param priorfactors: (optional)
+        Multiplicative factors that quantify the model prior
+        for this particular model; e.g. ``f_binary``, etc.
+
+    :param lhoodcachefile: (optional)
+        File where likelihood calculation cache is written.
+
+    :param orbpop: (optional)
+        Orbit population.
+    :type orbpop: 
+        :class:`orbits.OrbitPopulation` or 
+        :class:`orbits.TripleOrbitPopulation`
+
+    :param prob: (optional)
+        Averaged eclipse probability of scenario instances.
+        If not provided, this should be calculated,
+        though this is not implemented yet.
+
+    :param cadence: (optional)
+        Observing cadence, in days.  Defaults to *Kepler* value.
+
+    :param **kwargs:
+        Additional keyword arguments passed to
+        :class:`stars.StarPopulation`.
+
+    """
+                
     def __init__(self, stars=None, period=None, model='',
                  priorfactors=None, lhoodcachefile=None,
                  orbpop=None, prob=None,
                  cadence=0.020434028, #Kepler observing cadence, in days
                  **kwargs):
-        """Base class for populations of eclipsing things.
 
-        This is the base class for populations of various scenarios
-        that could explain a tranist signal; that is, 
-        astrophysical false positives or transiting planets.
-
-        Once set up properly, :func:`EclipsePopulation.fit_trapezoids`
-        can be used to fit the trapezoidal shape parameters, after
-        which the likelihood of a transit signal under the model
-        may be calculated.
-
-        Subclasses :class:`stars.StarPopulation`, which enables
-        all the functionality of observational constraints.
-
-        if prob is not passed; should be able to calculated from given
-        star/orbit properties.
-
-        As with :class:`stars.StarPopulation`, any subclass must be able 
-        to be initialized with no arguments passed, in order for
-        :func:`stars.StarPopulation.load_hdf` to work properly.
-
-        :param stars:
-            ``DataFrame`` with star properties.  Must contain
-            ``M_1, M_2, R_1, R_2, u1_1, u1_2, u2_1, u2_2``.
-            Also, either the ``period`` keyword argument must be provided
-            or a ``period`` column should be in ``stars``.
-            ``stars`` must also have the eclipse parameters:
-            `'inc, ecc, w, dpri, dsec, b_sec, b_pri, fluxfrac_1, fluxfrac_2``.
-            
-        :param period: (optional)
-            Orbital period.  If not provided, then ``stars`` must
-            have period column.
-
-        :param model: (optional)
-            Name of the model.
-
-        :param priorfactors: (optional)
-            Multiplicative factors that quantify the model prior
-            for this particular model; e.g. ``f_binary``, etc.
-
-        :param lhoodcachefile: (optional)
-            File where likelihood calculation cache is written.
-
-        :param orbpop: (optional)
-            Orbit population.
-        :type orbpop: 
-            :class:`orbits.OrbitPopulation` or 
-            :class:`orbits.TripleOrbitPopulation`
-
-        :param prob: (optional)
-            Averaged eclipse probability of scenario instances.
-            If not provided, this should be calculated,
-            though this is not implemented yet.
-
-        :param cadence: (optional)
-            Observing cadence, in days.  Defaults to *Kepler* value.
-        
-        :param **kwargs:
-            Additional keyword arguments passed to
-            :class:`stars.StarPopulation`.
-
-        """
         
         self.period = period
         self.model = model
@@ -684,6 +686,73 @@ class EclipsePopulation(StarPopulation):
         return new
 
 class PlanetPopulation(EclipsePopulation):
+    """Population of Transiting Planets
+
+    Subclass of :class:`EclipsePopulation`.  This is mostly
+    a copy of :class:`EBPopulation`, with small modifications.
+
+    Star properties may be defined either with either a 
+    :class:`isochrones.StarModel` or by defining just its
+    ``mass`` and ``radius`` (and ``Teff`` and ``logg`` if 
+    desired to set limb darkening coefficients appropriately).
+
+    :param period:
+        Period of signal.  
+
+    :param rprs:
+        Point-estimate of Rp/Rs radius ratio.
+
+    :param mass, radius: (optional)
+        Mass and radius of host star.  If defined, must be
+        either tuples of form ``(value, error)`` or 
+        :class:`simpledist.Distribution` objects.
+
+    :param Teff, logg: (optional)
+        Teff and logg point estimates for host star.
+        These are used only for calculating limb darkening
+        coefficients.
+
+    :param starmodel: (optional)
+        The preferred way to define the properties of the 
+        host star.  If MCMC has been run on this model,
+        then samples are just read off; if it hasn't,
+        then it will run it.
+    :type starmodel:
+        :class:`isochrones.StarModel`
+
+    :param band: (optional)
+        Photometric band in which eclipse is detected.
+
+    :param model: (optional)
+        Name of the model.
+
+    :param n: (optional)
+        Number of instances to simulate.  Default = ``2e4``.
+
+    :param fp_specific: (optional)
+        "Specific occurrence rate" for this type of planets;
+        that is, the planet occurrence rate integrated
+        from ``(1-rbin_width)x`` to ``(1+rbin_width)x`` this planet radius.  This
+        goes into the ``priorfactor`` for this model.
+
+    :param u1, u2: (optional)
+        Limb darkening parameters.  If not provided, then 
+        calculated based on ``Teff, logg`` or just
+        defaulted to solar values.
+
+    :param rbin_width: (optional)
+        Fractional width of rbin for ``fp_specific``.
+
+    :param MAfn: (optional)
+        :class:`transit_basic.MAInterpolationFunction` object.
+        If not passed, then one with default parameters will
+        be created.
+
+    :param lhoodcachefile: (optional)
+        Likelihood calculation cache file.
+
+    """
+
     def __init__(self, period=None, rprs=None,
                  mass=None, radius=None, Teff=None, logg=None,
                  starmodel=None,
@@ -691,72 +760,6 @@ class PlanetPopulation(EclipsePopulation):
                  fp_specific=None, u1=None, u2=None,
                  rbin_width=0.3,
                  MAfn=None, lhoodcachefile=None):
-        """Population of Transiting Planets
-
-        Subclass of :class:`EclipsePopulation`.  This is mostly
-        a copy of :class:`EBPopulation`, with small modifications.
-
-        Star properties may be defined either with either a 
-        :class:`isochrones.StarModel` or by defining just its
-        ``mass`` and ``radius`` (and ``Teff`` and ``logg`` if 
-        desired to set limb darkening coefficients appropriately).
-
-        :param period:
-            Period of signal.  
-
-        :param rprs:
-            Point-estimate of Rp/Rs radius ratio.
-
-        :param mass, radius: (optional)
-            Mass and radius of host star.  If defined, must be
-            either tuples of form ``(value, error)`` or 
-            :class:`simpledist.Distribution` objects.
-
-        :param Teff, logg: (optional)
-            Teff and logg point estimates for host star.
-            These are used only for calculating limb darkening
-            coefficients.
-
-        :param starmodel: (optional)
-            The preferred way to define the properties of the 
-            host star.  If MCMC has been run on this model,
-            then samples are just read off; if it hasn't,
-            then it will run it.
-        :type starmodel:
-            :class:`isochrones.StarModel`
-
-        :param band: (optional)
-            Photometric band in which eclipse is detected.
-
-        :param model: (optional)
-            Name of the model.
-
-        :param n: (optional)
-            Number of instances to simulate.  Default = ``2e4``.
-
-        :param fp_specific: (optional)
-            "Specific occurrence rate" for this type of planets;
-            that is, the planet occurrence rate integrated
-            from ``(1-rbin_width)x`` to ``(1+rbin_width)x`` this planet radius.  This
-            goes into the ``priorfactor`` for this model.
-
-        :param u1, u2: (optional)
-            Limb darkening parameters.  If not provided, then 
-            calculated based on ``Teff, logg`` or just
-            defaulted to solar values.
-
-        :param rbin_width: (optional)
-            Fractional width of rbin for ``fp_specific``.
-
-        :param MAfn: (optional)
-            :class:`transit_basic.MAInterpolationFunction` object.
-            If not passed, then one with default parameters will
-            be created.
-
-        :param lhoodcachefile: (optional)
-            Likelihood calculation cache file.
-            
-        """
 
         self.period = period
         self.model = model
@@ -905,91 +908,92 @@ class PlanetPopulation(EclipsePopulation):
 
     
 class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
+    """Population of Eclipsing Binaries (undiluted)
+
+    Eclipsing Binary (EB) population is generated either
+    by generating a population
+    of binary stars to match the observed colors, or by fixing a
+    primary star to have certain properties and then simulating
+    binary companions.
+
+    Inherits from :class:`EclipsePopulation` and
+    :class:`stars.ColormatchMultipleStarPopulation`.
+
+    :param period:
+        Orbital period
+
+    :param mags:
+        Observed apparent magnitudes.  Won't work if this is
+        ``None``, which is the default.
+    :type mags:
+        ``dict``
+
+    :param colors: (optional)
+        Colors to use to enforce match with observations.
+        e.g., ('JK', 'HK'), etc.  The more colors are provided
+        the longer it might take to generate an appropriate
+        population. 
+    :type colors:
+        ``tuple`` or ``list``
+
+    :param colortol: (optional)
+        Threshold within which simulated binary companions must
+        match observed colors.  Default is 0.1 mag.
+
+    :param mass, age, feh: (optional)
+        Mass, log10(age), and feh  of primary star;
+        either in ``(value, error)`` format
+        or as :class:`simpledist.Distribution` objects.
+
+    :param starmodel: (optional)
+        The preferred way to define the properties of the 
+        host star.  If MCMC has been run on this model,
+        then samples are just read off; if it hasn't,
+        then it will run it.
+    :type starmodel:
+        :class:`isochrones.StarModel`            
+
+    :param starfield: (optional)
+        If ``mass`` or ``starmodel`` not provided, then primary masses will
+        get randomly selected from this starfield, assumed to be
+        a TRILEGAL simulation.  If string, then should be a filename
+        of an .h5 file containing the TRILEGAL simulation; can also
+        be a ``DataFrame`` directly (see
+        :class:`stars.ColormatchMultipleStarPopulation`).
+
+    :param band: (optional)
+        Photometric bandpass in which transit signal is observed.
+
+    :param model:  (optional)
+        Name of model.
+
+    :param f_binary: (optional)
+        Binary fraction to be assumed.  Will be one of the ``priorfactors``.
+
+    :param n: (optional)
+        Number of instances to simulate.  Default = 2e4.
+
+    :param MAfn: (optional)
+        :class:`transit_basic.MAInterpolationFunction` object.
+        If not passed, then one with default parameters will
+        be created.
+
+    :param lhoodcachefile: (optional)
+        Likelihood calculation cache file.
+
+    :param **kwargs:
+        Additional keyword arguments passed to
+        :class:`stars.ColormatchMultipleStarPopulation`
+
+    currently doesn't work if mags is None.
+    """
+
     def __init__(self, period=None, mags=None, colors=('JK',), colortol=0.1,
                  mass=None, age=None, feh=None, starmodel=None,
                  starfield=None, 
                  band='Kepler', model='EBs', f_binary=0.4, n=2e4,
                  MAfn=None, lhoodcachefile=None,
                  **kwargs):
-        """Population of Eclipsing Binaries (undiluted)
-
-        Eclipsing Binary (EB) population is generated either
-        by generating a population
-        of binary stars to match the observed colors, or by fixing a
-        primary star to have certain properties and then simulating
-        binary companions.
-
-        Inherits from :class:`EclipsePopulation` and
-        :class:`stars.ColormatchMultipleStarPopulation`.
-        
-        :param period:
-            Orbital period
-
-        :param mags:
-            Observed apparent magnitudes.  Won't work if this is
-            ``None``, which is the default.
-        :type mags:
-            ``dict``
-
-        :param colors: (optional)
-            Colors to use to enforce match with observations.
-            e.g., ('JK', 'HK'), etc.  The more colors are provided
-            the longer it might take to generate an appropriate
-            population. 
-        :type colors:
-            ``tuple`` or ``list``
-
-        :param colortol: (optional)
-            Threshold within which simulated binary companions must
-            match observed colors.  Default is 0.1 mag.
-
-        :param mass, age, feh: (optional)
-            Mass, log10(age), and feh  of primary star;
-            either in ``(value, error)`` format
-            or as :class:`simpledist.Distribution` objects.
-
-        :param starmodel: (optional)
-            The preferred way to define the properties of the 
-            host star.  If MCMC has been run on this model,
-            then samples are just read off; if it hasn't,
-            then it will run it.
-        :type starmodel:
-            :class:`isochrones.StarModel`            
-            
-        :param starfield: (optional)
-            If ``mass`` or ``starmodel`` not provided, then primary masses will
-            get randomly selected from this starfield, assumed to be
-            a TRILEGAL simulation.  If string, then should be a filename
-            of an .h5 file containing the TRILEGAL simulation; can also
-            be a ``DataFrame`` directly (see
-            :class:`stars.ColormatchMultipleStarPopulation`).
-
-        :param band: (optional)
-            Photometric bandpass in which transit signal is observed.
-
-        :param model:  (optional)
-            Name of model.
-
-        :param f_binary: (optional)
-            Binary fraction to be assumed.  Will be one of the ``priorfactors``.
-
-        :param n: (optional)
-            Number of instances to simulate.  Default = 2e4.
-
-        :param MAfn: (optional)
-            :class:`transit_basic.MAInterpolationFunction` object.
-            If not passed, then one with default parameters will
-            be created.
-
-        :param lhoodcachefile: (optional)
-            Likelihood calculation cache file.
-                    
-        :param **kwargs:
-            Additional keyword arguments passed to
-            :class:`stars.ColormatchMultipleStarPopulation`
-            
-        currently doesn't work if mags is None.
-        """
 
         self.period = period
         self.model = model
@@ -1136,95 +1140,96 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
 
 class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
+    """Population of Hierarchical Eclipsing Binaries
+
+    All arguments the same as :class:`EBPopulation`; except
+    for ``f_triple``.
+
+    Hierarchical Eclipsing Binary (HEB) population is generated
+    either by generating a population
+    of binary stars to match the observed colors, or by fixing a
+    primary star to have certain properties and then simulating
+    binary companions.
+
+    Inherits from :class:`EclipsePopulation` and
+    :class:`stars.ColormatchMultipleStarPopulation`.
+
+    :param period:
+        Orbital period
+
+    :param mags:
+        Observed apparent magnitudes.  Won't work if this is
+        ``None``, which is the default.
+    :type mags:
+        ``dict``
+
+    :param colors: (optional)
+        Colors to use to enforce match with observations.
+        e.g., ('JK', 'HK'), etc.  The more colors are provided
+        the longer it might take to generate an appropriate
+        population. 
+    :type colors:
+        ``tuple`` or ``list``
+
+    :param colortol: (optional)
+        Threshold within which simulated binary companions must
+        match observed colors.  Default is 0.1 mag.
+
+    :param mass, age, feh: (optional)
+        Mass, log10(age), and feh  of primary star;
+        either in ``(value, error)`` format
+        or as :class:`simpledist.Distribution` objects.
+
+    :param starmodel: (optional)
+        The preferred way to define the properties of the 
+        host star.  If MCMC has been run on this model,
+        then samples are just read off; if it hasn't,
+        then it will run it.
+    :type starmodel:
+        :class:`isochrones.StarModel`            
+
+    :param starfield: (optional)
+        If ``mass`` or ``starmodel`` not provided, then primary masses will
+        get randomly selected from this starfield, assumed to be
+        a TRILEGAL simulation.  If string, then should be a filename
+        of an .h5 file containing the TRILEGAL simulation; can also
+        be a ``DataFrame`` directly (see
+        :class:`stars.ColormatchMultipleStarPopulation`).
+
+    :param band: (optional)
+        Photometric bandpass in which transit signal is observed.
+
+    :param model:  (optional)
+        Name of model.
+
+    :param f_triple: (optional)
+        Stellar Triple fraction to be assumed.
+        Will be one of the ``priorfactors``.
+
+    :param n: (optional)
+        Number of instances to simulate.  Default = 2e4.
+
+    :param MAfn: (optional)
+        :class:`transit_basic.MAInterpolationFunction` object.
+        If not passed, then one with default parameters will
+        be created.
+
+    :param lhoodcachefile: (optional)
+        Likelihood calculation cache file.
+
+    :param **kwargs:
+        Additional keyword arguments passed to
+        :class:`stars.ColormatchMultipleStarPopulation`
+
+
+    """
     def __init__(self, period=None, mags=None, colors=('JK',), colortol=0.1,
                  mass=None, age=None, feh=None, starmodel=None, 
                  starfield=None, 
                  band='Kepler', model='HEBs', f_triple=0.12, n=2e4,
                  MAfn=None, lhoodcachefile=None, 
                  **kwargs):
-        """Population of Hierarchical Eclipsing Binaries
 
-        All arguments the same as :class:`EBPopulation`; except
-        for ``f_triple``.
-
-        Hierarchical Eclipsing Binary (HEB) population is generated
-        either by generating a population
-        of binary stars to match the observed colors, or by fixing a
-        primary star to have certain properties and then simulating
-        binary companions.
-
-        Inherits from :class:`EclipsePopulation` and
-        :class:`stars.ColormatchMultipleStarPopulation`.
-        
-        :param period:
-            Orbital period
-
-        :param mags:
-            Observed apparent magnitudes.  Won't work if this is
-            ``None``, which is the default.
-        :type mags:
-            ``dict``
-
-        :param colors: (optional)
-            Colors to use to enforce match with observations.
-            e.g., ('JK', 'HK'), etc.  The more colors are provided
-            the longer it might take to generate an appropriate
-            population. 
-        :type colors:
-            ``tuple`` or ``list``
-
-        :param colortol: (optional)
-            Threshold within which simulated binary companions must
-            match observed colors.  Default is 0.1 mag.
-
-        :param mass, age, feh: (optional)
-            Mass, log10(age), and feh  of primary star;
-            either in ``(value, error)`` format
-            or as :class:`simpledist.Distribution` objects.
-
-        :param starmodel: (optional)
-            The preferred way to define the properties of the 
-            host star.  If MCMC has been run on this model,
-            then samples are just read off; if it hasn't,
-            then it will run it.
-        :type starmodel:
-            :class:`isochrones.StarModel`            
-            
-        :param starfield: (optional)
-            If ``mass`` or ``starmodel`` not provided, then primary masses will
-            get randomly selected from this starfield, assumed to be
-            a TRILEGAL simulation.  If string, then should be a filename
-            of an .h5 file containing the TRILEGAL simulation; can also
-            be a ``DataFrame`` directly (see
-            :class:`stars.ColormatchMultipleStarPopulation`).
-
-        :param band: (optional)
-            Photometric bandpass in which transit signal is observed.
-
-        :param model:  (optional)
-            Name of model.
-
-        :param f_triple: (optional)
-            Stellar Triple fraction to be assumed.
-            Will be one of the ``priorfactors``.
-
-        :param n: (optional)
-            Number of instances to simulate.  Default = 2e4.
-
-        :param MAfn: (optional)
-            :class:`transit_basic.MAInterpolationFunction` object.
-            If not passed, then one with default parameters will
-            be created.
-
-        :param lhoodcachefile: (optional)
-            Likelihood calculation cache file.
-                    
-        :param **kwargs:
-            Additional keyword arguments passed to
-            :class:`stars.ColormatchMultipleStarPopulation`
-            
-                
-        """
 
         self.period = period
         self.model = model
@@ -1382,71 +1387,70 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
 
 class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
                     BGStarPopulation):
+    """
+    Population of "Background" eclipsing binaries (BEBs)
+
+    :param period:
+        Orbital period.
+
+    :param mags:
+        Observed apparent magnitudes of target (foreground)
+        star.  Must have at least magnitude in band
+        that eclipse is measured in (``band`` argument).
+    :type mags:
+        ``dict``
+
+    :param ra,dec: (optional)
+        Coordinates of star (to simulate field star population).
+        If ``trilegal_filename`` not provided, then TRILEGAL 
+        simulation will be generated.
+
+    :param trilegal_filename: 
+        Name of file that contains TRILEGAL field star
+        simulation to use.  Should always be provided
+        if population is to be generated.  If file
+        does not exist, then TRILEGAL simulation
+        will be saved as this filename (use .h5 extension).
+
+    :param n: (optional)
+        Size of simulation.  Default is 2e4.
+
+    :param ichrone: (optional)
+        :class:`isochrones.Isochrone` object to use
+        to generate stellar models.
+
+    :param band: (optional)
+        Photometric bandpass in which eclipse signal is observed.
+
+    :param maxrad: (optional)
+        Maximum radius [arcsec] from target star to assign to BG stars.
+
+    :param f_binary: (optional)
+        Assumed binary fraction.  Will be part of ``priorfactors``.
+
+    :param model: (optional)
+        Model name.
+
+    :param MAfn: (optional)
+        :class:`transit_basic.MAInterpolationFunction` object.
+        If not passed, then one with default parameters will
+        be created.
+
+    :param lhoodcachefile: (optional)
+        Likelihood calculation cache file.
+
+    :param **kwargs:
+        Additional keyword arguments passed to
+        :class:`stars.BGStarPopulation_TRILEGAL`.
+
+
+    """
     def __init__(self, period=None, mags=None,
                  ra=None, dec=None, trilegal_filename=None,
                  n=2e4, ichrone=DARTMOUTH, band='Kepler',
                  maxrad=10, f_binary=0.4, model='BEBs',
                  MAfn=None, lhoodcachefile=None,
                  **kwargs):
-        """
-        Population of "Background" eclipsing binaries (BEBs)
-
-        :param period:
-            Orbital period.
-
-        :param mags:
-            Observed apparent magnitudes of target (foreground)
-            star.  Must have at least magnitude in band
-            that eclipse is measured in (``band`` argument).
-        :type mags:
-            ``dict``
-
-        :param ra,dec: (optional)
-            Coordinates of star (to simulate field star population).
-            If ``trilegal_filename`` not provided, then TRILEGAL 
-            simulation will be generated.
-
-        :param trilegal_filename: 
-            Name of file that contains TRILEGAL field star
-            simulation to use.  Should always be provided
-            if population is to be generated.  If file
-            does not exist, then TRILEGAL simulation
-            will be saved as this filename (use .h5 extension).
-
-        :param n: (optional)
-            Size of simulation.  Default is 2e4.
-
-        :param ichrone: (optional)
-            :class:`isochrones.Isochrone` object to use
-            to generate stellar models.
-
-        :param band: (optional)
-            Photometric bandpass in which eclipse signal is observed.
-
-        :param maxrad: (optional)
-            Maximum radius [arcsec] from target star to assign to BG stars.
-
-        :param f_binary: (optional)
-            Assumed binary fraction.  Will be part of ``priorfactors``.
-
-        :param model: (optional)
-            Model name.
-            
-        :param MAfn: (optional)
-            :class:`transit_basic.MAInterpolationFunction` object.
-            If not passed, then one with default parameters will
-            be created.
-
-        :param lhoodcachefile: (optional)
-            Likelihood calculation cache file.
-
-        :param **kwargs:
-            Additional keyword arguments passed to
-            :class:`stars.BGStarPopulation_TRILEGAL`.
-
-
-        """
-
         self.period = period
         self.model = model
         self.band = band
@@ -1616,6 +1620,86 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
             
 class PopulationSet(object):
+    """
+    A set of EclipsePopulations used to calculate a transit signal FPP
+
+    :param poplist:
+        Can be either a list of :class:`EclipsePopulation` objects,
+        a filename (in which case a saved :class:`PopulationSet`
+        will be loaded), or ``None``, in which case the populations
+        will be generated.
+
+    :param period:
+        Orbital period of signal.
+
+    :param mags:
+        Observed magnitudes of target star.
+    :type mags:
+        ``dict``
+
+    :param n:
+        Size of simulations.  Default is 2e4.
+
+    :param ra, dec: (optional)
+        Target star position; passed to :class:`BEBPopulation`.
+
+    :param trilegal_filename:
+        Passed to :class:`BEBPopulation`.
+
+    :param mass, age, feh, radius: (optional)
+        Properties of target star.  Either in ``(value, error)`` form
+        or as :class:`simpledist.Distribution` objects.  Not necessary
+        if ``starmodel`` is passed.
+
+    :param starmodel: (optional)
+        The preferred way to define the properties of the 
+        host star.  If MCMC has been run on this model,
+        then samples are just read off; if it hasn't,
+        then it will run it.
+    :type starmodel:
+        :class:`isochrones.StarModel`
+
+    :param rprs:
+        R_planet/R_star.  Single-value estimate.
+
+    :param MAfn: (optional)
+        :class:`transit_basic.MAInterpolationFunction` object.
+        If not passed, then one with default parameters will
+        be created.
+
+    :param colors: (optional)
+        Colors to use to constrain multiple star populations;
+        passed to :class:`EBPopulation` and :class:`HEBPopulation`.
+        Default will be ['JK', 'HK']
+
+    :param Teff, logg: (optional)
+        If ``starmodel`` not provided, then these can be used
+        (single values only) in order for :class:`PlanetPopulation`
+        to use the right limb darkening parameters.
+
+    :param savefile: (optional)
+        HDF file in which to save :class:`PopulationSet`.
+
+    :param heb_kws, eb_kws, beb_kws, pl_kws: (optional)
+        Keyword arguments to pass on to respective
+        :class:`EclipsePopulation` constructors.
+
+    :param hide_exceptions: (optional)
+        If ``True``, then exceptions generated during
+        population simulations will be passed, not raised.
+
+    :param fit_trap: (optional)
+        If ``True``, then population generation will also
+        call :func:`EclipsePopulation.fit_trapezoids` for each
+        model population.
+
+    :param do_only: (optional)
+        Can be defined in order to make only a subset of populations.
+        List or tuple should contain modelname shortcuts
+        (e.g., 'beb', 'heb', 'eb', or 'pl').
+
+
+    """
     def __init__(self, poplist=None, 
                  period=None, mags=None, n=2e4, 
                  ra=None, dec=None, trilegal_filename=None,
@@ -1628,87 +1712,6 @@ class PopulationSet(object):
                  beb_kws=None, pl_kws=None,
                  hide_exceptions=False,
                  fit_trap=True, do_only=None):
-        """
-        A set of EclipsePopulations used to calculate a transit signal FPP
-
-        :param poplist:
-            Can be either a list of :class:`EclipsePopulation` objects,
-            a filename (in which case a saved :class:`PopulationSet`
-            will be loaded), or ``None``, in which case the populations
-            will be generated.
-
-        :param period:
-            Orbital period of signal.
-
-        :param mags:
-            Observed magnitudes of target star.
-        :type mags:
-            ``dict``
-
-        :param n:
-            Size of simulations.  Default is 2e4.
-            
-        :param ra, dec: (optional)
-            Target star position; passed to :class:`BEBPopulation`.
-
-        :param trilegal_filename:
-            Passed to :class:`BEBPopulation`.
-
-        :param mass, age, feh, radius: (optional)
-            Properties of target star.  Either in ``(value, error)`` form
-            or as :class:`simpledist.Distribution` objects.  Not necessary
-            if ``starmodel`` is passed.
-
-        :param starmodel: (optional)
-            The preferred way to define the properties of the 
-            host star.  If MCMC has been run on this model,
-            then samples are just read off; if it hasn't,
-            then it will run it.
-        :type starmodel:
-            :class:`isochrones.StarModel`
-
-        :param rprs:
-            R_planet/R_star.  Single-value estimate.
-
-        :param MAfn: (optional)
-            :class:`transit_basic.MAInterpolationFunction` object.
-            If not passed, then one with default parameters will
-            be created.
-        
-        :param colors: (optional)
-            Colors to use to constrain multiple star populations;
-            passed to :class:`EBPopulation` and :class:`HEBPopulation`.
-            Default will be ['JK', 'HK']
-
-        :param Teff, logg: (optional)
-            If ``starmodel`` not provided, then these can be used
-            (single values only) in order for :class:`PlanetPopulation`
-            to use the right limb darkening parameters.
-
-        :param savefile: (optional)
-            HDF file in which to save :class:`PopulationSet`.
-
-        :param heb_kws, eb_kws, beb_kws, pl_kws: (optional)
-            Keyword arguments to pass on to respective
-            :class:`EclipsePopulation` constructors.
-
-        :param hide_exceptions: (optional)
-            If ``True``, then exceptions generated during
-            population simulations will be passed, not raised.
-
-        :param fit_trap: (optional)
-            If ``True``, then population generation will also
-            call :func:`EclipsePopulation.fit_trapezoids` for each
-            model population.
-
-        :param do_only: (optional)
-            Can be defined in order to make only a subset of populations.
-            List or tuple should contain modelname shortcuts
-            (e.g., 'beb', 'heb', 'eb', or 'pl').
-            
-
-        """
-
         #if string is passed, load from file
         if poplist is None:
             self.generate(ra, dec, period, mags,
