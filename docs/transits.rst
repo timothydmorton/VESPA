@@ -39,9 +39,8 @@ and :func:`traptransit_MCMC`. Apologies for the occasionally sparse
 documentation; source code should be visible.
 
 .. automodule:: vespa.transit_basic
-  :members: ldcoeffs, impact_parameter, transit_T14,
-	    transit_T23, minimum_inclination, a_over_Rs,
-	    eclipse_tz, eclipse_pars, eclipse, eclipse_tt,
-	    occultquad, TraptransitModel, traptransit_MCMC
+    :members: ldcoeffs, impact_parameter, transit_T14, transit_T23,
+	    minimum_inclination, a_over_Rs, eclipse_tz, eclipse_pars,
+	    eclipse, eclipse_tt, occultquad, TraptransitModel, traptransit_MCMC
 
 		  

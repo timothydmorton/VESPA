@@ -12,6 +12,14 @@ actively developed on `GitHub
 issue <http://github.com/timothydmorton/vespa/issues>`_ with
 any questions or comments you may have about this code.
 
+.. note::
+
+   For some reason, the API links in this documentation mysteriously
+   stopped working (both on readthedocs and when I build on my local
+   machine).  If you have an idea why, or just want to make some noise
+   about this issue, please 
+   `chime in <https://github.com/sphinx-doc/sphinx/issues/1803>`_.
+  
 
 .. toctree::
    :maxdepth: 2
