@@ -23,7 +23,6 @@ any questions or comments you may have about this code.
    transits
    stars
    starutils
-   constraints
    orbits
    other
    
