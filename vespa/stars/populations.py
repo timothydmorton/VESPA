@@ -15,7 +15,9 @@ try:
     from astropy.coordinates import SkyCoord
     
 except ImportError:
-    np = None
+    #hacking...
+    class np(object):
+        inf = 1
     plt = None
     pd = None
     stats = None
