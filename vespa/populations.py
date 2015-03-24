@@ -13,7 +13,7 @@ try:
     from scipy.stats import gaussian_kde
     from scipy.integrate import quad
 except ImportError:
-    np, pd, plt, cm = (None, None, None)
+    np, pd, plt, cm = (None, None, None, None)
     gaussian_kde, quad = (None, None)
     
 try:
