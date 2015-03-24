@@ -7,6 +7,7 @@ try:
 except ImportError:
     on_rtd = True
     numpy = None
+    build_ext = None
     
 import os
 
