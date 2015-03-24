@@ -1,14 +1,17 @@
 from __future__ import print_function,division
-import numpy as np
 import logging
 
-from hashutils import hasharray, hashcombine, hashdict
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
-class ConstraintDict(dict):
-    def __hash__(self):
-        return hashdict(self)
+from ..hashutils import hasharray, hashcombine, hashdict
 
 class Constraint(object):
+    """
+    Base class for all constraints to be applied to StarPopulations.
+    """
     def __init__(self,mask,name='',**kwargs):
         self.name = name
         self.ok = mask
@@ -31,6 +34,13 @@ class Constraint(object):
 
     def __repr__(self):
         return '<%s: %s>' % (type(self),str(self))
+
+class ConstraintDict(dict):
+    """
+    A dictionary that is hashable.
+    """
+    def __hash__(self):
+        return hashdict(self)
 
 class JointConstraintAnd(Constraint):
     def __init__(self,c1,c2,name='',**kwargs):

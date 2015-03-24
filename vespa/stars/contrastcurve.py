@@ -1,14 +1,18 @@
 from __future__ import print_function, division
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+try:
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
 
-from scipy.interpolate import UnivariateSpline as interpolate
-from scipy.integrate import quad
-
-from plotutils import setfig
-from hashutils import hashcombine, hasharray
+    from scipy.interpolate import UnivariateSpline as interpolate
+    from scipy.integrate import quad
+except ImportError:
+    np, pd, plt = (None, None, None)
+    interpolate, quad = (None, None)
+    
+from ..plotutils import setfig
+from ..hashutils import hashcombine, hasharray
 
 from .constraints import FunctionLowerLimit
 
