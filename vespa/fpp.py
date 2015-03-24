@@ -660,10 +660,10 @@ class FPPCalculation(object):
                               suptitle=suptitle,**kwargs)
 
     def calc_lhoods(self,**kwargs):
-        logging.info('Calculating likelihoods...')
+        logging.debug('Calculating likelihoods...')
         for pop in self.popset.poplist:
             L = pop.lhood(self.trsig,**kwargs)
-            logging.info('%s: %.2e' % (pop.model,L))
+            logging.debug('%s: %.2e' % (pop.model,L))
 
     def __hash__(self):
         return hashcombine(self.popset, self.trsig)
@@ -688,7 +688,7 @@ class FPPCalculation(object):
         Lfpp = 0
         if skipmodels is None:
             skipmodels = []
-        logging.info('evaluating likelihoods for %s' % self.trsig.name)
+        logging.debug('evaluating likelihoods for %s' % self.trsig.name)
         
         for model in self.popset.modelnames:
             if model=='Planets':
@@ -697,11 +697,11 @@ class FPPCalculation(object):
                 prior = self.prior(model)
                 lhood = self.lhood(model)
                 Lfpp += prior*lhood
-                logging.info('%s: %.2e = %.2e (prior) x %.2e (lhood)' % (model,prior*lhood,prior,lhood))
+                logging.debug('%s: %.2e = %.2e (prior) x %.2e (lhood)' % (model,prior*lhood,prior,lhood))
         prior = self.prior('pl')
         lhood = self.lhood('pl')
         Lpl = prior*lhood
-        logging.info('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
+        logging.debug('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
         return Lpl/Lfpp/self['pl'].priorfactors['fp_specific']
 
     def fpV(self,FPPV=0.005,skipmodels=None):
@@ -715,7 +715,7 @@ class FPPCalculation(object):
         Lfpp = 0
         if skipmodels is None:
             skipmodels = []
-        logging.info('evaluating likelihoods for %s' % self.trsig.name)
+        logging.debug('evaluating likelihoods for %s' % self.trsig.name)
         for model in self.popset.modelnames:
             if model=='Planets':
                 continue
@@ -723,10 +723,10 @@ class FPPCalculation(object):
                 prior = self.prior(model)
                 lhood = self.lhood(model)
                 Lfpp += prior*lhood
-                logging.info('%s: %.2e = %.2e (prior) x %.2e (lhood)' % (model,prior*lhood,prior,lhood))
+                logging.debug('%s: %.2e = %.2e (prior) x %.2e (lhood)' % (model,prior*lhood,prior,lhood))
         prior = self.prior('pl')
         lhood = self.lhood('pl')
         Lpl = prior*lhood
-        logging.info('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
+        logging.debug('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
         return 1 - Lpl/(Lpl + Lfpp)
 

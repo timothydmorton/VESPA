@@ -68,9 +68,8 @@ warnings.simplefilter("error")
 warnings.simplefilter("ignore", DeprecationWarning)
 
 import logging
-logger = logging.getLogger()
 
-#utility function to define logfile
+#utility function to initialize logging
 def initLogging(filename, logger):
     if logger == None:
         logger = logging.getLogger()
@@ -89,7 +88,6 @@ def initLogging(filename, logger):
     logger.addHandler(sh)
     return logger
 
-
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
     
@@ -100,8 +98,6 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
-    verbosity = args.verbose - args.quiet
-        
     logger = None #dummy
             
     for folder in args.folders:
