@@ -1,5 +1,5 @@
 vespa
-=================================
+======
 
 ``vespa`` is a Python package built to enable automated false positive
 probability (FPP) analysis of transiting planet signals (and so much
