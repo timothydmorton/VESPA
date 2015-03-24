@@ -41,7 +41,9 @@ if "tag" in sys.argv:
 if not on_rtd:
     transit_utils = [Extension('vespa_transitutils',['vespa/vespa_transitutils.pyx'],
                                 include_dirs=[numpy.get_include()])]
-
+else:
+    transit_utils = None
+        
 setup(name = "VESPA",
       version = version,
       description = "Calculate astrophysical false positive probabilities for transiting exoplanet signals",
