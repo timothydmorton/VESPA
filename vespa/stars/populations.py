@@ -1,25 +1,42 @@
 from __future__ import print_function, division
 
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import scipy.stats as stats
 import logging
 import re, os, os.path
-import numpy.random as rand
 
-from astropy import units as u
-from astropy.units import Quantity
-from astropy.coordinates import SkyCoord
+try:
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import scipy.stats as stats
+    import numpy.random as rand
 
+    from astropy import units as u
+    from astropy.units import Quantity
+    from astropy.coordinates import SkyCoord
+except ImportError:
+    np = None
+    plt = None
+    pd = None
+    stats = None
+    rand = None
+    u = None
+    Quantity = None
+    SkyCoord = None
+    
 from ..orbits import OrbitPopulation
 from ..orbits import TripleOrbitPopulation
 from ..plotutils import setfig,plot2dhist
 
-from isochrones import StarModel
+try:
+    from isochrones import StarModel
+except ImportError:
+    isochrones = None
 
-from simpledist import distributions as dists
-
+try:
+    from simpledist import distributions as dists
+except ImportError:
+    dists = None
+    
 from ..hashutils import hashcombine, hashdict, hashdf
 
 from .constraints import Constraint,UpperLimit,LowerLimit,JointConstraintOr
@@ -1094,8 +1111,6 @@ class BinaryPopulation(StarPopulation):
     :class:`Raghavan_BinaryPopulation` subclass, rather than 
     instantiated directly.
 
-    Parameters
-    ----------
     :param primary,secondary: (:class:`pandas.DataFrame`)
         Properties of primary and secondary stars, respectively.
         These get merged into new ``stars`` attribute, with "_A"

@@ -1,12 +1,14 @@
-import numpy as np
-import hashlib
+try:
+    import numpy as np
+    import hashlib
 
-from hashlib import sha1
+    from hashlib import sha1
 
-from numpy import all, array, uint8
-
-# hashable class straight from http://stackoverflow.com/questions/1939228/constructing-a-python-set-from-a-numpy-matrix/5173201#5173201; edited slightly
-
+    from numpy import all, array, uint8
+except ImportError:
+    np, hashlib, sha1 = (None, None, None)
+    all, array, uint8 = (None, None, None)
+    
 class hashable(object):
     r'''Hashable wrapper for ndarray objects.
 
@@ -20,6 +22,8 @@ class hashable(object):
         ndarray object. This can be either a copied instance (which is safer)
         or the original object (which requires the user to be careful enough
         not to modify it).
+
+        This class taken from `here <http://stackoverflow.com/questions/1939228/constructing-a-python-set-from-a-numpy-matrix/5173201#5173201>`_; edited only slightly.
     '''
     def __init__(self, wrapped, tight=False):
         r'''Creates a new hashable object encapsulating an ndarray.
@@ -54,7 +58,8 @@ class hashable(object):
         return self.__wrapped
 
 def hasharray(arr):
-    """This doesn't seem to work very well...
+    """
+    Hashes array-like object (except DataFrame)
     """
     #return hash(hashlib.sha1(np.ascontiguousarray(arr)).hexdigest())
     return hash(hashable(np.array(arr)))
@@ -65,6 +70,9 @@ def hashdf(df):
     return hasharray(df.values.astype(float))
 
 def hashcombine(*xs):
+    """
+    Combines multiple hashes using xor
+    """
     k = 0
     for x in xs:
         k ^= hash(x)
@@ -72,6 +80,8 @@ def hashcombine(*xs):
     return k
 
 def hashdict(d):
+    """Hash a dictionary
+    """
     k = 0
     for key,val in d.iteritems():
         k ^= hash(key) ^ hash(val)

@@ -8,8 +8,17 @@ def setfig(fig=None,**kwargs):
 
     if fig is None (or anything else), creates new figure
     
-    I use this for basically every function I write to make a plot.  I give the function
+    I use this for basically every function I write to make a plot.
+    I give the function
     a "fig=None" kw argument, so that it will by default create a new figure.
+
+    .. note::
+
+      There's most certainly a better, more object-oriented
+      way of going about writing functions that make figures, but
+      this was put together before I knew how to think that way,
+      so this stays for now as a convenience.
+      
     """
     if fig:
         plt.figure(fig,**kwargs)
@@ -24,37 +33,38 @@ def plot2dhist(xdata,ydata,cmap='binary',interpolation='nearest',
                nbins=50,pts_only=False,**kwargs):
     """Plots a 2d density histogram of provided data
 
-    xdata,ydata : array_like
-        Data to plot
+    :param xdata,ydata: (array-like)
+        Data to plot.
 
-    cmap : string, optional
-        Colormap to use for density plot
+    :param cmap: (optional)
+        Colormap to use for density plot.
 
-    interpolation : string, optional
-        Interpolation scheme for display (passed to ``plt.imshow``)
+    :param interpolation: (optional)
+        Interpolation scheme for display (passed to ``plt.imshow``).
 
-    fig : None or int, optional
-        Argument passed to ``setfig`` function.
+    :param fig: (optional)
+        Argument passed to :func:`setfig`.
 
-    logscale : bool, optional
+    :param logscale: (optional)
         If ``True`` then the colormap will be based on a logarithmic
         scale, rather than linear.
 
-    xbins, ybins : ``None`` or array-like, optional
+    :param xbins,ybins: (optional)
         Bin edges to use (if ``None``, then use ``np.histogram2d`` to
-        find bins automatically.
+        find bins automatically).
 
-    nbins : ``None`` or int, optional
+    :param nbins: (optional)
         Number of bins to use (if ``None``, then use ``np.histogram2d`` to
-        find bins automatically.
+        find bins automatically).
 
-    pts_only : bool
+    :param pts_only: (optional)
         If ``True``, then just a scatter plot of the points is made,
         rather than the density plot.
 
-    kwargs :
+    :param **kwargs:
         Keyword arguments passed either to ``plt.plot`` or ``plt.imshow``
         depending upon whether ``pts_only`` is set to ``True`` or not.
+        
     """
 
     setfig(fig)

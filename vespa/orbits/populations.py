@@ -1,21 +1,34 @@
 from __future__ import division,print_function
 
-import numpy as np
-from astropy.coordinates import SkyCoord,Angle
-import numpy.random as rand
 import sys,re,os
-import matplotlib.pyplot as plt
 
-import pandas as pd
+try:
+    import numpy as np
+    from astropy.coordinates import SkyCoord,Angle
+    import numpy.random as rand
+    import matplotlib.pyplot as plt
 
-from astropy import units as u
-from astropy.units.quantity import Quantity
-from astropy import constants as const
-MSUN = const.M_sun.cgs.value
-AU = const.au.cgs.value
-DAY = 86400
-G = const.G.cgs.value
+    import pandas as pd
 
+    from astropy import units as u
+    from astropy.units.quantity import Quantity
+    from astropy import constants as const
+    MSUN = const.M_sun.cgs.value
+    AU = const.au.cgs.value
+    DAY = 86400
+    G = const.G.cgs.value
+except ImportError:
+    np = None
+    SkyCoord, Angle = (None, None)
+    rand = None
+    plt = None
+    pd = None
+    u = None
+    Quantity = None
+    const = None
+    MSUN, AU, DAY, G = (None, None, None, None)
+
+    
 from .utils import semimajor,random_spherepos,orbitproject,orbit_posvel
 
 from ..plotutils import setfig

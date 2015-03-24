@@ -1,15 +1,21 @@
-import numpy as np
-import numpy.random as rand
+try:
+    import numpy as np
+    import numpy.random as rand
 
-from astropy import units as u
-from astropy.coordinates import SkyCoord,Angle
-from astropy.units.quantity import Quantity
-from astropy import constants as const
-MSUN = const.M_sun.cgs.value
-AU = const.au.cgs.value
-DAY = 86400
-G = const.G.cgs.value
+    from astropy import units as u
+    from astropy.coordinates import SkyCoord,Angle
+    from astropy.units.quantity import Quantity
+    from astropy import constants as const
+    MSUN = const.M_sun.cgs.value
+    AU = const.au.cgs.value
+    DAY = 86400
+    G = const.G.cgs.value
+except ImportError:
+    np,rand = (None, None)
+    u, SkyCoord, Angle, Quantity, Const = (None, None, None, None, None)
+    MSUN, AU, DAY, G = (None, None, None None)
 
+    
 from .kepler import Efn #
 
 def semimajor(P,M):

@@ -3,27 +3,49 @@ from __future__ import print_function,division
 import os,os.path
 import pkg_resources
 
-import numpy as np
-import numpy.random as rand
+on_rtd = False
 
-from simpledist.distributions import KDE_Distribution
+try:
+    import numpy as np
+    import numpy.random as rand
+except ImportError:
+    on_rtd = True
+    np, rand = (None, None)
 
-from astropy.units import Quantity
+try:
+    from simpledist.distributions import KDE_Distribution
+except ImportError:
+    logging.warning('simpledist not available.')
+    KDE_Distribution = None
 
-DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+if not on_rtd:
+    from astropy.units import Quantity
+else:
+    Quantity = None 
 
-RAGHAVAN_PERS = np.recfromtxt('{}/raghavan_periods.dat'.format(DATAFOLDER))
-RAGHAVAN_LOGPERS = np.log10(RAGHAVAN_PERS.f1[RAGHAVAN_PERS.f0 == 'Y'])
-RAGHAVAN_BINPERS = RAGHAVAN_PERS.f1[RAGHAVAN_PERS.f0 == 'Y']
-RAGHAVAN_BINPERKDE = KDE_Distribution(RAGHAVAN_BINPERS,adaptive=False)
-RAGHAVAN_LOGPERKDE = KDE_Distribution(RAGHAVAN_LOGPERS,adaptive=False)
+if not on_rtd:
+    DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
-#from Multiple Star Catalog
-MSC_TRIPDATA = np.recfromtxt('{}/multiple_pecc.txt'.format(DATAFOLDER),names=True)
-MSC_TRIPLEPERS = MSC_TRIPDATA.P
-MSC_TRIPPERKDE = KDE_Distribution(MSC_TRIPLEPERS,adaptive=False)
-MSC_TRIPLOGPERKDE = KDE_Distribution(np.log10(MSC_TRIPLEPERS),adaptive=False)
+    RAGHAVAN_PERS = np.recfromtxt('{}/raghavan_periods.dat'.format(DATAFOLDER))
+    RAGHAVAN_LOGPERS = np.log10(RAGHAVAN_PERS.f1[RAGHAVAN_PERS.f0 == 'Y'])
+    RAGHAVAN_BINPERS = RAGHAVAN_PERS.f1[RAGHAVAN_PERS.f0 == 'Y']
+    RAGHAVAN_BINPERKDE = KDE_Distribution(RAGHAVAN_BINPERS,adaptive=False)
+    RAGHAVAN_LOGPERKDE = KDE_Distribution(RAGHAVAN_LOGPERS,adaptive=False)
 
+    #from Multiple Star Catalog
+    MSC_TRIPDATA = np.recfromtxt('{}/multiple_pecc.txt'.format(DATAFOLDER),names=True)
+    MSC_TRIPLEPERS = MSC_TRIPDATA.P
+    MSC_TRIPPERKDE = KDE_Distribution(MSC_TRIPLEPERS,adaptive=False)
+    MSC_TRIPLOGPERKDE = KDE_Distribution(np.log10(MSC_TRIPLEPERS),adaptive=False)
+else:
+    DATAFOLDER = None
+    RAGHAVAN_PERS, RAGHAVAN_LOGPERS, RAGHAVAN_BINPERS = (None, None, None)
+    RAGHAVAN_BINPERKDE, RAGHAVAN_LOGPERKDE = (None, None)
+    MSC_TRIPDATA, MSC_TRIPLEPERS, MSC_TRIPPERKDE, MSC_TRIPLOGPERKDE = (None, None,
+                                                                       None, None)
+    
+    
+    
 def randpos_in_circle(n,rad,return_rad=False):
     x = rand.random(n)*2*rad - rad
     y = rand.random(n)*2*rad - rad
@@ -112,13 +134,16 @@ def draw_eccs(n,per=10,binsize=0.1,fuzz=0.05,maxecc=0.97):
 
 ########## other utility functions; copied from old code
 
-import astropy.constants as const
-AU = const.au.cgs.value
-RSUN = const.R_sun.cgs.value
-MSUN = const.M_sun.cgs.value
-DAY = 86400 #seconds
-G = const.G.cgs.value
-
+if not on_rtd:
+    import astropy.constants as const
+    AU = const.au.cgs.value
+    RSUN = const.R_sun.cgs.value
+    MSUN = const.M_sun.cgs.value
+    DAY = 86400 #seconds
+    G = const.G.cgs.value
+else:
+    const, AU, RSUN, MSUN, DAY, G = (None, None, None, None, None, None)
+    
 def rochelobe(q):
     """returns r1/a; q = M1/M2"""
     return 0.49*q**(2./3)/(0.6*q**(2./3) + np.log(1+q**(1./3)))

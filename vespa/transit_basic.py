@@ -1,44 +1,62 @@
 from __future__ import print_function, division
 
 import os
-import numpy as np
-import numpy.random as rand
-
 import logging
-
 import pkg_resources
 
+#test if building documentation on readthedocs.org
+on_rtd = False
 
-from scipy.optimize import leastsq
-from scipy.ndimage import convolve1d
-
-from scipy.interpolate import LinearNDInterpolator as interpnd
+try:
+    import numpy as np
+    import numpy.random as rand
+    from scipy.optimize import leastsq
+    from scipy.ndimage import convolve1d
+    from scipy.interpolate import LinearNDInterpolator as interpnd
+except ImportError:
+    on_rtd = True
+    np, rand, leastsq, convolve1d, interpnd = (None, None, None, None, None)
+    
 
 from .orbits.kepler import Efn
 from .stars.utils import rochelobe, withinroche, semimajor
 
-from vespa_transitutils import find_eclipse
-from vespa_transitutils import traptransit, traptransit_resid
+if not on_rtd:
+    from vespa_transitutils import find_eclipse
+    from vespa_transitutils import traptransit, traptransit_resid
+    
+    import emcee
+else:
+    find_eclipse, traptransit, traptransit_resid = (None, None, None)
+    emcee = None
 
-import emcee
+if not on_rtd:
+    import astropy.constants as const
+    AU = const.au.cgs.value
+    RSUN = const.R_sun.cgs.value
+    MSUN = const.M_sun.cgs.value
+    REARTH = const.R_earth.cgs.value
+    MEARTH = const.M_earth.cgs.value
+    DAY = 86400
 
-import astropy.constants as const
-AU = const.au.cgs.value
-RSUN = const.R_sun.cgs.value
-MSUN = const.M_sun.cgs.value
-REARTH = const.R_earth.cgs.value
-MEARTH = const.M_earth.cgs.value
-DAY = 86400
+    DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
-DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
-
-LDDATA = np.recfromtxt('{}/keplerld.dat'.format(DATAFOLDER),names=True)
-LDOK = ((LDDATA.teff < 10000) & (LDDATA.logg > 2.0) & (LDDATA.feh > -2))
-LDPOINTS = np.array([LDDATA.teff[LDOK],LDDATA.logg[LDOK]]).T
-U1FN = interpnd(LDPOINTS,LDDATA.u1[LDOK])
-U2FN = interpnd(LDPOINTS,LDDATA.u2[LDOK])
+    LDDATA = np.recfromtxt('{}/keplerld.dat'.format(DATAFOLDER),names=True)
+    LDOK = ((LDDATA.teff < 10000) & (LDDATA.logg > 2.0) & (LDDATA.feh > -2))
+    LDPOINTS = np.array([LDDATA.teff[LDOK],LDDATA.logg[LDOK]]).T
+    U1FN = interpnd(LDPOINTS,LDDATA.u1[LDOK])
+    U2FN = interpnd(LDPOINTS,LDDATA.u2[LDOK])
+else:
+    const, AU, RSUN, MSUN = (None, None, None, None)
+    REARTH, MEARTH, DAY = (None, None, None)
+    DATAFOLDER = None
+    LDDATA, LDOK, LDPOINTS, U1FN, U2FN = (None, None, None, None, None)
+    
 
 def ldcoeffs(teff,logg=4.5,feh=0):
+    """
+    Returns limb-darkening coefficients in Kepler band.
+    """
     teffs = np.atleast_1d(teff)
     loggs = np.atleast_1d(logg)
 
@@ -53,9 +71,8 @@ def ldcoeffs(teff,logg=4.5,feh=0):
     u1,u2 = (U1FN(teffs,loggs),U2FN(teffs,loggs))
     return u1,u2
 
+"""
 def correct_fs(fs):
-    """ patch-y fix to anything with messed-up fs
-    """
     fflat = fs.ravel().copy()
     wbad = np.where(fflat > 1)[0]     
 
@@ -93,10 +110,50 @@ def correct_fs(fs):
 
     fflat[wbad] = (fflat[whi] + fflat[wlo])/2. #slightly kludge-y, esp. if there are consecutive bad vals
     return fflat.reshape(fs.shape)
+"""
 
 class MAInterpolationFunction(object):
+    """
+    Object enabling fast, vectorized evaluations of Mandel-Agol transit model.
+
+    Interpolates on pre-defined grid calculating Mandel & Agol (2002)
+    and Agol & Eastman (2008) calculations.
+
+    This object is generally used as follows::
+
+        >>> import numpy as np
+        >>> from vespa import MAInterpolationFunction
+        >>> mafn = MAInterpolationFunction() #takes a few seconds
+        >>> ps = 0.1 # radius ratio; can be float or array-like
+        >>> zs = np.abs(np.linspace(-1,1,1000)) #impact parameters
+        >>> fs = mafn(ps, zs) # relative flux
+
+    Even cooler, it can be called with different-sized arrays for
+    radius ratio and impact parameter, in which case it returns a
+    flux array of shape ``(nps, nzs)``.  This is clearly awesome
+    for generating populations of eclipses::
+
+        >>> ps = np.linspace(0.01,0.1,100) # radius ratios
+        >>> zs = np.abs(np.linspace(-1,1,1000)) #impact parameters
+        >>> fs = mafn(ps, zs)
+        >>> fs.shape
+            (100, 1000)
+
+    It can also be called with different limb darkening parameters,
+    in which case arrays of ``u1`` and ``u2`` should be the third
+    and fourth argument, after ``ps`` and ``zs``, with the same shape
+    as ``ps`` (radius ratios).  
+            
+    :param u1,u2: (optional)
+        Default quadratic limb darkening parameters. Setting
+        these only enables faster evaluation; you can always call with
+        different values.
+
+    :param pmin,pmax,nps,nzs,zmax: (optional)
+        Parameters describing grid in p and z.
+        
+    """
     def __init__(self,u1=0.394,u2=0.261,pmin=0.007,pmax=2,nps=200,nzs=200,zmax=None):
-    #def __init__(self,pmin=0.007,pmax=2,nps=500,nzs=500):
         self.u1 = u1
         self.u2 = u2
         self.pmin = pmin
@@ -161,7 +218,7 @@ class MAInterpolationFunction(object):
         self.etad = interpnd(points,etads.T.ravel())        
         self.fn = interpnd(points,fs.T.ravel())
 
-    def __call__(self,ps,zs,u1=.394,u2=0.261,force_broadcast=False,fix=False):
+    def __call__(self,ps,zs,u1=.394,u2=0.261,force_broadcast=False):
         """  returns array of fluxes; if ps and zs aren't the same shape, then returns array of 
         shape (nps, nzs)
         """
@@ -188,8 +245,8 @@ class MAInterpolationFunction(object):
             etad = self.etad(P,zs)
             fs = 1. - ((1-U1-2*U2)*(1-mu0) + (U1+2*U2)*(lambdad+2./3*(P > zs)) + U2*etad)/(1.-U1/3.-U2/6.)
             
-            if fix:
-                fs = correct_fs(fs)
+            #if fix:
+            #    fs = correct_fs(fs)
         else:
             fs = self.fn(P,zs)
             
@@ -254,6 +311,17 @@ def eclipse_depth(mafn,Rp,Rs,b,u1=0.394,u2=0.261,max_only=False,npts=100,force_1
     return meandepth  #array of average depths, shape (nks,nbs)
 
 def minimum_inclination(P,M1,M2,R1,R2):
+    """
+    Returns the minimum inclination at which two bodies from two given sets eclipse
+
+    Only counts systems not within each other's Roche radius
+    
+    :param P:
+        Orbital periods.
+
+    :param M1,M2,R1,R2:
+        Masses and radii of primary and secondary stars.  
+    """
     P,M1,M2,R1,R2 = (np.atleast_1d(P),
                      np.atleast_1d(M1),
                      np.atleast_1d(M2),
@@ -276,6 +344,9 @@ def minimum_inclination(P,M1,M2,R1,R2):
     return mininc
 
 def a_over_Rs(P,R2,M2,M1=1,R1=1,planet=True):
+    """
+    Returns a/Rs for given parameters.
+    """
     if planet:
         M2 *= REARTH/RSUN
         R2 *= MEARTH/MSUN
@@ -283,6 +354,37 @@ def a_over_Rs(P,R2,M2,M1=1,R1=1,planet=True):
 
 def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=False):
     """Returns ts and zs for an eclipse (npts points right around the eclipse)
+
+    
+    :param P,b,aR:
+        Period, impact parameter, a/Rstar.
+
+    :param ecc,w:
+        Eccentricity, argument of periapse.
+
+    :param npts:
+        Number of points in transit to return.
+
+    :param width:
+        How much to go out of transit. 1.5 is a good choice.
+
+    :param sec:
+        Whether to return the values relevant to the secondary occultation
+        rather than primary eclipse.
+
+    :param dt:
+        Spacing of simulated data points, in minutes.
+
+    :param approx:
+        Whether to use the approximate expressions to find the mean
+        anomalies.  Default is ``False`` (exact calculation).
+
+    :param new:
+        Meaningless.
+
+    :return ts,zs:
+        Times from mid-transit (in days) and impact parameters.
+        
     """
     if sec:
         eccfactor = np.sqrt(1-ecc**2)/(1-ecc*np.sin(w*np.pi/180))
@@ -429,8 +531,57 @@ def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
         p0 = R2/R1
     return p0,b,aR
 
-def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=False):
-    """ frac is fraction of total light in eclipsed object"""
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=False):
+    """Returns ts, fs of simulated eclipse.
+
+
+    :param p0,b,aR:
+        Radius ratio, impact parameter, a/Rstar.
+
+    :param P:
+        Orbital period
+
+    :param ecc,w: (optional)
+        Eccentricity, argument of periapse.
+
+    :param npts: (optional)
+        Number of points to simulate.
+
+    :param MAfn: (optional)
+        :class:`MAInterpolationFunction` object.
+
+    :param u1,u2: (optional)
+        Quadratic limb darkening parameters.
+
+    :param width: (optional)
+        Argument defining how much out-of-transit to simulate.  3 is good.
+
+    :param conv: (optional)
+        Whether to convolve with box-car to simulate integration time.
+
+    :param cadence: (optional)
+        Cadence to simulate; default is Kepler cadence.
+
+    :param frac: (optional)
+        Fraction of total light in eclipsed object (for dilution purposes).
+
+    :param sec: (optional)
+        If ``True``, then simulate secondary occultation rather than eclipse.
+
+    :param dt: (optional)
+        Simulated spacing of theoretical data points, in minutes.
+
+    :param approx: (optional)
+        Whether to approximate solution to Kepler's equation or not.
+
+    :param new: (optional)
+        Meaningless relic.
+
+
+    :return ts,fs:
+        Times from mid-transit [days] and relative fluxes of simulated eclipse.
+
+    """
 
     if sec:
         ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
@@ -469,9 +620,20 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,
     fs = 1 - frac*(1-fs)
     return ts,fs #ts are in the same units P is given in.
 
-def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.261,leastsq=True,conv=False,cadence=0.020434028,frac=1,sec=False,new=True,pars0=None):
+def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,conv=False,cadence=0.020434028,frac=1,sec=False,new=True,pars0=None):
+    """
+    Trapezoidal parameters for simulated orbit.
     
-    ts,fs = eclipse(p0,b,aR,P,ecc,w,xmax,npts,MAfn,u1,u2,
+    All arguments passed to :func:`eclipse` except the following:
+
+    :param pars0: (optional)
+        Initial guess for least-sq optimization for trapezoid parameters.
+
+    :return dur,dep,slope:
+        Best-fit duration, depth, and T/tau for eclipse shape.
+    
+    """
+    ts,fs = eclipse(p0,b,aR,P,ecc,w,npts,MAfn,u1,u2,
                     conv=conv,cadence=cadence,frac=frac,sec=sec,new=new)
     
     #logging.debug('{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}'.format(p0,b,aR,P,ecc,w,xmax,npts,u1,u2,leastsq,conv,cadence,frac,sec,new))
@@ -487,15 +649,24 @@ def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,xmax=1.5,npts=200,MAfn=None,u1=0.394,u2=0.2
     return dur,dep,slope
 
 
-#### Mandel-Agol code:
-#   Python translation of IDL code.
-#   This routine computes the lightcurve for occultation of a
-#   quadratically limb-darkened source without microlensing.  Please
-#   cite Mandel & Agol (2002) and Eastman & Agol (2008) if you make use
-#   of this routine in your research.  Please report errors or bugs to
-#   jdeast@astronomy.ohio-state.edu
+
 
 def occultquad(z,u1,u2,p0,return_components=False):
+    """
+    #### Mandel-Agol code:
+    #   Python translation of IDL code.
+    #   This routine computes the lightcurve for occultation of a
+    #   quadratically limb-darkened source without microlensing.  Please
+    #   cite Mandel & Agol (2002) and Eastman & Agol (2008) if you make use
+    #   of this routine in your research.  Please report errors or bugs to
+    #   jdeast@astronomy.ohio-state.edu
+
+    .. note::
+
+        Should probably wrap the Fortran code at some point.
+        (This particular part of the code was put together awhile ago.)
+
+    """
     z = np.atleast_1d(z)
     nz = np.size(z)
     lambdad = np.zeros(nz)
@@ -763,6 +934,9 @@ def ellpic_bulirsch(n,k):
 #    return traptransit(ts,p)
 
 def fit_traptransit(ts,fs,p0):
+    """
+    Fits trapezoid model to provided ts,fs
+    """
     pfit,success = leastsq(traptransit_resid,p0,args=(ts,fs))
     if success not in [1,2,3,4]:
         raise NoFitError
@@ -770,6 +944,9 @@ def fit_traptransit(ts,fs,p0):
     return pfit
 
 class TraptransitModel(object):
+    """
+    Model to enable MCMC fitting of trapezoidal shape.
+    """
     def __init__(self,ts,fs,sigs=1e-4,maxslope=30):
         self.n = np.size(ts)
         if np.size(sigs)==1:
@@ -791,7 +968,12 @@ def traptransit_lhood(pars,ts,fs,sigs,maxslope=30):
 
 def traptransit_MCMC(ts,fs,dfs=1e-5,nwalkers=200,nburn=300,niter=1000,
                      threads=1,p0=[0.1,0.1,3,0],return_sampler=False,
-                     verbose=False,maxslope=30):
+                     maxslope=30):
+    """
+    Fit trapezoidal model to provided ts, fs, [dfs] using MCMC.
+
+    Standard emcee usage.
+    """
     model = TraptransitModel(ts,fs,dfs,maxslope=maxslope)
     sampler = emcee.EnsembleSampler(nwalkers,4,model,threads=threads)
     T0 = p0[0]*(1+rand.normal(size=nwalkers)*0.1)

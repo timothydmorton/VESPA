@@ -1,16 +1,24 @@
 from __future__ import division, print_function
 
-import numpy as np
-import pandas as pd
 import os,os.path
-import matplotlib.pyplot as plt
-import numpy.random as rand
 import logging
 import pickle
-from scipy.stats import gaussian_kde
 
-import acor
-
+try:
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import numpy.random as rand
+    from scipy.stats import gaussian_kde
+except ImportError:
+    np, pd, plt, rand = (None, None, None, None)
+    gaussian_kde = None
+    
+try:
+    import acor
+except ImportError:
+    logging.warning('acor not available')
+    
 from .plotutils import setfig
 from .hashutils import hashcombine, hasharray
 

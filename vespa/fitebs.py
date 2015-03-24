@@ -5,23 +5,50 @@ import numpy as np
 import logging
 import pandas as pd
 
-import transit_basic as tr
 from .transit_basic import eclipse_pars, eclipse_tt
 from .transit_basic import NoEclipseError, NoFitError
 import sys, re, os
 try:
     from progressbar import Percentage,Bar,RotatingMarker,ETA,ProgressBar
+    pbar_ok = True
 except ImportError:
     logging.warning('progressbar not imported')
+    pbar_ok = False
+    
+def fitebs(data, MAfn=None, conv=True, cadence=0.020434028,
+           use_pbar=True, msg=''): 
+    """Fits trapezoidal shape to eclipses described by parameters in data
 
-def fitebs(data, MAfn=None, conv=True, use_pbar=True, msg='', 
-           cadence=0.020434028):
-    """Fits trapezoidal shape to eclispes described by parameters in data
+    Takes a few minutes for 20,000 simulations. 
+           
+    :param data:
+        Input ``DataFrame`` holding data.  Must have following columns:
+        ``'P', 'mass_1', 'mass_2', 'radius_1', 'radius_2'``, 
+        ``'inc', 'ecc', 'w', 'dpri', 'dsec', 'b_sec', 'b_pri'``,
+        ``'fluxfrac_1', 'fluxfrac_2', 'u1_1', 'u1_2', 'u2_1', 'u2_2'``.
 
-    data is a pandas DataFrame.  Must have 'P', 'mass_1', 'mass_2', 
-    'radius_1', 'radius_2',
-    'inc', 'ecc', 'w', 'dpri', 'dsec', 'b_sec', 'b_pri', 'fluxfrac_1', 
-    'fluxfrac_2', 'u1_1', 'u1_2', 'u2_1', 'u2_2'
+    :param MAfn:
+        :class:`MAInterpolationFunction` object; if not passed, it will be
+        created.
+
+    :param conv:
+        Whether to convolve theoretical transit shape
+        with box-car filter to simulate observation integration time.
+
+    :param cadence:
+        Integration time used if ``conv`` is ``True``.  Defaults to
+        Kepler mission cadence.
+
+    :param use_pbar:
+        Whether to use nifty visual progressbar when doing calculation.
+
+    :param msg:
+        Message to print for pbar.
+
+    :return df:
+        Returns dataframe with the following columns:
+        ``'depth', 'duration', 'slope'``,
+        ``'secdepth', 'secondary'``.
 
     """
     n = len(data)
@@ -36,7 +63,7 @@ def fitebs(data, MAfn=None, conv=True, use_pbar=True, msg='',
     secs = np.zeros(n).astype(bool)
     dsec = np.zeros(n)
 
-    if use_pbar:
+    if use_pbar and pbar_ok:
         widgets = [msg+'fitting shape parameters for %i systems: ' % n,Percentage(),
                    ' ',Bar(marker=RotatingMarker()),' ',ETA()]
         pbar = ProgressBar(widgets=widgets,maxval=n)
@@ -79,7 +106,7 @@ def fitebs(data, MAfn=None, conv=True, use_pbar=True, msg='',
             #logging.debug('{}'.format(trap_pars))
             
             durs[i], deps[i], slopes[i] = trap_pars
-            if use_pbar:
+            if use_pbar and pbar_ok:
                 pbar.update(i)
 
         except NoEclipseError:

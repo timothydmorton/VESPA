@@ -1,15 +1,18 @@
 from __future__ import print_function, division
 
-import numpy as np
 import os, os.path, re
 import logging
 import cPickle as pickle
-
 from configobj import ConfigObj
 
-import matplotlib.pyplot as plt
-from matplotlib import cm
+try:
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+except ImportError:
+    np, plt, cm = (None, None, None)
 
+    
 from .populations import PopulationSet
 from .transitsignal import TransitSignal
 
@@ -18,7 +21,10 @@ from .stars.contrastcurve import ContrastCurveFromFile
 from .plotutils import setfig
 from .hashutils import hashcombine
 
-from isochrones import StarModel
+try:
+    from isochrones import StarModel
+except ImportError:
+    StarModel = None
 from .stars.populations import DARTMOUTH
 
 class FPPCalculation(object):

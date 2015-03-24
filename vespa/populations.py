@@ -1,20 +1,28 @@
 from __future__ import print_function, division
 
 import logging
-
-import numpy as np
 import os, os.path
 import re
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib import cm
 
+try:
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
 
-from scipy.stats import gaussian_kde
-from scipy.integrate import quad
-from sklearn.neighbors import KernelDensity
-from sklearn.grid_search import GridSearchCV
+    from scipy.stats import gaussian_kde
+    from scipy.integrate import quad
 
+try:
+    from sklearn.neighbors import KernelDensity
+    from sklearn.grid_search import GridSearchCV
+except ImportError:
+    logging.warning('sklearn not available')
+    KernelDensity = None
+    GridSearchCV = None
+    
+
+    
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .fitebs import fitebs
@@ -34,8 +42,12 @@ from .stars.utils import RAGHAVAN_LOGPERKDE
 
 from .stars.constraints import UpperLimit
 
-import simpledist.distributions as dists
-
+try:
+    import simpledist.distributions as dists
+except ImportError:
+    logging.warning('simpledist not available')
+    dists = None
+    
 from .orbits.populations import OrbitPopulation, TripleOrbitPopulation
 
 SHORT_MODELNAMES = {'Planets':'pl',
@@ -48,16 +60,22 @@ SHORT_MODELNAMES = {'Planets':'pl',
                         
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 
-from astropy.units import Quantity
-import astropy.units as u
-import astropy.constants as const
-AU = const.au.cgs.value
-RSUN = const.R_sun.cgs.value
-MSUN = const.M_sun.cgs.value
-G = const.G.cgs.value
-REARTH = const.R_earth.cgs.value
-MEARTH = const.M_earth.cgs.value
-
+try:
+    from astropy.units import Quantity
+    import astropy.units as u
+    import astropy.constants as const
+    AU = const.au.cgs.value
+    RSUN = const.R_sun.cgs.value
+    MSUN = const.M_sun.cgs.value
+    G = const.G.cgs.value
+    REARTH = const.R_earth.cgs.value
+    MEARTH = const.M_earth.cgs.value
+except ImportError:
+    Quantity = None
+    u = None
+    const = None
+    AU, RSUN, MSUN, G, REARTH, MEARTH = (None, None, None, None, None, None)
+    
 
 class EclipsePopulation(StarPopulation):
     """Base class for populations of eclipsing things.
