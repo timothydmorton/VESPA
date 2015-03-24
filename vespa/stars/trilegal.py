@@ -1,13 +1,19 @@
 from __future__ import print_function,division
 
 import logging
-import numpy as np
 import subprocess as sp
-import pandas as pd
 import os, re
 
-from astropy.units import UnitsError
-from astropy.coordinates import SkyCoord
+try:
+    import numpy as np
+    import pandas as pd
+
+    from astropy.units import UnitsError
+    from astropy.coordinates import SkyCoord
+except ImportError:
+    np, pd = (None, None)
+    UnitsError, SkyCoord = (None, None)
+    
 from .extinction import get_AV_infinity
 
 NONMAG_COLS = ['Gc','logAge', '[M/H]', 'm_ini', 'logL', 'logTe', 'logg',

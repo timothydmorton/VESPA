@@ -3,8 +3,12 @@ from __future__ import print_function,division
 import os,re
 import logging
 import subprocess as sp
-from astropy.coordinates import SkyCoord
 
+try:
+    from astropy.coordinates import SkyCoord
+except:
+    SkyCoord = None
+    
 def get_AV_infinity(ra,dec,frame='icrs'):
     """
     Gets the A_V exctinction at infinity for a given line of sight.
