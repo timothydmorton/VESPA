@@ -141,7 +141,7 @@ class StarPopulation(object):
 
     """
     def __init__(self,stars=None,distance=None,
-                 max_distance=1000*u.pc,convert_absmags=True,
+                 max_distance=1000,convert_absmags=True,
                  name='', orbpop=None, mags=None):
 
         self.orbpop = orbpop
