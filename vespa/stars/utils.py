@@ -2,6 +2,7 @@ from __future__ import print_function,division
 
 import os,os.path
 import pkg_resources
+import logging
 
 on_rtd = False
 
