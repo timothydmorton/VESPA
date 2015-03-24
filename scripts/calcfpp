@@ -45,6 +45,7 @@ in the same directory as the ``.ini`` file:
     for each model.
   * ``trsig.png``: plot of the transit signal
   * ``FPPsummary.png``: FPP summary plot.
+  * ``run.log``: logfile of calculation.
 
 This script is not yet set up to incorporate observational constraints,
 but this will be easily doable in the near future.
@@ -97,20 +98,6 @@ if __name__=='__main__':
     parser.add_argument('-n','--n', type=int, default=20000)
     parser.add_argument('--recalc', action='store_true')
 
-
-    parser.add_argument(
-        '-v', '--verbose',
-        action='count',
-        default=0,
-        help="Increase verbosity.")
-
-    parser.add_argument(
-        '-q', '--quiet',
-        action='count',
-        default=0,
-        help='Decrease verbosity.')
-
-    
     args = parser.parse_args()
 
     verbosity = args.verbose - args.quiet
@@ -124,19 +111,6 @@ if __name__=='__main__':
 
             logfile = os.path.join(folder, 'run.log')
             logger = initLogging(logfile, logger)
-
-            if verbosity == 1:
-                logger.setLevel(logging.INFO)
-            elif verbosity==2:
-                logger.setLevel(logging.DEBUG)
-            elif verbosity==0:
-                logger.setLevel(logging.WARNING)
-            elif verbosity==-1:
-                logger.setLevel(logging.ERROR)
-            elif verbosity==-2:
-                logger.setLevel(logging.CRITICAL)
-        
-
 
             inifile = os.path.join(folder, args.inifile)
 
