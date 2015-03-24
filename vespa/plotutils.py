@@ -1,7 +1,13 @@
-import matplotlib.pyplot as plt
-import numpy as np
-import logging
 
+try:
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import logging
+except ImportError:
+    plt = None
+    np = None
+    
+    
 def setfig(fig=None,**kwargs):
     """
     Sets figure to 'fig' and clears; if fig is 0, does nothing (e.g. for overplotting)
