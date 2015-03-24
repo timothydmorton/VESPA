@@ -11,16 +11,20 @@ and is being actively developed on `GitHub
 
 .. note::
 
-   This documentation is a work in progress and far from
+   This documentation is a work in progress and thus may not be
    complete.  Please feel free to `raise an issue on GitHub
    <http://github.com/timothydmorton/vespa/issues>`_ with any questions
-   you may have about the code.
+   you may have about this code.
 
 
 .. toctree::
    :maxdepth: 2
 
    overview
+   fpp
    api
    eclipse
    stars
+   starutils
+   constraints
+   orbits

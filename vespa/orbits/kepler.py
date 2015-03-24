@@ -18,7 +18,19 @@ points = np.array([MS.ravel(),ECCS.ravel()]).T
 EFN = interpnd(points,Es.ravel())
 
 def Efn(Ms,eccs):
-    """works for -2pi < Ms < 2pi, e <= 0.97"""
+    """
+    Returns Eccentric anomaly, interpolated from pre-computed grid of M, ecc
+
+    Instantaneous solution of Kepler's equation!
+
+    Works for ``-2*np.pi < Ms < 2*np.pi`` and ``eccs <= 0.97``
+    
+    :param Ms: (``float`` or array-like)
+        Mean anomaly
+
+    :param eccs: (``float`` or array-like)
+
+    """
     Ms = np.atleast_1d(Ms)
     eccs = np.atleast_1d(eccs)
     unit = np.floor(Ms / (2*np.pi))

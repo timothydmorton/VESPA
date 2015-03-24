@@ -244,6 +244,9 @@ class StarPopulation(object):
     def __hash__(self):
         return hashcombine(self.constraints,
                            hashdf(self.stars), self.orbpop)
+
+    def __eq__(self, other):
+        return hash(self)==hash(other)
     
     def generate(self, *args, **kwargs):
         """
@@ -343,7 +346,7 @@ class StarPopulation(object):
                    fig=None,selected=False,**kwargs):
         """Makes a 2d density histogram of two given properties
 
-        :param propx, propy:
+        :param propx,propy:
             Names of properties to histogram.  Must be names of columns
             in ``self.stars`` table.
 
@@ -351,7 +354,7 @@ class StarPopulation(object):
             Boolean mask (``True`` is good) to say which indices to plot.
             Must be same length as ``self.stars``.
 
-        :param logx, logy: (optional)
+        :param logx,logy: (optional)
             Whether to plot the log10 of x and/or y properties.
             
         :param fig: (optional)
@@ -703,7 +706,7 @@ class StarPopulation(object):
         :param name:
             Name of constraint to replace
 
-        :param selectfrac_skip, distribution_skip: (optional)
+        :param selectfrac_skip,distribution_skip: (optional)
             Same as :func:`StarPopulation.apply_constraint`
 
         """
@@ -767,7 +770,7 @@ class StarPopulation(object):
         :param thresh: (optional)
             Number of "sigma" to allow for measurement constraint.
 
-        :param selectfrac_skip, distribution_skip:
+        :param selectfrac_skip,distribution_skip:
             Passed to :func:`StarPopulation.apply_constraint`.
 
         """
@@ -926,8 +929,22 @@ class StarPopulation(object):
 
         Subclasses should be sure to define 
         ``_properties`` attribute to ensure that all
-        correct attributes get saved.
+        correct attributes get saved.  Load a saved population
+        with :func:`StarPopulation.load_hdf`.
 
+        Example usage::
+
+            >>> from vespa.stars import Raghavan_BinaryPopulation, StarPopulation
+            >>> pop = Raghavan_BinaryPopulation(1., n=1000)
+            >>> pop.save_hdf('test.h5')
+            >>> pop2 = StarPopulation.load_hdf('test.h5')
+            >>> pop == pop2
+                True
+            >>> pop3 = Ragahavan_BinaryPopulation.load_hdf('test.h5')
+            >>> pop3 == pop2
+                True
+
+        
         :param filename:
             Name of HDF file.
 
@@ -995,9 +1012,22 @@ class StarPopulation(object):
         Correct properties should be restored to object, and object
         will be original type that was saved.  Complement to 
         :func:`StarPopulation.save_hdf`.
+
+        Example usage::
+
+            >>> from vespa.stars import Raghavan_BinaryPopulation, StarPopulation
+            >>> pop = Raghavan_BinaryPopulation(1., n=1000)
+            >>> pop.save_hdf('test.h5')
+            >>> pop2 = StarPopulation.load_hdf('test.h5')
+            >>> pop == pop2
+                True
+            >>> pop3 = Ragahavan_BinaryPopulation.load_hdf('test.h5')
+            >>> pop3 == pop2
+                True
+
         
         :param filename:
-            HDF file with save :class:`StarPopulation`.
+            HDF file with saved :class:`StarPopulation`.
 
         :param path:
             Path within HDF file.
@@ -1054,7 +1084,8 @@ class StarPopulation(object):
 class BinaryPopulation(StarPopulation):
     """A population of binary stars.
 
-    If ``OrbitPopulation`` provided, that will describe the orbits;
+    If :class:`vespa.orbits.OrbitPopulation` provided via ``orbpop`` keyword,
+    that will describe the orbits;
     if not, then orbit population will be generated.  Single stars may
     be indicated if desired by having their mass set to zero and all
     magnitudes set to ``inf``.
@@ -1070,7 +1101,7 @@ class BinaryPopulation(StarPopulation):
         These get merged into new ``stars`` attribute, with "_A"
         and "_B" tags.
 
-    :param orbpop: (:class:`OrbitPopulation`, optional)
+    :param orbpop: (:class:`vespa.orbits.OrbitPopulation`, optional)
         Object describing orbits of stars.  If not provided, then ``period``
         and ``ecc`` keywords must be provided, or else they will be
         randomly generated (see below).
@@ -1384,7 +1415,7 @@ class TriplePopulation(StarPopulation):
         Full stars ``DataFrame``.  If not passed, then primary, secondary, 
         and tertiary must be.
 
-    :param primary, secondary, tertiary: (optional)
+    :param primary,secondary,tertiary: (optional)
         Properties of primary, secondary, and tertiary stars,
         in :class:`pandas.DataFrame` form.
         These will get merged into a new ``stars`` attribute,
@@ -1397,7 +1428,7 @@ class TriplePopulation(StarPopulation):
     :type orbpop:
         :class:`TripleOrbitPopulation`
 
-    :param period_short, period_long, ecc_short, ecc_long: (array-like, optional)
+    :param period_short,period_long,ecc_short,ecc_long: (array-like, optional)
         Orbital periods and eccentricities of short and long-period orbits. 
         "Short" describes the close pair of the hierarchical system; "long"
         describes the separation between the two major components.  Randomly
@@ -1531,10 +1562,10 @@ class MultipleStarPopulation(TriplePopulation):
         then the simulation will be lots of 
         realizations of one system.
 
-    :param age, feh: (optional)
+    :param age,feh: (optional)
         Age, feh of system(s).
 
-    :param f_binary, f_triple: (optional)
+    :param f_binary,f_triple: (optional)
         Fraction of systems that should be binaries or triples.
         Should have ``f_binary + f_triple < 1``, though if 
         ``f_binary + f_triple >= 1``, then ``f_binary`` will 
@@ -1557,7 +1588,7 @@ class MultipleStarPopulation(TriplePopulation):
     :param bands: (optional)
         Photometry bandpasses to simulate using ``ichrone``.
 
-    :param multmass_fn, period_long_fn, period_short_fn, ecc_fn: (optional)
+    :param multmass_fn,period_long_fn,period_short_fn,ecc_fn: (optional)
         Functions to generate masses, orbital periods, and eccentricities.
         Defaults built in.  See :class`TriplePopulation`.
 
@@ -1713,7 +1744,7 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
     :param colortol: (optional)
         Tolerance within which to constrain color matching.
 
-    :param mA, age, feh:
+    :param mA,age,feh:
         Primary masses, age, and feh.  If float or array_like, 
         those values are used; if distributions, they are resampled.
 
@@ -1912,7 +1943,7 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
     :param filename: (optional)
         If passed, saved population will be restored.
 
-    :param Teff, logg, feh: (optional)
+    :param Teff,logg,feh: (optional)
         Spectroscopic measurements ``(value, error)``.  Must
         be provided neither ``filename`` nor ``starmodel`` are.
 
@@ -2103,7 +2134,7 @@ class BGStarPopulation_TRILEGAL(BGStarPopulation):
         loaded; otherwise, TRILEGAL will be called via the ``get_trilegal`` perl
         script, and the file will be generated.  
 
-    :param ra, dec: (optional)
+    :param ra,dec: (optional)
         Sky coordinates of TRILEGAL simulation.  Must be passed if generating 
         TRILEGAL simulation and not just reading from existing file.
 

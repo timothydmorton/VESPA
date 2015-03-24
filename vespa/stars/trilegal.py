@@ -17,6 +17,54 @@ def get_trilegal(filename,ra,dec,folder='.',
                  filterset='kepler_2mass',area=1,maglim=27,binaries=False,
                  trilegal_version='1.6',sigma_AV=0.1,convert_h5=True):
     """Runs get_trilegal perl script; optionally saves output into .h5 file
+
+    Depends on a perl script provided by L. Girardi; calls the
+    web form simulation, downloads the file, and (optionally) converts
+    to HDF format.
+
+    Uses A_V at infinity from :func:`utils.get_AV_infinity`.
+
+    .. note::
+
+        Would be desirable to re-write the get_trilegal script
+        all in python.
+                 
+    :param filename:
+        Desired output filename.  If extension not provided, it will
+        be added.
+
+    :param ra,dec:
+        Coordinates (ecliptic) for line-of-sight simulation.
+
+    :param folder: (optional)
+        Folder to which to save file.  *Acknowledged, file control
+        in this function is a bit wonky.*
+
+    :param filterset: (optional)
+        Filter set for which to call TRILEGAL.
+
+    :param area: (optional)
+        Area of TRILEGAL simulation [sq. deg]
+
+    :param maglim: (optional)
+        Limiting magnitude in first mag (by default will be Kepler band)
+        If want to limit in different band, then you have to
+        got directly to the ``get_trilegal`` perl script.
+
+    :param binaries: (optional)
+        Whether to have TRILEGAL include binary stars.  Default ``False``.
+
+    :param trilegal_version: (optional)
+        Default ``'1.6'``.
+
+    :param sigma_AV: (optional)
+        Fractional spread in A_V along the line of sight.
+
+    :param convert_h5: (optional)
+        If true, text file downloaded from TRILEGAL will be converted
+        into a ``pandas.DataFrame`` stored in an HDF file, with ``'df'``
+        path.
+                 
     """
     try:
         c = SkyCoord(ra,dec)

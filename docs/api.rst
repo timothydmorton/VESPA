@@ -13,14 +13,14 @@ and creates a bunch of data files/diagnostic plots.  A
 :class:`FPPCalculation` is made up of a :class:`PopulationSet` and a
 :class:`TransitSignal`.
 
-For more details on the guts of the population objects that make
-up a :class:`PopulationSet`, please see the
-documentation on Eclipse Populations, Star Populations, and Orbit Populations.
+For more details on the guts of the objects that make up a
+:class:`PopulationSet`, please see the documentation on :ref:`eclipse`,
+:ref:`stars`, and :ref:`orbits`.
 
 FPPCalculation
 -----------------
 
-.. autoclass:: vespa.FPPCalculation
+.. autoclass:: vespa.fpp.FPPCalculation
    :members:
 
 PopulationSet
@@ -29,12 +29,12 @@ PopulationSet
 This object is essentially an organized list of
 :class:`EclipsePopulation` objects.  
 
-.. autoclass:: vespa.PopulationSet
+.. autoclass:: vespa.populations.PopulationSet
   :members:
 
 TransitSignal
 ----------------
 
-.. autoclass:: vespa.TransitSignal
+.. autoclass:: vespa.transitsignal.TransitSignal
   :members:
      

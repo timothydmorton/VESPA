@@ -13,7 +13,8 @@ G = const.G.cgs.value
 from .kepler import Efn #
 
 def semimajor(P,M):
-    """P, M can be ``Quantity`` objects; otherwise default to day, M_sun
+    """
+    P, M can be ``Quantity`` objects; otherwise default to day, M_sun
     """
     if type(P) != Quantity:
         P = P*u.day
@@ -23,16 +24,14 @@ def semimajor(P,M):
     return a.to(u.AU)
 
 def random_spherepos(n):
-    """returns SkyCoord object with n positions randomly oriented on the unit sphere
+    """
+    Returns SkyCoord object with n positions randomly oriented on the unit sphere.
 
-    Parameters
-    ----------
-    n : int
-        number of positions desired
+    :param n: (``int``)
+        Number of positions desired.
 
-    Returns
-    -------
-    c : ``SkyCoord`` object with random positions 
+    :return c:
+        ``astropy.coordinates.SkyCoord`` object with random positions 
     """
     signs = np.sign(rand.uniform(-1,1,size=n))
     thetas = Angle(np.arccos(rand.uniform(size=n)*signs),unit=u.rad) #random b/w 0 and 180
@@ -41,36 +40,33 @@ def random_spherepos(n):
     return c
 
 def orbitproject(x,y,inc,phi=0,psi=0):
-    """Transform x,y planar coordinates into observer's coordinate frame.
-    
-    x,y are coordinates in z=0 plane (plane of the orbit)
+    """
+    Transform x,y planar coordinates into observer's coordinate frame.
 
-    observer is at (inc, phi) on celestial sphere (angles in radians);
-    psi is orientation of final x-y axes about the (inc,phi) vector.
+    ``x,y`` are coordinates in ``z=0`` plane (plane of the orbit)
 
-    Returns x,y,z values in observer's coordinate frame, where
-    x,y are now plane-of-sky coordinates and z is along the line of sight.
+    observer is at ``(inc, phi)`` on celestial sphere (angles in radians);
+    ``psi`` is orientation of final ``x-y`` axes about the ``(inc,phi)`` vector.
 
-    Parameters
-    ----------
-    x,y : float or arrray-like
-        Coordinates to transorm
+    Returns ``x,y,z`` values in observer's coordinate frame, where
+    ``x,y`` are now plane-of-sky coordinates and ``z`` is along the line of sight.
 
-    inc : float or array-like
-        Polar angle(s) of observer (where inc=0 corresponds to north pole
-        of original x-y plane).  This angle is the same as standard "inclination."
+    :param x,y: (``float`` or array-like)
+        Coordinates to transform.
 
-    phi : float or array-like, optional
-        Azimuthal angle of observer around z-axis
+    :param inc: (``float`` or array-like)
+        Polar angle(s) of observer (where ``inc=0`` corresponds to north pole
+        of original ``x-y`` plane).  This angle is the same as standard "inclination."
 
-    psi : float or array-like, optional
+    :param phi: (``float`` or array-like, optional)
+        Azimuthal angle of observer around ``z`` -axis
+
+    :param psi: (``float`` or array-like, optional)
         Orientation of final observer coordinate frame (azimuthal around
-        (inc,phi) vector.
+        ``(inc,phi)`` vector.
 
-    Returns
-    -------
-    x,y,z : ``ndarray``
-        Coordinates in observers' frames.  x,y in "plane of sky" and z
+    :return x,y,z: (``ndarray``)
+        Coordinates in observers' frames.  ``x,y`` in "plane of sky" and ``z``
         along line of sight.
     """
 
@@ -85,27 +81,27 @@ def orbitproject(x,y,inc,phi=0,psi=0):
     return (xf,yf,z2)
 
 def orbit_posvel(Ms,eccs,semimajors,mreds,obspos=None):
-    """returns positions in projected AU and velocities in km/s for given mean anomalies
+    """
+    Returns positions in projected AU and velocities in km/s for given mean anomalies.
 
-    Returns positions and velocities as SkyCoord objects.  Uses
-    ``orbitutils.kepler.Efn`` to calculate eccentric anomalies using interpolation.    
+    Returns 3-D positions and velocities as SkyCoord objects, in
+    "observer" reference frame.  Uses
+    :func:`kepler.Efn` to calculate eccentric anomalies using interpolation.    
 
-    Parameters
-    ----------
-    Ms, eccs, semimajors, mreds : float or array-like
-        Mean anomalies, eccentricities, semimajor axes (AU), reduced masses (Msun).
+    :param Ms,eccs,semimajors,mreds: (``float`` or array-like)
+        Mean anomalies, eccentricities, semimajor axes [AU], reduced masses [Msun].
 
-    obspos : ``None``, (x,y,z) tuple or ``SkyCoord`` object
+    :param obspos: (``None``, ``(x,y,z)`` ``tuple`` or ``SkyCoord`` object)
         Locations of observers for which to return coordinates.
-        If ``None`` then populate randomly on sphere.  If (x,y,z) or
+        If ``None`` then populate randomly on sphere.  If ``(x,y,z)`` or
         ``SkyCoord`` object provided, then use those.
 
-    Returns
-    -------
-    pos,vel : ``SkyCoord``
-        Objects representing the positions and velocities, the coordinates
+    :returns pos,vel:
+        ``SkyCoord`` Objects representing the positions and velocities,
+        the coordinates
         of which are ``Quantity`` objects that have units.  Positions are in
-        projected AU and velocities in km/s. 
+        projected AU and velocities in km/s.
+        
     """
 
     Es = Efn(Ms,eccs) #eccentric anomalies by interpolation

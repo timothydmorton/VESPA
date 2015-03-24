@@ -40,6 +40,9 @@ def randpos_in_circle(n,rad,return_rad=False):
         return x,y
 
 def draw_pers_eccs(n,**kwargs):
+    """
+    Draw random periods and eccentricities according to empirical survey data.
+    """
     pers = draw_raghavan_periods(n)
     eccs = draw_eccs(n,pers,**kwargs)
     return pers,eccs
@@ -53,10 +56,16 @@ def flat_massratio_fn(qmin=0.1,qmax=1.):
     return fn
 
 def draw_raghavan_periods(n):
+    """
+    Draw orbital periods according to Raghavan (2010)
+    """
     logps = RAGHAVAN_LOGPERKDE.resample(n)
     return 10**logps
 
 def draw_msc_periods(n):
+    """
+    Draw orbital periods according to Multiple Star Catalog
+    """
     logps = MSC_TRIPLOGPERKDE.resample(n)
     return 10**logps
 
@@ -115,11 +124,14 @@ def rochelobe(q):
     return 0.49*q**(2./3)/(0.6*q**(2./3) + np.log(1+q**(1./3)))
 
 def withinroche(semimajors,M1,R1,M2,R2):
+    """
+    Returns boolean array that is True where two stars are within Roche lobe
+    """
     q = M1/M2
     return ((R1+R2)*RSUN) > (rochelobe(q)*semimajors*AU)
     
 def semimajor(P,mstar=1):
-    """Period in days, mstar in solar masses
+    """Returns semimajor axis given P in days, mstar in solar masses.
     """
     return ((P*DAY/2/np.pi)**2*G*mstar*MSUN)**(1./3)/AU
 
@@ -127,13 +139,16 @@ def period_from_a(a,mstar):
     return np.sqrt(4*np.pi**2*(a*AU)**3/(G*mstar*MSUN))/DAY
 
 def addmags(*mags):
+    """
+    "Adds" magnitudes.  Yay astronomical units!
+    """
     tot=0
     for mag in mags:
         tot += 10**(-0.4*mag)
     return -2.5*np.log10(tot)
 
 def fluxfrac(*mags):
-    """Returns fraction of total flux in first argument, assuming all are magnitudes
+    """Returns fraction of total flux in first argument, assuming all are magnitudes.
     """
     Ftot = 0
     for mag in mags:
@@ -142,12 +157,14 @@ def fluxfrac(*mags):
     return F1/Ftot
 
 def dfromdm(dm):
+    """Returns distance given distance modulus.
+    """
     if np.size(dm)>1:
         dm = np.atleast_1d(dm)
     return 10**(1+dm/5)
 
 def distancemodulus(d):
-    """d in parsec
+    """Returns distance modulus given d in parsec.
     """
     if type(d)==Quantity:
         x = d.to('pc').value

@@ -5,7 +5,23 @@ import logging
 import subprocess as sp
 from astropy.coordinates import SkyCoord
 
-def get_AV_infinity(ra,dec,frame='icrs',verbose=False):
+def get_AV_infinity(ra,dec,frame='icrs'):
+    """
+    Gets the A_V exctinction at infinity for a given line of sight.
+
+    Queries the NED database using ``wget``.
+
+    .. note::
+
+        It would be desirable to rewrite this to avoid dependence
+        on ``wget``.
+
+    :param ra,dec:
+        Desired coordinates, in degrees.
+
+    :param frame: (optional)
+        Frame of input coordinates (e.g., ``'icrs', 'galactic'``)
+    """
     coords = SkyCoord(ra,dec,unit='deg',frame=frame).transform_to('icrs')
 
     rah,ram,ras = coords.ra.hms

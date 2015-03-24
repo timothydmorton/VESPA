@@ -15,7 +15,8 @@ if not __VESPA_SETUP__:
                'ColormatchMultipleStarPopulation',
                'Spectroscopic_MultipleStarPopulation',
                'BGStarPopulation', 'BGStarPopulation_TRILEGAL',
-               'BinaryPopulation',
+               'BinaryPopulation', 'Simulated_BinaryPopulation',
+               'Raghavan_BinaryPopulation', 'TriplePopulation',
                'MAInterpolationFunction']
 
     from .fpp import FPPCalculation
@@ -36,7 +37,10 @@ if not __VESPA_SETUP__:
     from .stars.populations import Spectroscopic_MultipleStarPopulation
     from .stars.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
     from .stars.populations import BinaryPopulation
-
+    from .stars.populations import Simulated_BinaryPopulation
+    from .stars.populations import Raghavan_BinaryPopulation
+    from .stars.populations import TriplePopulation
+    
     from .transit_basic import MAInterpolationFunction
 
     pass

@@ -25,8 +25,15 @@ class FPPCalculation(object):
     """
     An object to organize an FPP calculation.
 
-    See :func:`FPPCalculation.from_ini` for how to initialize
-    using a config file.  
+    May be created in one of three ways:
+
+    * Manually building a
+      :class:`TransitSignal` and a :class:`PopulationSet`
+      and then calling the constructor,
+    * Loading from a folder in which the correct data
+      files have been saved, using :func:`FPPCalculation.load`, or
+    * Reading from a config file, using :func:`FPPCalculation.from_ini`
+    
 
     :param trsig:
         :class:`TransitSignal` object representing the signal

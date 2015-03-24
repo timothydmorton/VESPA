@@ -71,15 +71,15 @@ class EclipsePopulation(StarPopulation):
     which the likelihood of a transit signal under the model
     may be calculated.
 
-    Subclasses :class:`StarPopulation`, which enables
+    Subclasses :class:`vespa.stars.StarPopulation`, which enables
     all the functionality of observational constraints.
 
     if prob is not passed; should be able to calculated from given
     star/orbit properties.
 
-    As with :class:`StarPopulation`, any subclass must be able 
+    As with :class:`vespa.stars.StarPopulation`, any subclass must be able 
     to be initialized with no arguments passed, in order for
-    :func:`StarPopulation.load_hdf` to work properly.
+    :func:`vespa.stars.StarPopulation.load_hdf` to work properly.
 
     :param stars:
         ``DataFrame`` with star properties.  Must contain
@@ -119,7 +119,7 @@ class EclipsePopulation(StarPopulation):
 
     :param **kwargs:
         Additional keyword arguments passed to
-        :class:`stars.StarPopulation`.
+        :class:`vespa.stars.StarPopulation`.
 
     """
                 
@@ -419,7 +419,7 @@ class EclipsePopulation(StarPopulation):
         at ``self.kde``.
 
         :param trsig:
-            :class:`TransitSignal` object.
+            :class:`vespa.TransitSignal` object.
 
         :param recalc: (optional)
             Whether to recalculate likelihood (if calculation
@@ -469,7 +469,7 @@ class EclipsePopulation(StarPopulation):
         over the density plot.
 
         :param trsig: (optional)
-            :class:`TransitSignal` object.
+            :class:`vespa.TransitSignal` object.
 
         :param fig: (optional)
             Argument for :func:`plotutils.setfig`.
@@ -484,7 +484,7 @@ class EclipsePopulation(StarPopulation):
         :param logscale: (optional)
             If ``True``, then shading will be based on the log-histogram
             (thus showing more detail at low density).  Passed to
-            :func:`StarPopulation.prophist2d`.
+            :func:`vespa.stars.StarPopulation.prophist2d`.
 
         :param constraints: (``'all', 'none'`` or ``list``; optional)
             Which constraints to apply in making plot.  Picking 
@@ -514,14 +514,14 @@ class EclipsePopulation(StarPopulation):
 
         :param nbins: (optional)
             Number of bins with which to make the 2D histogram plot;
-            passed to :func:`StarPopulation.prophist2d`.
+            passed to :func:`vespa.stars.StarPopulation.prophist2d`.
 
         :param dur_range, slope_range, depth_range: (optional)
             Define ranges of plots.
 
         :param **kwargs:
             Additional keyword arguments passed to 
-            :func:`StarPopulation.prophist2d`.
+            :func:`vespa.stars.StarPopulation.prophist2d`.
 
         """
 
@@ -2061,7 +2061,7 @@ class PopulationSet(object):
         """
         Constrains property for each population
 
-        See :func:`stars.StarPopulation.constrain_property`;
+        See :func:`vespa.stars.StarPopulation.constrain_property`;
         all arguments passed to that function for each population.
 
         """
@@ -2077,7 +2077,7 @@ class PopulationSet(object):
         """
         Replaces removed constraint in each population.
 
-        See :func:`stars.StarPopulation.replace_constraint`
+        See :func:`vespa.stars.StarPopulation.replace_constraint`
 
         """
 
@@ -2090,7 +2090,7 @@ class PopulationSet(object):
         """
         Removes constraint from each population
 
-        See :func:`stars.StarPopulation.remove_constraint
+        See :func:`vespa.stars.StarPopulation.remove_constraint
 
         """
         for name in names:
@@ -2106,7 +2106,7 @@ class PopulationSet(object):
         """
         Applies contrast curve constraint to each population
 
-        See :func:`stars.StarPopulation.apply_cc`;
+        See :func:`vespa.stars.StarPopulation.apply_cc`;
         all arguments passed to that function for each population.
 
         """
@@ -2125,7 +2125,7 @@ class PopulationSet(object):
         """
         Applies velocity contrast curve constraint to each population
 
-        See :func:`stars.StarPopulation.apply_vcc`;
+        See :func:`vespa.stars.StarPopulation.apply_vcc`;
         all arguments passed to that function for each population.
 
         """
