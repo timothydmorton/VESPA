@@ -17,6 +17,7 @@ try:
     AU = const.au.cgs.value
     DAY = 86400
     G = const.G.cgs.value
+    
 except ImportError:
     np = None
     SkyCoord, Angle = (None, None)

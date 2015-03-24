@@ -12,7 +12,10 @@ try:
 
     from scipy.stats import gaussian_kde
     from scipy.integrate import quad
-
+except ImportError:
+    np, pd, plt, cm = (None, None, None)
+    gaussian_kde, quad = (None, None)
+    
 try:
     from sklearn.neighbors import KernelDensity
     from sklearn.grid_search import GridSearchCV

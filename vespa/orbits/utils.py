@@ -13,7 +13,7 @@ try:
 except ImportError:
     np,rand = (None, None)
     u, SkyCoord, Angle, Quantity, Const = (None, None, None, None, None)
-    MSUN, AU, DAY, G = (None, None, None None)
+    MSUN, AU, DAY, G = (None, None, None, None)
 
     
 from .kepler import Efn #
