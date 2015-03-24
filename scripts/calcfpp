@@ -29,9 +29,6 @@ The ``.ini`` file should be of the following form::
     H = 9.135, 0.03
     K = 8.899, 0.02
     Kepler = 12.473
-
-    [constraints]
-    maxrad = 12
       
 Running this script will create the following files,
 in the same directory as the ``.ini`` file:
@@ -70,28 +67,7 @@ warnings.simplefilter("error")
 warnings.simplefilter("ignore", DeprecationWarning)
 
 import logging
-
 logger = logging.getLogger()
-
-###Utility function to initialize logger to file.
-def initLogging(filename, logger):
-    if logger == None:
-        logger = logging.getLogger()
-    else:  # wish there was a logger.close()
-        for handler in logger.handlers[:]:  # make a copy of the list
-            logger.removeHandler(handler)
-
-    logger.setLevel(logging.INFO)
-    formatter = logging.Formatter(fmt='%(asctime)s: %(message)s')
-
-    fh = logging.FileHandler(filename)
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
-
-    sh = logging.StreamHandler(sys.stdout)
-    logger.addHandler(sh)
-    return logger
-
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
