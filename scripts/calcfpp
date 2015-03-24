@@ -152,7 +152,12 @@ if __name__=='__main__':
                 starmodel = StarModel.load_hdf(starmodel_file)
                 triangle_base = os.path.join(folder, 'starmodel_triangle')
                 starmodel.triangle_plots(triangle_base)
+
+            logger.info('FPP calculation successful. ' + 
+                        'Results/plots written to {}.'.format(os.path.abspath(folder)))
+
             print('FPP for {}: {}'.format(f.name,f.FPP()))
+
         except KeyboardInterrupt:
             raise
         except:
