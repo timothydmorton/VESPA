@@ -69,6 +69,26 @@ warnings.simplefilter("ignore", DeprecationWarning)
 import logging
 logger = logging.getLogger()
 
+#utility function to define logfile
+def initLogging(filename, logger):
+    if logger == None:
+        logger = logging.getLogger()
+    else:  # wish there was a logger.close()
+        for handler in logger.handlers[:]:  # make a copy of the list
+            logger.removeHandler(handler)
+
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(fmt='%(asctime)s: %(message)s')
+
+    fh = logging.FileHandler(filename)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    sh = logging.StreamHandler(sys.stdout)
+    logger.addHandler(sh)
+    return logger
+
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
     
@@ -93,38 +113,50 @@ if __name__=='__main__':
     
     args = parser.parse_args()
 
-    logger = logging.getLogger()    
     verbosity = args.verbose - args.quiet
-    if verbosity == 1:
-        logger.setLevel(logging.INFO)
-    elif verbosity==2:
-        logger.setLevel(logging.DEBUG)
-    elif verbosity==0:
-        logger.setLevel(logging.WARNING)
-    elif verbosity==-1:
-        logger.setLevel(logging.ERROR)
-    elif verbosity==-2:
-        logger.setLevel(logging.CRITICAL)
         
-        
+    logger = None #dummy
             
     for folder in args.folders:
-        inifile = os.path.join(folder, args.inifile)
+        try:
 
-        f = FPPCalculation.from_ini(inifile, recalc=args.recalc,
-                                    n=args.n)
-        f.FPPplots()
+            #initialize logger for this folder:
 
-        starmodel_file = os.path.join(folder, 'starmodel.h5')
-        triangle_file1 = os.path.join(folder, 'starmodel_triangle_physical.png')
-        triangle_file2 = os.path.join(folder, 'starmodel_triangle_observed.png')
-        if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
-            logging.info('Making StarModel triangle plots...')
-            starmodel = StarModel.load_hdf(starmodel_file)
-            triangle_base = os.path.join(folder, 'starmodel_triangle')
-            starmodel.triangle_plots(triangle_base)
+            logfile = os.path.join(folder, 'run.log')
+            logger = initLogging(logfile, logger)
+
+            if verbosity == 1:
+                logger.setLevel(logging.INFO)
+            elif verbosity==2:
+                logger.setLevel(logging.DEBUG)
+            elif verbosity==0:
+                logger.setLevel(logging.WARNING)
+            elif verbosity==-1:
+                logger.setLevel(logging.ERROR)
+            elif verbosity==-2:
+                logger.setLevel(logging.CRITICAL)
+        
 
 
-        print('FPP for {}: {}'.format(f.name,f.FPP()))
+            inifile = os.path.join(folder, args.inifile)
+
+            f = FPPCalculation.from_ini(inifile, recalc=args.recalc,
+                                        n=args.n)
+            f.FPPplots()
+
+            starmodel_file = os.path.join(folder, 'starmodel.h5')
+            triangle_file1 = os.path.join(folder, 'starmodel_triangle_physical.png')
+            triangle_file2 = os.path.join(folder, 'starmodel_triangle_observed.png')
+            if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
+                logger.info('Making StarModel triangle plots...')
+                starmodel = StarModel.load_hdf(starmodel_file)
+                triangle_base = os.path.join(folder, 'starmodel_triangle')
+                starmodel.triangle_plots(triangle_base)
+            print('FPP for {}: {}'.format(f.name,f.FPP()))
+        except KeyboardInterrupt:
+            raise
+        except:
+            logger.error('FPP calculation failed for {}.'.format(folder), exc_info=True)
+
 
 
