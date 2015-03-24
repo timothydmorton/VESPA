@@ -1,7 +1,13 @@
 from setuptools import setup, Extension, find_packages
-from Cython.Build import cythonize
-from Cython.Distutils import build_ext
-import numpy
+
+on_rtd = False
+try:
+    #from Cython.Distutils import build_ext
+    import numpy
+except ImportError:
+    on_rtd = True
+    numpy = None
+    
 import os
 
 def readme():
@@ -31,7 +37,8 @@ if "tag" in sys.argv:
     os.system("git push --tags")
     sys.exit()
 
-transit_utils = [Extension('vespa_transitutils',['vespa/vespa_transitutils.pyx'],
+if not on_rtd:
+    transit_utils = [Extension('vespa_transitutils',['vespa/vespa_transitutils.pyx'],
                                 include_dirs=[numpy.get_include()])]
 
 setup(name = "VESPA",
@@ -53,7 +60,7 @@ setup(name = "VESPA",
                  'scripts/koifpp',
                  'scripts/batch_koifpp_condor',
                  'scripts/calcfpp'],
-      cmdclass = {'build_ext': build_ext},
+      #cmdclass = {'build_ext': build_ext},
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
