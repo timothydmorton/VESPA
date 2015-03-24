@@ -3,6 +3,8 @@
 Other Utilities
 =============
 
+.. py:currentmodule:: vespa
+
 Here are documented (occasionally sparsely) a few other utilities
 used in the ``vespa`` package.
 
