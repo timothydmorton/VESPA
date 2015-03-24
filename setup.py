@@ -2,7 +2,7 @@ from setuptools import setup, Extension, find_packages
 
 on_rtd = False
 try:
-    #from Cython.Distutils import build_ext
+    from Cython.Distutils import build_ext
     import numpy
 except ImportError:
     on_rtd = True
@@ -60,7 +60,7 @@ setup(name = "VESPA",
                  'scripts/koifpp',
                  'scripts/batch_koifpp_condor',
                  'scripts/calcfpp'],
-      #cmdclass = {'build_ext': build_ext},
+      cmdclass = {'build_ext': build_ext},
       classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
