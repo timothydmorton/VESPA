@@ -3,14 +3,15 @@ from __future__ import print_function, division
 import os, os.path, re
 import logging
 import cPickle as pickle
-from configobj import ConfigObj
+
 
 try:
+    from configobj import ConfigObj
     import numpy as np
     import matplotlib.pyplot as plt
     from matplotlib import cm
 except ImportError:
-    np, plt, cm = (None, None, None)
+    ConfigObj, np, plt, cm = (None, None, None, None)
 
     
 from .populations import PopulationSet
