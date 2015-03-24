@@ -1,13 +1,17 @@
 #! /usr/bin/env python
 from __future__ import print_function, division
 
-import numpy as np
 import logging
-import pandas as pd
+import sys, re, os
 
+try:
+    import numpy as np
+    import pandas as pd
+except ImportError:
+    np, pd = (None, None)
+    
 from .transit_basic import eclipse_pars, eclipse_tt
 from .transit_basic import NoEclipseError, NoFitError
-import sys, re, os
 try:
     from progressbar import Percentage,Bar,RotatingMarker,ETA,ProgressBar
     pbar_ok = True
