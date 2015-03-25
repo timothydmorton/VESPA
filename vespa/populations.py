@@ -24,7 +24,6 @@ except ImportError:
     KernelDensity = None
     GridSearchCV = None
     
-
     
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
@@ -949,38 +948,16 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     :type mags:
         ``dict``
 
-    :param colors: (optional)
-        Colors to use to enforce match with observations.
-        e.g., ('JK', 'HK'), etc.  The more colors are provided
-        the longer it might take to generate an appropriate
-        population. 
-    :type colors:
-        ``tuple`` or ``list``
-
-    :param colortol: (optional)
-        Threshold within which simulated binary companions must
-        match observed colors.  Default is 0.1 mag.
-
-    :param mass, age, feh: (optional)
-        Mass, log10(age), and feh  of primary star;
-        either in ``(value, error)`` format
-        or as :class:`simpledist.Distribution` objects.
+    :param Teff,logg,feh:
+        Spectroscopic properties of primary, if measured, in ``(value, err)`` format.
 
     :param starmodel: (optional)
-        The preferred way to define the properties of the 
-        host star.  If MCMC has been run on this model,
+        Must be a BinaryStarModel.
+        If MCMC has been run on this model,
         then samples are just read off; if it hasn't,
         then it will run it.
     :type starmodel:
-        :class:`isochrones.StarModel`            
-
-    :param starfield: (optional)
-        If ``mass`` or ``starmodel`` not provided, then primary masses will
-        get randomly selected from this starfield, assumed to be
-        a TRILEGAL simulation.  If string, then should be a filename
-        of an .h5 file containing the TRILEGAL simulation; can also
-        be a ``DataFrame`` directly (see
-        :class:`stars.ColormatchMultipleStarPopulation`).
+        :class:`isochrones.BinaryStarModel`            
 
     :param band: (optional)
         Photometric bandpass in which transit signal is observed.
@@ -1009,29 +986,25 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
     currently doesn't work if mags is None.
     """
 
-    def __init__(self, period=None, mags=None, colors=('JK',), colortol=0.1,
-                 mass=None, age=None, feh=None, starmodel=None,
-                 starfield=None, 
+    def __init__(self, period=None, mags=None, starmodel=None,
+                 Teff=None, logg=None, feh=None,
                  band='Kepler', model='EBs', f_binary=0.4, n=2e4,
-                 MAfn=None, lhoodcachefile=None,
-                 **kwargs):
+                 MAfn=None, lhoodcachefile=None, **kwargs):
 
         self.period = period
         self.model = model
         self.band = band
         self.lhoodcachefile = lhoodcachefile
 
-        if mags is not None or mass is not None or starmodel is not None:
+        if mags is not None or starmodel is not None:
             #generates stars from ColormatchMultipleStarPopulation
             # and eclipses using calculate_eclipses
-            self.generate(mags=mags, colors=colors, colortol=colortol,
-                          starfield=starfield, mass=mass,
-                          age=age, feh=feh, n=n, MAfn=MAfn,
+            self.generate(mags=mags, n=n, MAfn=MAfn,
                           f_binary=f_binary, starmodel=starmodel,
                           **kwargs)
 
-    def generate(self, mags, colors, starfield=None, colortol=0.1,
-                 mass=None, age=None, feh=None, n=2e4,
+    def generate(self, mags, n=2e4,
+                 Teff=None, logg=None, feh=None,
                  MAfn=None, f_binary=0.4, starmodel=None,
                  **kwargs):
         """Generates stars and eclipses
@@ -1039,6 +1012,8 @@ class EBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
         All arguments previously defined.
         """
         n = int(n)
+
+
         #if provided, period_long (self.period) 
         #  is the observed period of the eclipse
         pop_kwargs = {'mags':mags, 'colors':colors,

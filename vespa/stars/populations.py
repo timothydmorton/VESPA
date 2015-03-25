@@ -31,9 +31,10 @@ from ..orbits import TripleOrbitPopulation
 from ..plotutils import setfig,plot2dhist
 
 try:
-    from isochrones import StarModel
+    from isochrones.starmodel import StarModel, BinaryStarModel
+    from isochrones.starmodel import TripleStarModel
 except ImportError:
-    isochrones = None
+    StarModel, BinaryStarModel, TripleStarModel = (None, None, None)
 
 try:
     from simpledist import distributions as dists
@@ -1568,8 +1569,118 @@ class TriplePopulation(StarPopulation):
         else:
             return frac
 
+class Observed_BinaryPopulation(BinaryPopulation):
+    """
+    A population of binary stars matching observed constraints.
 
+    :param mags:
+        Observed apparent magnitudes
+    :type mags:
+        ``dict``
+
+    :param Teff,logg,feh:
+        Observed spectroscopic properties of primary star, if available.
+        Format: ``(value, err)``.
+
+    :param starmodel:
+        :class:`isochrones.BinaryStarModel`. If not 
+        passed, it will be generated.
+
+    All other parameters like :class:`MultipleStarPopulation`.
+    """
+    def __init__(self, mags=None, mag_errs=None,
+                 Teff=None, 
+                 logg=None, feh=None,
+                 starmodel=None, n=2e4,
+                 f_binary=0.4, f_triple=0.12,
+                 ichrone=DARTMOUTH, bands=BANDS,
+                 period=None, ecc=None,
+                 orbpop=None, stars=None,
+                 **kwargs):                 
+
+        self.mags = mags
+        self.mag_errs = mag_errs
+        self.Teff = Teff
+        self.logg = logg
+        self.feh = feh
+
+        if stars is None and mags is not None:
+            self.generate(mags=mags, mag_errs=mag_errs,
+                          n=n, ichrone=ichrone,
+                          starmodel=starmodel,
+                          Teff=Teff, logg=logg, feh=feh,
+                          bands=bands, orbpop=orbpop,
+                          period=period, ecc=ecc, **kwargs)
+
+    @property
+    def starmodel_props(self):
+        """Default mag_err is 0.05, arbitrarily
+        """
+        props = {}
+        mags = self.mags
+        mag_errs = self.mag_errs
+        for b in mags.keys():
+            if np.size(mags[b])==2:
+                props[b] = mags[b]
+            elif np.size(mags[b])==1:
+                mag = mags[b]
+                try:
+                    e_mag = mag_errs[b]
+                except:
+                    e_mag = 0.05
+                props[b] = (mag, e_mag)
+
+        if self.Teff is not None:
+            props['Teff'] = self.Teff
+        if self.logg is not None:
+            props['logg'] = self.logg
+        if self.feh is not None:
+            props['feh'] = self.feh
+
+        return props
+
+
+    def generate(self, mags=None, mag_errs=None,
+                 n=1e4, ichrone=DARTMOUTH,
+                 starmodel=None, Teff=None, logg=None, feh=None,
+                 bands=BANDS, orbpop=None, period=None,
+                 ecc=None, **kwargs):
+
+        if starmodel is None:
+            params = self.starmodel_props
+            logging.info('Fitting BinaryStarModel to {}...'.format(params))
+            starmodel = BinaryStarModel(ichrone, **params)
+            starmodel.fit_mcmc()
+            logging.info('BinaryStarModel fit Done.')
+
+        if type(starmodel) != BinaryStarModel:
+            raise TypeError('starmodel must be BinaryStarModel.')
         
+        self._starmodel = starmodel
+
+        samples = starmodel.random_samples(n)
+        age, feh = (samples['age'], samples['feh'])
+        dist, AV = (samples['distance'], samples['AV'])
+        mass_A = (samples['mass_A'], samples['mass_B'])
+        primary = ichrone(mass_A, age, feh, 
+                          distance=dist, AV=AV, bands=BANDS)
+        secondary = ichrone(mass_B, age, feh, 
+                            distance=dist, AV=AV, bands=BANDS)
+        
+        BinaryPopulation.__init__(self, primary=primary,
+                                  secondary=secondary,
+                                  orbpop=orbpop, period=period,
+                                  ecc=ecc, **kwargs)
+
+    @property
+    def _properties(self):
+        return ['mags','mag_errs','Teff','logg','feh'] + \
+            super(Observed_BinaryPopulation, self)._properties
+
+    @property
+    def starmodel(self):
+        return self._starmodel
+
 class MultipleStarPopulation(TriplePopulation):
     """A population of single, double, and triple stars, generated according to prescription.
 
