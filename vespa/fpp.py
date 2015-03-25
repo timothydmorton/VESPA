@@ -313,13 +313,10 @@ class FPPCalculation(object):
 
         ``popset.h5`` and ``trsig.pkl`` must exist in folder.
 
-        Again, using :func:`FPPCalculation.from_ini` may be
-        better to use.
-
         :param folder:
             Folder from which to load.
         """
-        popset = PopulationSet(os.path.join(folder,'popset.h5'))
+        popset = PopulationSet.load_hdf(os.path.join(folder,'popset.h5'))
         sigfile = os.path.join(folder,'trsig.pkl')
         trsig = pickle.load(open(sigfile, 'rb'))
         return cls(trsig, popset, folder=folder)
