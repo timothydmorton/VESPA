@@ -1362,10 +1362,9 @@ class HEBPopulation(EclipsePopulation, ColormatchMultipleStarPopulation):
             df_long = pd.concat((df_long, new_df_long))
             df_short = pd.concat((df_short, new_df_short))
 
-            logging.info('{} eclipsing HEB systems generated '.format(len(stars)) +
-                         '(target {})'.format(n))
-            logging.debug('{} nans in '.format(np.isnan(stars['dpri']).sum())) +
-                          'stars[dpri]'
+            logging.info('{} eclipsing HEB systems generated (target {})'.format(len(stars),n))
+            logging.debug('{} nans in '.format(np.isnan(stars['dpri']).sum()) +
+                          'stars[dpri]')
             logging.debug('{} nans in df[dpri]'.format(np.isnan(df['dpri']).sum()))
 
             if tot_prob is None:
