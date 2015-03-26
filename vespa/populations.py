@@ -1763,8 +1763,7 @@ class PopulationSet(object):
 
         if 'pl' in do_only:
             try:
-                plpop = PlanetPopulation(radius=radius,
-                                         period=period, rprs=rprs,
+                plpop = PlanetPopulation(period=period, rprs=rprs,
                                          starmodel=starmodel,
                                          MAfn=MAfn, n=n, **pl_kws)
 
