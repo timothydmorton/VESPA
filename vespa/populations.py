@@ -1652,11 +1652,13 @@ class PopulationSet(object):
     def __init__(self, poplist=None, 
                  period=None, mags=None, n=2e4, 
                  ra=None, dec=None, trilegal_filename=None,
-                 mass=None, age=None, feh=None, 
-                 radius=None, starmodel=None,
+                 Teff=None, logg=None, feh=None,
+                 starmodel=None,
+                 binary_starmodel=None,
+                 triple_starmodel=None,
                  rprs=None,
-                 MAfn=None, colors=None,
-                 Teff=None, logg=None, savefile=None,
+                 MAfn=None, 
+                 savefile=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None,
                  hide_exceptions=False,
@@ -1664,11 +1666,13 @@ class PopulationSet(object):
         #if string is passed, load from file
         if poplist is None:
             self.generate(ra, dec, period, mags,
-                          n=n, mass=mass, age=age, feh=feh,
-                          MAfn=MAfn, colors=colors, radius=radius,
+                          n=n, MAfn=MAfn,
                           trilegal_filename=trilegal_filename,
-                          Teff=Teff, logg=logg, rprs=rprs,
+                          Teff=Teff, logg=logg, feh=feh,
+                          rprs=rprs,
                           savefile=savefile, starmodel=starmodel,
+                          binary_starmodel=binary_starmodel,
+                          triple_starmodel=triple_starmodel,
                           heb_kws=heb_kws, eb_kws=eb_kws, 
                           beb_kws=beb_kws, pl_kws=pl_kws,
                           hide_exceptions=hide_exceptions,
@@ -1681,9 +1685,11 @@ class PopulationSet(object):
             self.poplist = poplist
 
     def generate(self, ra, dec, period, mags,
-                 n=2e4, mass=None, age=None, feh=None, radius=None,
-                 MAfn=None, colors=None, Teff=None, logg=None,
-                 rprs=None, trilegal_filename=None, starmodel=None,
+                 n=2e4, Teff=None, logg=None, feh=None, 
+                 MAfn=None, 
+                 rprs=None, trilegal_filename=None, 
+                 starmodel=None,
+                 binary_starmodel=None, triple_starmodel=None,
                  heb_kws=None, eb_kws=None, 
                  beb_kws=None, pl_kws=None, savefile=None,
                  hide_exceptions=False, fit_trap=True,
@@ -1708,6 +1714,40 @@ class PopulationSet(object):
         if pl_kws is None:
             pl_kws = {}
 
+        if 'heb' in do_only:
+            try:
+                hebpop = HEBPopulation(mags=mags, 
+                                       Teff=Teff, logg=logg, feh=feh, 
+                                       period=period,
+                                       starmodel=triple_starmodel,
+                                       starfield=trilegal_filename,
+                                       MAfn=MAfn, n=n, **heb_kws)
+                if fit_trap:
+                    hebpop.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    hebpop.save_hdf(savefile, 'heb', append=True)
+            except:
+                logging.error('Error generating HEB population.')
+                if not hide_exceptions:
+                    raise
+
+        if 'eb' in do_only:
+            try:
+                ebpop = EBPopulation(mags=mags, 
+                                     Teff=Teff, logg=logg, feh=feh, 
+                                     period=period,
+                                     starmodel=binary_starmodel,
+                                     starfield=trilegal_filename,
+                                     MAfn=MAfn, n=n, **eb_kws)
+                if fit_trap:
+                    ebpop.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    ebpop.save_hdf(savefile, 'eb', append=True)
+            except:
+                logging.error('Error generating EB population.')
+                if not hide_exceptions:
+                    raise
+
         if 'beb' in do_only:
             try:
                 bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
@@ -1722,43 +1762,11 @@ class PopulationSet(object):
                 if not hide_exceptions:
                     raise
                 
-        if 'heb' in do_only:
-            try:
-                hebpop = HEBPopulation(mass=mass, age=age, feh=feh, 
-                                       colors=colors, period=period,
-                                       starmodel=starmodel,
-                                       starfield=trilegal_filename,
-                                       mags=mags, MAfn=MAfn, n=n, **heb_kws)
-                if fit_trap:
-                    hebpop.fit_trapezoids(MAfn=MAfn)
-                if savefile is not None:
-                    hebpop.save_hdf(savefile, 'heb', append=True)
-            except:
-                logging.error('Error generating HEB population.')
-                if not hide_exceptions:
-                    raise
-
-        if 'eb' in do_only:
-            try:
-                ebpop = EBPopulation(mass=mass, age=age, feh=feh, 
-                                     colors=colors, period=period,
-                                     starmodel=starmodel,
-                                     starfield=trilegal_filename,
-                                     mags=mags, MAfn=MAfn, n=n, **eb_kws)
-                if fit_trap:
-                    ebpop.fit_trapezoids(MAfn=MAfn)
-                if savefile is not None:
-                    ebpop.save_hdf(savefile, 'eb', append=True)
-            except:
-                logging.error('Error generating EB population.')
-                if not hide_exceptions:
-                    raise
 
         if 'pl' in do_only:
             try:
-                plpop = PlanetPopulation(mass=mass, radius=radius,
+                plpop = PlanetPopulation(radius=radius,
                                          period=period, rprs=rprs,
-                                         Teff=Teff, logg=logg,
                                          starmodel=starmodel,
                                          MAfn=MAfn, n=n, **pl_kws)
 
