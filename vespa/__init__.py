@@ -19,17 +19,6 @@ if not __VESPA_SETUP__:
                'Raghavan_BinaryPopulation', 'TriplePopulation',
                'MAInterpolationFunction']
 
-    from .fpp import FPPCalculation
-
-    #EclipsePopulation & children
-    from .populations import EclipsePopulation
-    from .populations import EBPopulation, HEBPopulation, BEBPopulation
-    from .populations import PlanetPopulation
-    from .populations import PopulationSet
-
-    #from .populations import calculate_eclipses
-    from .transitsignal import TransitSignal
-    
     #StarPopulation & children
     from .stars.populations import StarPopulation
     from .stars.populations import MultipleStarPopulation
@@ -43,4 +32,15 @@ if not __VESPA_SETUP__:
     
     from .transit_basic import MAInterpolationFunction
 
-    pass
+
+    #EclipsePopulation & children
+    from .populations import EclipsePopulation
+    from .populations import EBPopulation, HEBPopulation, BEBPopulation
+    from .populations import PlanetPopulation
+    from .populations import PopulationSet
+
+    #from .populations import calculate_eclipses
+    from .transitsignal import TransitSignal
+
+    from .fpp import FPPCalculation
+

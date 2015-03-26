@@ -1,6 +1,7 @@
 from __future__ import division,print_function
 
 import sys,re,os
+import logging
 
 try:
     import numpy as np
@@ -99,7 +100,7 @@ class TripleOrbitPopulation(object):
         Pshort, Plong = (np.minimum(Pshort,Plong), np.maximum(Pshort,Plong))
         #if Plong < Pshort:
         #    Pshort,Plong = (Plong, Pshort)
-        
+
         self.orbpop_long = OrbitPopulation(M1,M2+M3,Plong,ecc=ecclong,n=n,
                                            mean_anomaly=mean_anomaly_long,
                                            obsx=obsx_long,obsy=obsy_long,obsz=obsz_long)
@@ -288,7 +289,7 @@ class OrbitPopulation(object):
     def __init__(self,M1,M2,P,ecc=0,n=None,
                  mean_anomaly=None,obsx=None,obsy=None,obsz=None,
                  obspos=None):
-        
+
         if type(M1) != Quantity:
             M1 = Quantity(M1, unit='M_sun')
         if type(M2) != Quantity:
