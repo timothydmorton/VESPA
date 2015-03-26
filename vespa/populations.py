@@ -1700,8 +1700,6 @@ class PopulationSet(object):
         if do_only is None:
             do_only = ['beb','heb','eb','pl']
 
-        if colors is None:
-            colors = ['JK','HK']
         if MAfn is None:
             MAfn = MAInterpolationFunction(pmin=0.007, pmax=1/0.007, nzs=200, nps=400)
 
