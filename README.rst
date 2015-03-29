@@ -5,6 +5,24 @@ Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating f
 
 For usage and more info, `check out the documentation <http://vespa.rtfd.org>`_.
 
+Installation
+------------
+
+To install, you can get the most recently released version from PyPI::
+
+    pip install vespa [--user]
+
+Or you can clone the repository::
+
+    git clone https://github.com/timothydmorton/vespa.git
+    cd vespa
+    python setup.py install [--user]
+
+The ``--user`` argument may be necessary if you don't have root privileges.
+
+Attribution
+-----------
+
 If you use this code, please cite the following paper::
 
     @ARTICLE{2012ApJ...761....6M,
@@ -25,18 +43,3 @@ If you use this code, please cite the following paper::
     adsnote = {Provided by the SAO/NASA Astrophysics Data System}
     }
 
-
-Installation
-------------
-
-To install, you can get the most recently released version from PyPI::
-
-    pip install vespa [--user]
-
-Or you can clone the repository::
-
-    git clone https://github.com/timothydmorton/vespa.git
-    cd vespa
-    python setup.py install [--user]
-
-The ``--user`` argument may be necessary if you don't have root privileges.
