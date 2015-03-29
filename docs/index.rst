@@ -32,6 +32,7 @@ any questions or comments you may have about this code.
    eclipse
    transits
    stars
+   constraints
    starutils
    orbits
    other

@@ -18,7 +18,30 @@ from .constraints import FunctionLowerLimit
 
 class ContrastCurve(object):
     def __init__(self,rs,dmags,band,mag=None,name=None):
-        """band is self-explanatory; 'mag' is mag of the primary in 'band' """
+        """Object representing an imaging contrast curve
+
+        Usually accessed via :class:`ContrastCurveFromFile`
+        and then applied using :class:`ContrastCurveConstraint`,
+        e.g., through :func:`StarPopulation.apply_cc`.
+        
+        :param rs:
+            Angular separation from target star, in arcsec.
+
+        :param dmags:
+            Magnitude contrast.
+
+        :param band:
+            Photometric bandpass in which observation is taken.
+
+        :param mag:
+            Magnitude of central star (rarely used?)
+
+        :param name:
+            Name; e.g., "PHARO J-band", "Keck AO", etc.
+            Should be a decent label.
+
+
+        """
         #if band=='K' or band=="K'":
         #    band = 'Ks'
 

@@ -24,7 +24,8 @@ except ImportError:
     KernelDensity = None
     GridSearchCV = None
     
-    
+
+        
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .fitebs import fitebs
@@ -980,16 +981,11 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
     :param lhoodcachefile: (optional)
         Likelihood calculation cache file.
 
-    :param **kwargs:
-        Additional keyword arguments passed to
-        :class:`stars.ColormatchMultipleStarPopulation`
-
-    currently doesn't work if mags is None.
     """
 
     def __init__(self, period=None, mags=None, mag_errs=None,
-                 starmodel=None,
                  Teff=None, logg=None, feh=None,
+                 starmodel=None,
                  band='Kepler', model='EBs', f_binary=0.4, n=2e4,
                  MAfn=None, lhoodcachefile=None, **kwargs):
 
@@ -1141,9 +1137,10 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
     :param period:
         Orbital period
 
-    :param mags:
-        Observed apparent magnitudes.  Won't work if this is
-        ``None``, which is the default.
+    :param mags,mag_errs:
+        Observed apparent magnitudes; uncertainties optional.  If
+        uncertainties not provided, :class:`Observed_TriplePopulation`
+        will default to uncertainties in all bands of 0.05 mag.
     :type mags:
         ``dict``
 
@@ -1178,16 +1175,11 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
     :param lhoodcachefile: (optional)
         Likelihood calculation cache file.
 
-    :param **kwargs:
-        Additional keyword arguments passed to
-        :class:`stars.ColormatchMultipleStarPopulation`
-
-    currently doesn't work if mags is None.
     """
 
     def __init__(self, period=None, mags=None, mag_errs=None,
-                 starmodel=None,
                  Teff=None, logg=None, feh=None,
+                 starmodel=None,
                  band='Kepler', model='HEBs', f_triple=0.12, n=2e4,
                  MAfn=None, lhoodcachefile=None, **kwargs):
 
