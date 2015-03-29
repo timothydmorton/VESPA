@@ -5,7 +5,7 @@ Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating f
 
 For usage and more info, `check out the documentation <http://vespa.rtfd.org>`_.
 
-If you use this code, please cite the follow paper::
+If you use this code, please cite the following paper::
 
     @ARTICLE{2012ApJ...761....6M,
     author = {{Morton}, T.~D.},
