@@ -17,31 +17,32 @@ from ..hashutils import hashcombine, hasharray
 from .constraints import FunctionLowerLimit
 
 class ContrastCurve(object):
+    """Object representing an imaging contrast curve
+
+    Usually accessed via :class:`ContrastCurveFromFile`
+    and then applied using :class:`ContrastCurveConstraint`,
+    e.g., through :func:`StarPopulation.apply_cc`.
+
+    :param rs:
+        Angular separation from target star, in arcsec.
+
+    :param dmags:
+        Magnitude contrast.
+
+    :param band:
+        Photometric bandpass in which observation is taken.
+
+    :param mag:
+        Magnitude of central star (rarely used?)
+
+    :param name:
+        Name; e.g., "PHARO J-band", "Keck AO", etc.
+        Should be a decent label.
+
+
+    """
     def __init__(self,rs,dmags,band,mag=None,name=None):
-        """Object representing an imaging contrast curve
 
-        Usually accessed via :class:`ContrastCurveFromFile`
-        and then applied using :class:`ContrastCurveConstraint`,
-        e.g., through :func:`StarPopulation.apply_cc`.
-        
-        :param rs:
-            Angular separation from target star, in arcsec.
-
-        :param dmags:
-            Magnitude contrast.
-
-        :param band:
-            Photometric bandpass in which observation is taken.
-
-        :param mag:
-            Magnitude of central star (rarely used?)
-
-        :param name:
-            Name; e.g., "PHARO J-band", "Keck AO", etc.
-            Should be a decent label.
-
-
-        """
         #if band=='K' or band=="K'":
         #    band = 'Ks'
 
@@ -119,6 +120,20 @@ class ContrastCurveConstraint(FunctionLowerLimit):
         logging.info('%s updated with new rsky values.' % self.name)
 
 class ContrastCurveFromFile(ContrastCurve):
+    """A contrast curve derived from a two-column file
+
+    :param filename:
+        Filename of contrast curve; first column separation in arcsec,
+        second column delta-mag.
+
+    :param band:
+        Bandpass of imaging observation.
+
+    :param mas:
+        Set to ``True`` if separation is in milliarcsec rather than
+        arcsec.
+
+    """
     def __init__(self,filename,band,mag=None, mas=False, **kwargs):
         rs,dmags = np.loadtxt(filename,unpack=True)
         if mas: #convert from milliarcsec
