@@ -5,6 +5,27 @@ Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating f
 
 For usage and more info, `check out the documentation <http://vespa.rtfd.org>`_.
 
+If you use this code, please cite the follow paper::
+
+    @ARTICLE{2012ApJ...761....6M,
+    author = {{Morton}, T.~D.},
+    title = "{An Efficient Automated Validation Procedure for Exoplanet Transit Candidates}",
+    journal = {\apj},
+    archivePrefix = "arXiv",
+    eprint = {1206.1568},
+    primaryClass = "astro-ph.EP",
+    keywords = {planetary systems, stars: statistics },
+    year = 2012,
+    month = dec,
+    volume = 761,
+    eid = {6},
+    pages = {6},
+    doi = {10.1088/0004-637X/761/1/6},
+    adsurl = {http://adsabs.harvard.edu/abs/2012ApJ...761....6M},
+    adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+    }
+
+
 Installation
 ------------
 
