@@ -20,6 +20,9 @@ Or you can clone the repository::
 
 The ``--user`` argument may be necessary if you don't have root privileges.
 
+Depends on typical scientific packages (e.g. `numpy`, `scipy`, `pandas`),
+as well as `isochrones <http://github.com/timothydmorton/isochrones>`_, and (in several corners of the code), another package of mine called `simpledist <http://github.com/timothydmorton/simpledist>`_.  All dependencies *should* get resolved upon install, though this has only been tested under the anaconda Python distribution, which has all the scientific stuff already well-organized.
+
 Attribution
 -----------
 
