@@ -1,8 +1,8 @@
+VESPA
+======
 .. image:: https://zenodo.org/badge/6253/timothydmorton/VESPA.svg   
     :target: http://dx.doi.org/10.5281/zenodo.16467
 
-VESPA
-======
 
 Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating false positive probabilities for transit signals
 
