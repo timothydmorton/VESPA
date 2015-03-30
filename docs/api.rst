@@ -3,7 +3,7 @@
 High-level API
 ===========
 
-.. module:: vespa
+.. py:currentmodule:: vespa
 
 This page details the top-level classes that provide access to the
 ``vespa`` module.  The simplest entry point into these calculations is
@@ -20,7 +20,7 @@ For more details on the guts of the objects that make up a
 FPPCalculation
 -----------------
 
-.. autoclass:: vespa.fpp.FPPCalculation
+.. autoclass:: vespa.FPPCalculation
    :members:
 
 PopulationSet
@@ -29,12 +29,12 @@ PopulationSet
 This object is essentially an organized list of
 :class:`EclipsePopulation` objects.  
 
-.. autoclass:: vespa.populations.PopulationSet
+.. autoclass:: vespa.PopulationSet
   :members:
 
 TransitSignal
 ----------------
 
-.. autoclass:: vespa.transitsignal.TransitSignal
+.. autoclass:: vespa.TransitSignal
   :members:
      

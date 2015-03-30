@@ -14,13 +14,12 @@ any questions or comments you may have about this code.
 
 .. note::
 
-   For some reason, the API links in this documentation mysteriously
-   stopped working (both on readthedocs and when I build on my local
-   machine, except for two submodules deep inside this
-   package--treasure hunt!).  So first, apologies for the
-   inconvenience, and second, if you have any idea why, or just want
-   to make some noise about this issue, please `chime in
-   <https://github.com/sphinx-doc/sphinx/issues/1803>`_.
+    I am still a bit new to making Sphinx documentation;
+    as such, I have not yet fully figured out how to make all the
+    inter-module API links work correctly...sorry for any
+    inconvenience!  Also, feel free to give me tips to make this
+    documentation work better.
+    
   
 
 .. toctree::

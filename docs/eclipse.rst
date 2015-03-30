@@ -3,7 +3,7 @@
 Eclipse Populations
 =============
 
-.. py:currentmodule:: vespa
+.. py:currentmodule:: vespa.populations
 
 All physical eclipse models proposed as potential explanations for
 an obseved transit signal are defined as :class:`EclipsePopulation`
