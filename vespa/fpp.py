@@ -209,9 +209,9 @@ class FPPCalculation(object):
                 raise AttributeError('If transit pickle file (trsig.pkl)'+
                                      'not present, "photfile" must be'+
                                      'defined.')
+            photfile = os.path.join(folder,config['photfile'])
             logging.info('Reading transit signal photometry ' +
                          'from {}...'.format(photfile))
-            photfile = os.path.join(folder,config['photfile'])
             try:
                 ts, fs, dfs = np.loadtxt(photfile, unpack=True)
             except:
