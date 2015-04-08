@@ -101,13 +101,12 @@ if __name__=='__main__':
     logger = None #dummy
             
     for folder in args.folders:
+        #initialize logger for this folder:
+
+        logfile = os.path.join(folder, 'run.log')
+        logger = initLogging(logfile, logger)
+
         try:
-
-            #initialize logger for this folder:
-
-            logfile = os.path.join(folder, 'run.log')
-            logger = initLogging(logfile, logger)
-
             inifile = os.path.join(folder, args.inifile)
 
             f = FPPCalculation.from_ini(inifile, recalc=args.recalc,
