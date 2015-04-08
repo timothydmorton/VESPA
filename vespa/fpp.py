@@ -209,7 +209,11 @@ class FPPCalculation(object):
                 raise AttributeError('If transit pickle file (trsig.pkl)'+
                                      'not present, "photfile" must be'+
                                      'defined.')
-            photfile = os.path.join(folder,config['photfile'])
+            if not os.path.isabs(config['photfile']):
+                photfile = os.path.join(folder,config['photfile'])
+            else:
+                photfile = config['photfile']
+
             logging.info('Reading transit signal photometry ' +
                          'from {}...'.format(photfile))
             try:
