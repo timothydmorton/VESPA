@@ -8,6 +8,8 @@ import cPickle as pickle
 
 from pkg_resources import resource_filename
 
+from configobj import ConfigObj
+
 from scipy.integrate import quad
 
 from astropy.coordinates import SkyCoord
@@ -413,6 +415,15 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
             os.mkdir(folder)
         super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
 
+
+def koi_config(koi, bands=['J','H','K']):
+    """creates a config object for given KOI
+    """
+
+    config = ConfigObj()
+
+    sig = JRowe_KeplerTransitSignal(koi)
+    
 
 ###############Exceptions################
 

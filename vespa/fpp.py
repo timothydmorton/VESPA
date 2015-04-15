@@ -265,8 +265,10 @@ class FPPCalculation(object):
         fpp = cls(trsig, popset, folder=folder)
 
         maxrad = float(config['constraints']['maxrad'])
+        secthresh = float(config['constraints']['secthresh'])
 
         fpp.set_maxrad(maxrad)
+        fpp.apply_secthresh(secthresh)
 
         #apply contrast curve constraints if present
         if 'ccfiles' in config['constraints']:
