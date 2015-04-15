@@ -1715,7 +1715,7 @@ class PopulationSet(object):
                 if fit_trap:
                     hebpop.fit_trapezoids(MAfn=MAfn)
                 if savefile is not None:
-                    hebpop.save_hdf(savefile, 'heb', append=True)
+                    hebpop.save_hdf(savefile, 'heb', overwrite=True)
             except:
                 logging.error('Error generating HEB population.')
                 if not hide_exceptions:
@@ -1746,7 +1746,7 @@ class PopulationSet(object):
                 if fit_trap:
                     bebpop.fit_trapezoids(MAfn=MAfn)
                 if savefile is not None:
-                    bebpop.save_hdf(savefile, 'beb', overwrite=True)
+                    bebpop.save_hdf(savefile, 'beb', append=True)
             except:
                 logging.error('Error generating BEB population.')
                 if not hide_exceptions:
