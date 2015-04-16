@@ -126,7 +126,7 @@ if __name__=='__main__':
                         'Results/plots written to {}.'.format(os.path.abspath(folder)))
 
             print('FPP for {}: {}'.format(f.name,f.FPP()))
-        except Warning:
+        except RuntimeWarning:
             pass
         except KeyboardInterrupt:
             raise
