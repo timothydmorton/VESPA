@@ -66,6 +66,7 @@ from isochrones import StarModel
 import warnings
 warnings.simplefilter("error")
 warnings.simplefilter("ignore", DeprecationWarning)
+warnings.simplefilter("ignore",RuntimeWarning)
 
 import logging
 
