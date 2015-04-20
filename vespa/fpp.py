@@ -23,7 +23,7 @@ from .plotutils import setfig
 from .hashutils import hashcombine
 
 try:
-    from isochrones import StarModel
+    from isochrones import StarModel, BinaryStarModel, TripleStarModel
 except ImportError:
     StarModel = None
 from .stars.populations import DARTMOUTH
@@ -71,12 +71,18 @@ class FPPCalculation(object):
             pop.lhoodcachefile = lhoodcachefile
 
     @classmethod
-    def from_ini(cls, ini_file='fpp.ini', recalc=False,
+    def from_ini(cls, folder='.',
+                 ini_file='fpp.ini', recalc=False,
+                 star_ini_file='star.ini', ichrone=DARTMOUTH,
                  **kwargs):
         """
         To enable simple usage, initializes a FPPCalculation from a .ini file
 
-        File must be of the following form::
+        By default, a file called ``fpp.ini`` will be looked for in the 
+        current folder.  Also present must be a ``star.ini`` file that 
+        contains the observed properties of the target star.
+
+        ``fpp.ini`` must be of the following form::
 
             name = k2oi
             ra = 11:30:14.510
@@ -86,14 +92,22 @@ class FPPCalculation(object):
             rprs = 0.0534   #Rp/Rstar
             photfile = lc_k2oi.csv
 
+            [constraints]
+            maxrad = 10 #exclusion radius [arcsec]
+            secthresh = 0.001 #maximum allowed secondary signal depth
+
             #This variable defines contrast curves
             #ccfiles = Keck_J.cc, Lick_J.cc
-                        
-            #Teff = 3503, 80
-            #feh = 0.09, 0.09
-            #logg = 4.89, 0.1
-            
-            [mags]
+
+        Photfile must be a text file with columns ``(days_from_midtransit,
+        flux, flux_err)``.  Both whitespace- and comma-delimited
+        will be tried, using ``np.loadtxt``.  Photfile need not be there
+        if there is a pickled :class:`TransitSignal` saved in the same
+        directory as ``ini_file``, named ``trsig.pkl`` (or another name
+        as defined by ``trsig`` keyword in ``.ini`` file). 
+
+        ``star.ini`` should look something like the following::
+
             B = 15.005, 0.06
             V = 13.496, 0.05
             g = 14.223, 0.05
@@ -107,34 +121,29 @@ class FPPCalculation(object):
             W3 = 8.552, 0.025
             Kepler = 12.473
 
-            [constraints]
-            maxrad = 10 #exclusion radius [arcsec]
+            #Teff = 3503, 80
+            #feh = 0.09, 0.09
+            #logg = 4.89, 0.1            
 
-        Photfile must be a text file with columns ``(days_from_midtransit,
-        flux, flux_err)``.  Both whitespace- and comma-delimited
-        will be tried, using ``np.loadtxt``.  Photfile need not be there
-        if there is a pickled :class:`TransitSignal` saved in the same
-        directory as ``ini_file``, named ``trsig.pkl`` (or another name
-        as defined by ``trsig`` keyword in ``.ini`` file). 
-
-        Any number of magnitudes can be defined; if errors are included
+        Any star properties can be defined; if errors are included
         then they will be used in a :class:`isochrones.StarModel` fit.
-
         Spectroscopic parameters (``Teff, feh, logg``) are optional.
         If included, then they will also be included in
         :class:`isochrones.StarModel` fit.
 
-        If ``starmodelfile`` is not provided, then :class:`isochrones.StarModel`
-        will be saved to ``starmodel.h5`` in the same directory as ``fpp.ini``;
-        If ``popsetfile`` is not provided, it will be saved to ``popset.h5``,
-        in the same directory.  
-        
+
+        :param folder: 
+            Folder to find configuration files.
 
         :param ini_file:
             Input configuration file.
 
+        :param star_ini_file:
+            Input config file for :class:`isochrones.StarModel` fits.
+
         :param recalc:
-            Whether to re-calculate :class:`PopulationSet`.  
+            Whether to re-calculate :class:`PopulationSet`, if a
+            ``popset.h5`` file is already present
 
         :param **kwargs:
             Keyword arguments passed to :class:`PopulationSet`.
@@ -148,56 +157,93 @@ class FPPCalculation(object):
               representing the model population simulations.
                     
         """        
-        config = ConfigObj(ini_file)
-
-        #all files will be relative to this
-        folder = os.path.abspath(os.path.dirname(ini_file))
         
+        if not os.path.isabs(ini_file):
+            config = ConfigObj(os.path.join(folder,ini_file))
+        else:
+            config = ConfigObj(ini_file)
+
+        folder = os.path.abspath(folder)
+
         #required items
         name = config['name']
         ra, dec = config['ra'], config['dec']
         period = float(config['period'])
         rprs = float(config['rprs'])
         
-        mags = {k:(float(v[0]) if len(v)==2 else float(v))
-                for k,v in config['mags'].items()}
-        mag_err = {k: float(v[1]) for k,v in config['mags'].items()
-                   if len(v)==2}
-
-        #optional
-        Teff = config['Teff'] if 'Teff' in config else None
-        feh = config['feh'] if 'feh' in config else None
-        logg = config['logg'] if 'logg' in config else None
-
-        #Load filenames if other than default;
-        # if not absolute paths; make them relative 
-        if 'starmodel' in config:
-            starmodel_file = config['starmodel']
-            if not os.path.isabs(starmodel_file):
-                starmodel_file = os.path.join(folder, starmodel_file)
+        #load starmodels if there; 
+        # if not, create them.
+        if 'starmodel_basename' not in config:
+            starmodel_basename = 'dartmouth_starmodel'
         else:
-            starmodel_file = os.path.join(folder,'starmodel.h5')
+            starmodel_basename = config['starmodel_basename']
+        single_starmodel_file = os.path.join(folder,'{}_single.h5'.format(starmodel_basename))
+        binary_starmodel_file = os.path.join(folder,'{}_binary.h5'.format(starmodel_basename))
+        triple_starmodel_file = os.path.join(folder,'{}_triple.h5'.format(starmodel_basename))
 
+        #Single
+        try:
+            single_starmodel = StarModel.load_hdf(single_starmodel_file)
+            logging.info('Single StarModel loaded from {}'.format(single_starmodel_file))
+        except:
+            starmodel = StarModel.from_ini(ichrone, folder, 
+                                           ini_file=star_ini_file)
+            logging.info('Fitting single StarModel to {}...'.format(starmodel.properties))
+            starmodel.fit_mcmc()
+            starmodel.save_hdf(single_starmodel_file)
+            triangle_base = os.path.join(folder, '{}_triangle_single'.format(starmodel_basename))
+            starmodel.triangle_plots(triangle_base)
+            logging.info('StarModel fit done.')
+
+        #Binary
+        try:
+            binary_starmodel = BinaryStarModel.load_hdf(binary_starmodel_file)
+            logging.info('BinaryStarModel loaded from {}'.format(binary_starmodel_file))
+        except:
+            binary_starmodel = BinaryStarModel.from_ini(ichrone, folder,
+                                                        ini_file=star_ini_file)
+            logging.info('Fitting BinaryStarModel to {}...'.format(binary_starmodel.properties))
+            binary_starmodel.fit_mcmc()
+            binary_starmodel.save_hdf(binary_starmodel_file)
+            triangle_base = os.path.join(folder, '{}_triangle_binary'.format(starmodel_basename))
+            binary_starmodel.triangle_plots(triangle_base)
+            logging.info('BinaryStarModel fit done.')
+
+        #Triple
+        try:
+            triple_starmodel = TripleStarModel.load_hdf(triple_starmodel_file)
+            logging.info('TripleStarModel loaded from {}'.format(triple_starmodel_file))
+        except:
+            triple_starmodel = TripleStarModel.from_ini(ichrone, folder,
+                                                        ini_file=star_ini_file)
+            logging.info('Fitting TripleStarModel to {}...'.format(triple_starmodel.properties))
+            triple_starmodel.fit_mcmc()
+            triple_starmodel.save_hdf(triple_starmodel_file)
+            triangle_base = os.path.join(folder, '{}_triangle_triple'.format(starmodel_basename))
+            triple_starmodel.triangle_plots(triangle_base)
+            logging.info('TripleStarModel fit done.')
+
+                
         if 'popset' in config:
             popset_file = config['popset']
-        else:
-            popset_file = os.path.join(folder,'popset.h5')
             if not os.path.isabs(popset_file):
                 popset_file = os.path.join(folder, popset_file)
+        else:
+            popset_file = os.path.join(folder,'popset.h5')
 
         if 'starfield' in config:
             trilegal_file = config['starfield']
-        else:
-            trilegal_file = os.path.join(folder,'starfield.h5')
             if not os.path.isabs(trilegal_file):
                 trilegal_file = os.path.join(folder, trilegal_file)
+        else:
+            trilegal_file = os.path.join(folder,'starfield.h5')
 
         if 'trsig' in config:
             trsig_file = config['trsig']
-        else:
-            trsig_file = os.path.join(folder,'trsig.pkl')
             if not os.path.isabs(trsig_file):
                 trsig_file = os.path.join(folder, trsig_file)
+        else:
+            trsig_file = os.path.join(folder,'trsig.pkl')
         
             
         #create TransitSignal
@@ -206,7 +252,7 @@ class FPPCalculation(object):
             trsig = pickle.load(open(trsig_file,'rb'))
         else:
             if 'photfile' not in config:
-                raise AttributeError('If transit pickle file (trsig.pkl)'+
+                raise AttributeError('If transit pickle file (trsig.pkl) '+
                                      'not present, "photfile" must be'+
                                      'defined.')
             if not os.path.isabs(config['photfile']):
@@ -226,26 +272,6 @@ class FPPCalculation(object):
             trsig.MCMC()
             trsig.save(trsig_file)
                         
-        #create StarModel--- make this recalculate
-        # if props don't match existing ones?
-        try:
-            starmodel = StarModel.load_hdf(starmodel_file)
-            logging.info('Starmodel loaded from {}.'.format(starmodel_file))
-        except:
-            props = {b:(mags[b], mag_err[b]) for b in mag_err.keys()}
-            if Teff is not None:
-                props['Teff'] = Teff
-            if feh is not None:
-                props['feh'] = feh
-            if logg is not None:
-                props['logg'] = logg
-
-            logging.info('Fitting StarModel to {}...'.format(props))
-            starmodel = StarModel(DARTMOUTH, **props)
-            starmodel.fit_mcmc()
-            starmodel.save_hdf(starmodel_file)
-            logging.info('StarModel fit done.')
-
         #create PopulationSet
         try:
             if recalc:
@@ -254,10 +280,12 @@ class FPPCalculation(object):
             popset['pl'] #should there be a better way to check this? (yes)
             logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
-            popset = PopulationSet(period=period, mags=mags,
+            popset = PopulationSet(period=period, mags=single_starmodel.mags,
                                    ra=ra, dec=dec,
                                    trilegal_filename=trilegal_file,
-                                   starmodel=starmodel,
+                                   starmodel=single_starmodel,
+                                   binary_starmodel=binary_starmodel,
+                                   triple_starmodel=triple_starmodel,
                                    rprs=rprs,
                                    savefile=popset_file, **kwargs)
             

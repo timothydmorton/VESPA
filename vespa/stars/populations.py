@@ -1682,11 +1682,6 @@ class Observed_BinaryPopulation(BinaryPopulation):
                                   ecc=ecc, **kwargs)
 
 
-    @property
-    def _properties(self):
-        return ['mags','mag_errs','Teff','logg','feh'] + \
-            super(Observed_BinaryPopulation, self)._properties
-
     def save_hdf(self, filename, path='', **kwargs):
         super(Observed_BinaryPopulation,self).save_hdf(filename, path=path, **kwargs)
         self.starmodel.save_hdf(filename, path='{}/starmodel'.format(path), append=True)
@@ -1697,6 +1692,10 @@ class Observed_BinaryPopulation(BinaryPopulation):
         pop.starmodel = BinaryStarModel.load_hdf(filename, 
                                                   path='{}/starmodel'.format(path))
         return pop
+
+    def __getattr__(self, attr):
+        if attr != 'starmodel':
+            return getattr(self.starmodel, attr)
 
 class Observed_TriplePopulation(TriplePopulation):
     """
@@ -1811,11 +1810,6 @@ class Observed_TriplePopulation(TriplePopulation):
                                   orbpop=orbpop, period_short=period,
                                   ecc_short=ecc, **kwargs)
 
-    @property
-    def _properties(self):
-        return ['mags','mag_errs','Teff','logg','feh'] + \
-            super(Observed_TriplePopulation, self)._properties
-
     def save_hdf(self, filename, path='', **kwargs):
         super(Observed_TriplePopulation,self).save_hdf(filename, path=path, **kwargs)
         self.starmodel.save_hdf(filename, path='{}/starmodel'.format(path), append=True)
@@ -1827,6 +1821,10 @@ class Observed_TriplePopulation(TriplePopulation):
                                                   path='{}/starmodel'.format(path))
         return pop
     
+    def __getattr__(self, attr):
+        if attr != 'starmodel':
+            return getattr(self.starmodel, attr)
+
 
 class MultipleStarPopulation(TriplePopulation):
     """A population of single, double, and triple stars, generated according to prescription.
