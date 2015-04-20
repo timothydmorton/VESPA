@@ -186,13 +186,13 @@ class FPPCalculation(object):
             single_starmodel = StarModel.load_hdf(single_starmodel_file)
             logging.info('Single StarModel loaded from {}'.format(single_starmodel_file))
         except:
-            starmodel = StarModel.from_ini(ichrone, folder, 
+            single_starmodel = StarModel.from_ini(ichrone, folder, 
                                            ini_file=star_ini_file)
-            logging.info('Fitting single StarModel to {}...'.format(starmodel.properties))
-            starmodel.fit_mcmc()
-            starmodel.save_hdf(single_starmodel_file)
+            logging.info('Fitting single StarModel to {}...'.format(single_starmodel.properties))
+            single_starmodel.fit_mcmc()
+            single_starmodel.save_hdf(single_starmodel_file)
             triangle_base = os.path.join(folder, '{}_triangle_single'.format(starmodel_basename))
-            starmodel.triangle_plots(triangle_base)
+            single_starmodel.triangle_plots(triangle_base)
             logging.info('StarModel fit done.')
 
         #Binary
