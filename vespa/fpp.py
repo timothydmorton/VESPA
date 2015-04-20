@@ -126,10 +126,13 @@ class FPPCalculation(object):
             #logg = 4.89, 0.1            
 
         Any star properties can be defined; if errors are included
-        then they will be used in a :class:`isochrones.StarModel` fit.
+        then they will be used in the :class:`isochrones.StarModel` 
+        MCMC fit.
         Spectroscopic parameters (``Teff, feh, logg``) are optional.
         If included, then they will also be included in
-        :class:`isochrones.StarModel` fit.
+        :class:`isochrones.StarModel` fit.  A magnitude for the
+        band in which the transit signal is observed (e.g., ``Kepler``)
+        is required, though need not have associated uncertainty.
 
 
         :param folder: 
