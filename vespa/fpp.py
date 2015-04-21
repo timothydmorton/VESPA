@@ -286,6 +286,7 @@ class FPPCalculation(object):
             if os.path.exists(popset_file):
                 logging.warning('{} exists, but regenerating Population Set...'.format(popset_file),
                                 exc_info=True)
+
             popset = PopulationSet(period=period, mags=single_starmodel.mags,
                                    ra=ra, dec=dec,
                                    trilegal_filename=trilegal_file,

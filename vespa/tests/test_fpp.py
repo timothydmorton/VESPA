@@ -5,11 +5,10 @@ from vespa.fpp import FPPCalculation
 
 import pkg_resources
 
-INI_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__),
-                                'fpp.ini'))
+FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 
-def test_fpp(ini_file=INI_FILE):
-    f = FPPCalculation.from_ini(ini_file, n=100)
+def test_fpp(folder=FOLDER):
+    f = FPPCalculation.from_ini(folder, n=100)
     f.FPP()
 
 
