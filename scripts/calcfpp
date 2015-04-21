@@ -64,7 +64,7 @@ import argparse
 import logging
 
 from vespa import FPPCalculation
-from isochrones import StarModel
+from isochrones import StarModel, BinaryStarModel, TripleStarModel
 
 import warnings
 warnings.simplefilter("error")
@@ -119,14 +119,19 @@ if __name__=='__main__':
                                         n=args.n)
             f.FPPplots()
 
-            starmodel_file = os.path.join(folder, 'starmodel.h5')
-            triangle_file1 = os.path.join(folder, 'starmodel_triangle_physical.png')
-            triangle_file2 = os.path.join(folder, 'starmodel_triangle_observed.png')
-            if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
-                logger.info('Making StarModel triangle plots...')
-                starmodel = StarModel.load_hdf(starmodel_file)
-                triangle_base = os.path.join(folder, 'starmodel_triangle')
-                starmodel.triangle_plots(triangle_base)
+            for mult,Model in zip(['single','binary','triple'],
+                                  [StarModel, BinaryStarModel, TripleStarModel]):
+                starmodel_file = os.path.join(folder, 'dartmouth_starmodel_{}.h5'.format(mult))
+                triangle_file1 = os.path.join(folder, 
+                                              'dartmouth_starmodel_triangle_{}_physical.png'.format(mult))
+                triangle_file2 = os.path.join(folder, 
+                                              'dartmouth_starmodel_triangle_{}_observed.png'.format(mult))
+                if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
+                    logger.info('Making StarModel triangle plots...')
+                    starmodel = Model.load_hdf(starmodel_file)
+                    triangle_base = os.path.join(folder, 
+                                                 'dartmouth_starmodel_triangle_{}'.format(mult))
+                    starmodel.triangle_plots(triangle_base)
 
             logger.info('FPP calculation successful. ' + 
                         'Results/plots written to {}.'.format(os.path.abspath(folder)))
