@@ -283,6 +283,8 @@ class FPPCalculation(object):
             popset['pl'] #should there be a better way to check this? (yes)
             logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
+            if os.path.exists(popset_file):
+                logging.warning('{} exists, but regenerating Population Set...'.format(popset_file))
             popset = PopulationSet(period=period, mags=single_starmodel.mags,
                                    ra=ra, dec=dec,
                                    trilegal_filename=trilegal_file,
