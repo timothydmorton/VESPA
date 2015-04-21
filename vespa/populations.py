@@ -939,7 +939,8 @@ class PlanetPopulation(EclipsePopulation):
         pop = super(PlanetPopulation, cls).load_hdf(filename, path=path)
         pop.starmodel = StarModel.load_hdf(filename, 
                                            path='{}/starmodel'.format(path))
-    
+        return pop
+
 class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
     """Population of Eclipsing Binaries (undiluted)
 
