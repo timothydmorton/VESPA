@@ -24,7 +24,7 @@ except ImportError:
     KernelDensity = None
     GridSearchCV = None
     
-
+from isochrones import StarModel
         
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
@@ -919,6 +919,8 @@ class PlanetPopulation(EclipsePopulation):
             
         priorfactors = {'fp_specific':fp_specific}
 
+        self.starmodel = starmodel
+
         EclipsePopulation.__init__(self, stars=stars,
                                    period=self.period, model=self.model,
                                    priorfactors=priorfactors, prob=tot_prob,
@@ -928,6 +930,15 @@ class PlanetPopulation(EclipsePopulation):
         return ['rprs', 'Teff', 'logg'] + \
             super(PlanetPopulation, self)._properties
 
+    def save_hdf(self, filename, path='', **kwargs):
+        super(PlanetPopulation, self).save_hdf(filename, path=path, **kwargs)
+        self.starmodel.save_hdf(filename, path='{}/starmodel'.format(path), append=True)
+
+    @classmethod
+    def load_hdf(cls, filename, path=''):
+        pop = super(PlanetPopulation, cls).load_hdf(filename, path=path)
+        pop.starmodel = StarModel.load_hdf(filename, 
+                                           path='{}/starmodel'.format(path))
     
 class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
     """Population of Eclipsing Binaries (undiluted)
