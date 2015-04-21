@@ -845,7 +845,7 @@ class PlanetPopulation(EclipsePopulation):
                 u1,u2 = ldcoeffs(Teff, logg)
             
         #use point estimate of rprs to construct planets in radius bin
-        rp = self.rprs*radius.mean()
+        rp = self.rprs*np.median(radius)
         rbin_min = (1-rbin_width)*rp
         rbin_max = (1+rbin_width)*rp
         radius_p = np.random.random(int(1e5))*(rbin_max - rbin_min) + rbin_min
