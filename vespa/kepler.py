@@ -21,6 +21,9 @@ from .transitsignal import TransitSignal
 from .populations import PopulationSet
 from .populations import fp_fressin
 from .fpp import FPPCalculation
+
+from .stars import get_AV_infinity
+
 from keputils.koiutils import koiname
 from keputils import koiutils as ku
 from keputils import kicutils as kicu
@@ -34,6 +37,8 @@ JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
 
 KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
 STARFIELD_DIR = os.path.join(KOI_FPPDIR, 'starfields')
+STARMODEL_DIR = os.path.join(KOI_FPPDIR, 'starmodels')
+
 
 CHIPLOC_FILE = resource_filename('vespa','data/kepler_chiplocs.txt')
 
@@ -416,14 +421,75 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
 
 
-def koi_config(koi, bands=['J','H','K']):
-    """creates a config object for given KOI
-    """
 
+def star_config(koi, bands=['J','H','K'], unc=0.02,
+                write=True):
+    """returns star config object for given KOI
+    """
     config = ConfigObj()
 
+    koi = ku.koiname(koi)
+
+    maxAV = get_AV_infinity(*ku.radec(koi))
+
+    mags = ku.KICmags(koi)
+    for band in bands:
+        config[band] = (mags[band], unc)
+    config['Kepler'] = mags['Kepler']
+
+    kepid = ku.DATA.ix[koi,'kepid']
+    if re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov']):
+        config['Teff'] = (kicu.DATA.ix[kepid, 'teff'],
+                          kicu.DATA.ix[kepid, 'teff_err1'])
+        config['feh'] = (kicu.DATA.ix[kepid, 'feh'],
+                         kicu.DATA.ix[kepid, 'feh_err1'])
+        try:
+            config['logg'] = (kicu.DATA.ix[kepid, 'logg'],
+                              kicu.DATA.ix[kepid, 'logg_err1'])
+        except:
+            pass
+
+
+    config['maxAV'] = maxAV
+
+    if write:
+        folder = os.path.join(KOI_FPPDIR, koi)
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        config.filename = os.path.join(folder,
+                                       'star.ini')
+        config.write()
+
+    return config
+
+def fpp_config(koi):
+    """returns config object for given KOI
+    """
+    koi = ku.koiname(koi)
+
     sig = JRowe_KeplerTransitSignal(koi)
+
+    config = ConfigObj()
+    config['name'] = koi
+    ra,dec = ku.radec(koi)
+    config['ra'] = ra
+    config['dec'] = dec
+    config['rprs'] = sig.rowefit.ix['RD1','val']
+    config['period'] = ku.DATA.ix[koi, 'koi_period']
     
+    config['maxrad'] = default_r_exclusion(koi)
+    try:
+        config['secthresh'] = pipeline_weaksec(koi)
+    except NoWeakSecondaryError:
+        pass
+
+    folder = os.path.join(KOI_FPPDIR, koi)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+        
+    config.filename = os.path.join(folder, 'fpp.ini')
+    config.write()
 
 ###############Exceptions################
 
