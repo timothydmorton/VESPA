@@ -8,8 +8,18 @@ import cPickle as pickle
 import numpy as np
 import pandas as pd
 
-from vespa.kepler import star_config, fpp_config
+from vespa.kepler import setup_fpp
 
 if __name__=='__main__':
     
-    parser = argparse.ArgumentParser(description='
+    parser = argparse.ArgumentParser(description='set up FPP calculation(s) for given KOI(s)')
+    parser.add_argument('kois', nargs='+', help='KOIs to config')
+
+    args = parser.parse_args()
+
+    for koi in args.kois:
+        try:
+            setup_fpp(koi)
+        except:
+            logging.error('Error with writing config setup for {}.'.format(koi),
+                          exc_info=True)
