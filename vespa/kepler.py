@@ -534,7 +534,8 @@ def setup_fpp(koi, bands=['g','r','i','z','J','H','K'],
     trsig_file = os.path.join(folder,'trsig.pkl')
     if not os.path.exists(trsig_file) or\
             trsig_overwrite:
-        sig = JRowe_KeplerTransitSignal(koi, **trsig_kws)
+        sig = JRowe_KeplerTransitSignal(koi, refit_mcmc=True,
+                                        **trsig_kws)
         sig.save(os.path.join(folder,'trsig.pkl'))
 
     star = star_config(koi, bands=bands, unc=unc, **star_kws)
