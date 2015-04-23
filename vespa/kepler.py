@@ -520,13 +520,22 @@ def fpp_config(koi, **kwargs):
 def setup_fpp(koi, bands=['g','r','i','z','J','H','K'], 
               unc=dict(g=0.05, r=0.05, i=0.05, z=0.05,
                        J=0.02, H=0.02, K=0.02), 
-              star_kws=None, fpp_kws=None, trsig_kws=None):
+              star_kws=None, fpp_kws=None, trsig_kws=None,
+              trsig_overwrite=False):
     if star_kws is None:
         star_kws = {}
     if fpp_kws is None:
         fpp_kws = {}
     if trsig_kws is None:
         trsig_kws = {}
+        
+    #save transit signal
+    folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
+    trsig_file = os.path.join(folder,'trsig.pkl')
+    if not os.path.exists(trsig_file) or\
+            trsig_overwrite:
+        sig = JRowe_KeplerTransitSignal(koi, **trsig_kws)
+        sig.save(os.path.join(folder,'trsig.pkl'))
 
     star = star_config(koi, bands=bands, unc=unc, **star_kws)
     fpp = fpp_config(koi, **fpp_kws)
@@ -534,9 +543,6 @@ def setup_fpp(koi, bands=['g','r','i','z','J','H','K'],
     star.write()
     fpp.write()
 
-    sig = JRowe_KeplerTransitSignal(koi, **trsig_kws)
-    folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
-    sig.save(os.path.join(folder,'trsig.pkl'))
 
 
 ###############Exceptions################
