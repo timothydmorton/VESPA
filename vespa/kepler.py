@@ -446,7 +446,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
 
 def star_config(koi, bands=['g','r','i','z','J','H','K'], 
                 unc=dict(g=0.05, r=0.05, i=0.05, z=0.05,
-                         J=0.02, H=0.02, K=0.02)):
+                         J=0.02, H=0.02, K=0.02), **kwargs):
 
     """returns star config object for given KOI
     """
@@ -480,9 +480,12 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
 
     config['maxAV'] = maxAV
 
+    for kw,val in kwargs.items():
+        config[kw] = val
+
     return config
 
-def fpp_config(koi):
+def fpp_config(koi, **kwargs):
     """returns config object for given KOI
     """
     folder = os.path.join(KOI_FPPDIR, koi)
@@ -509,12 +512,32 @@ def fpp_config(koi):
 
     config['starfield'] = kepler_starfield_file(koi)
 
+    for kw,val in kwargs.items():
+        config[kw] = val
+
     return config
 
 def setup_fpp(koi, bands=['g','r','i','z','J','H','K'], 
               unc=dict(g=0.05, r=0.05, i=0.05, z=0.05,
-                       J=0.02, H=0.02, K=0.02)):
-    
+                       J=0.02, H=0.02, K=0.02), 
+              star_kws=None, fpp_kws=None, trsig_kws=None):
+    if star_kws is None:
+        star_kws = {}
+    if fpp_kws is None:
+        fpp_kws = {}
+    if trsig_kws is None:
+        trsig_kws = {}
+
+    star = star_config(koi, bands=bands, unc=unc, **star_kws)
+    fpp = fpp_config(koi, **fpp_kws)
+
+    star.write()
+    fpp.write()
+
+    sig = JRowe_KeplerTransitSignal(koi, **trsig_kws)
+    folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
+    sig.save(os.path.join(folder,'trsig.pkl'))
+
 
 ###############Exceptions################
 
