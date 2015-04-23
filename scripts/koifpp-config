@@ -14,12 +14,14 @@ if __name__=='__main__':
     
     parser = argparse.ArgumentParser(description='set up FPP calculation(s) for given KOI(s)')
     parser.add_argument('kois', nargs='+', help='KOIs to config')
+    parser.add_argument('--trsig_overwrite', action='store_true',
+                        help='flag to re-fit transit signal')
 
     args = parser.parse_args()
 
     for koi in args.kois:
         try:
-            setup_fpp(koi)
+            setup_fpp(koi, trsig_overwrite=args.trsig_overwrite)
         except:
             logging.error('Error with writing config setup for {}.'.format(koi),
                           exc_info=True)
