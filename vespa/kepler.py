@@ -53,6 +53,7 @@ WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
 
 MAXAV = pd.read_table(os.path.join(DATAFOLDER,
                                    'koi_maxAV.txt'),
+                      delim_whitespace=True,
                       names=['koi','maxAV'])
 MAXAV.index = MAXAV['koi']
 
