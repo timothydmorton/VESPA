@@ -446,7 +446,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         phs = (Ms - Mcenter) / (2*np.pi)
         ts = phs*P
         
-        logging.debug('{} in-transit points simulated'.format(len(ts)))
+        #logging.debug('{} in-transit points simulated'.format(len(ts)))
 
         return ts,zs
     
