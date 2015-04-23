@@ -28,9 +28,9 @@ from keputils.koiutils import koiname
 from keputils import koiutils as ku
 from keputils import kicutils as kicu
 
-from simpledist import distributions as dists
+#from simpledist import distributions as dists
 
-import kplr
+#import kplr
 
 KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
