@@ -43,7 +43,8 @@ STARMODEL_DIR = os.path.join(KOI_FPPDIR, 'starmodels')
 CHIPLOC_FILE = resource_filename('vespa','data/kepler_chiplocs.txt')
 
 #temporary, only local solution
-CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
+#CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
+CHAINSDIR = os.path.join(KOI_FPPDIR, 'trap_chains')
 
 DATAFOLDER = resource_filename('vespa','data')
 WEAKSECFILE = os.path.join(DATAFOLDER, 'weakSecondary_socv9p2vv.csv')
