@@ -1,7 +1,7 @@
 from __future__  import print_function, division
 import numpy as np
 import pandas as pd
-import os, os.path
+import os, os.path, shutil
 import re
 import logging
 import cPickle as pickle
@@ -441,8 +441,12 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         folder = '%s/%s' % (CHAINSDIR,self.name)
         if not os.path.exists(folder):
             os.makedirs(folder)
-        super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
-
+        try:
+            super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
+        except IOError:
+            shutil.rmtree(folder)
+            os.makedirs(folder)
+            super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)            
 
 
 def star_config(koi, bands=['g','r','i','z','J','H','K'], 
