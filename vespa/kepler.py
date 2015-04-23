@@ -305,12 +305,13 @@ class KeplerTransitSignal(TransitSignal):
         # kois, etc., etc.
         
 def jrowe_fit(koi):
-    folder = os.path.join(JROWE_DIR,
-                         str(koiname(koi, star=True, koinum=True)))
-    num = np.round(koiname(koi,koinum=True) % 1 * 100)
-    fitfile = os.path.join(folder, 'n{}.dat'.format(num))
+    koinum = koiname(koi, star=True, koinum=True)
+    folder = os.path.join(JROWE_DIR, 'koi{}.n'.format(koinum))
 
-    logging.debug('JRowe fitfile: {}'.format(self.rowefitfile))    
+    num = np.round(koiname(koi,koinum=True) % 1 * 100)
+    fitfile = os.path.join(folder, 'n{:.0f}.dat'.format(num))
+
+    logging.debug('JRowe fitfile: {}'.format(fitfile))    
 
     return pd.read_table(fitfile,index_col=0,usecols=(0,1,3),
                          names=['par','val','a','err','c'],
@@ -450,7 +451,7 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
 
     """returns star config object for given KOI
     """
-    folder = os.path.join(KOI_FPPDIR, koi)
+    folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
     if not os.path.exists(folder):
         os.makedirs(folder)
 
@@ -488,7 +489,7 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
 def fpp_config(koi, **kwargs):
     """returns config object for given KOI
     """
-    folder = os.path.join(KOI_FPPDIR, koi)
+    folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
     if not os.path.exists(folder):
         os.makedirs(folder)
     config = ConfigObj(os.path.join(folder,'fpp.ini'))
