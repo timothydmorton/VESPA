@@ -306,7 +306,7 @@ class KeplerTransitSignal(TransitSignal):
         
 def jrowe_fit(koi):
     folder = os.path.join(JROWE_DIR,
-                         koiname(koi, star=True, koinum=True))
+                         str(koiname(koi, star=True, koinum=True)))
     num = np.round(koiname(koi,koinum=True) % 1 * 100)
     fitfile = os.path.join(folder, 'n{}.dat'.format(num))
 
