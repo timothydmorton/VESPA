@@ -352,7 +352,7 @@ def a_over_Rs(P,R2,M2,M1=1,R1=1,planet=True):
         R2 *= MEARTH/MSUN
     return semimajor(P,M1+M2)*AU/(R1*RSUN)
 
-def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=False):
+def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
     """Returns ts and zs for an eclipse (npts points right around the eclipse)
 
     
@@ -396,7 +396,11 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         #    width = 5
         
     if new:
-        Ms = np.linspace(-np.pi,np.pi,2e3)
+        n = 2e3 
+        #need to scale this to higher resolution for longer-period eclipses
+        #shoot for npts in transit
+
+        Ms = np.linspace(-np.pi,np.pi,n)
         if ecc != 0:
             Es = Efn(Ms,ecc) #eccentric anomalies
         else:
@@ -404,6 +408,9 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         zs,in_eclipse = find_eclipse(Es,b,aR,ecc,w,width,sec)
 
         if in_eclipse.sum() < 2:
+            logging.debug('no eclipse because fewer than 2 points '+
+                          'in eclipse. [Es,b,aR,ecc,w,width,sec] = ' +
+                          '{}'.format([Es,b,aR,ecc,w,width,sec]))
             raise NoEclipseError
 
         wecl = np.where(in_eclipse)
@@ -433,6 +440,9 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         Mcenter = Ms[zs.argmin()]
         phs = (Ms - Mcenter) / (2*np.pi)
         ts = phs*P
+        
+        logging.debug('{} in-transit points simulated'.format(len(ts)))
+
         return ts,zs
     
     if not approx:
@@ -465,6 +475,8 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
             subMs[np.where(subMs < 0)] += 2*np.pi
 
         if np.size(subMs)<2:
+            logging.debug('no eclipse because fewer than 2 points '+
+                          'in subMs.  Look into this...')                              
             logging.error(subMs)
             raise NoEclipseError
 
@@ -504,7 +516,9 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         fmin = -arcsin(1./aR*sqrt(width**2 - b**2)/sin(inc))
         fmax = arcsin(1./aR*sqrt(width**2 - b**2)/sin(inc))
         if isnan(fmin) or isnan(fmax):
-            raise NoEclipseError('no eclipse:  P=%.2f, b=%.3f, aR=%.2f, ecc=%0.2f, w=%.1f' % (P,b,aR,ecc,w))
+            logging.debug('No eclipse in approximate calculation. ' +
+                          'P=%.2f, b=%.3f, aR=%.2f, ecc=%0.2f, w=%.1f' % (P,b,aR,ecc,w))
+            raise NoEclipseError
         fs = linspace(fmin,fmax,npts)
         if sec:
             ts = fs*P/2./pi * sqrt(1-ecc**2)/(1 - ecc*sin(w)) #approximation of constant angular velocity
@@ -531,7 +545,7 @@ def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
         p0 = R2/R1
     return p0,b,aR
 
-def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=False):
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
     """Returns ts, fs of simulated eclipse.
 
 
@@ -575,7 +589,8 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
         Whether to approximate solution to Kepler's equation or not.
 
     :param new: (optional)
-        Meaningless relic.
+        Meaningless relic [or not??].  Apparently this is in practice
+        ``True`` by default.
 
 
     :return ts,fs:
@@ -587,15 +602,16 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
         ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
                            sec=sec,dt=dt,approx=approx,new=new)
         if zs.min() > (1 + 1/p0):
-            #logging.debug('ts: {}'.format(ts))
-            #logging.debug('zs: {}'.format(zs))
+            logging.debug('no eclipse because min z is greater than 1 + 1/p0: ' +
+                          '[P,b/p0,aR/p0,ecc,w] = {}'.format([P,b/p0,aR/p0,ecc,w]))                         
             raise NoEclipseError
     else:
         ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
                            sec=sec,dt=dt,approx=approx,new=new)
         if zs.min() > (1+p0):
-            #logging.debug('ts: {}'.format(ts))
-            #logging.debug('zs: {}'.format(zs))
+            logging.debug('no eclipse (secondary) because min z is greater ' +
+                          'than 1 + 1/p0: ' +
+                          '[P,b,aR,ecc,w] = {}'.format([P,b,aR,ecc,w]))
             raise NoEclipseError
         
     if MAfn is None:
