@@ -53,7 +53,8 @@ WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
 
 MAXAV = pd.read_table(os.path.join(DATAFOLDER,
                                    'koi_maxAV.txt'),
-                      index_col=0, names=['koi','maxAV'])
+                      names=['koi','maxAV'])
+MAXAV.index = MAXAV['koi']
 
 import astropy.constants as const
 G = const.G.cgs.value
