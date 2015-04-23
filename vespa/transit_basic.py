@@ -396,9 +396,10 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         #    width = 5
         
     if new:
-        n = 2e3 
-        #need to scale this to higher resolution for longer-period eclipses
-        #shoot for npts in transit
+        #finding the mean anomaly boundaries of the eclipse
+
+        #shoot for at least 100 pts in transit
+        n = 100 * (np.pi * aR)
 
         Ms = np.linspace(-np.pi,np.pi,n)
         if ecc != 0:
