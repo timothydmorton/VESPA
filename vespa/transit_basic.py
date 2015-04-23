@@ -429,8 +429,12 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         minM,maxM = (subMs.min(),subMs.max())
         #logging.debug('minM: {}, maxM: {}'.format(minM,maxM))
 
-        dM = 2*np.pi*dt/(P*24*60)   #the spacing in mean anomaly that corresponds to dt (minutes)
-        Ms = np.arange(minM,maxM+dM,dM)
+
+        #dM = 2*np.pi*dt/(P*24*60)   #the spacing in mean anomaly that corresponds to dt (minutes)
+        #Ms = np.arange(minM,maxM+dM,dM)
+
+        Ms = np.linspace(minM, maxM, npts) #npts desired in transit, rather than using dt
+
         if ecc != 0:
             Es = Efn(Ms,ecc) #eccentric anomalies
         else:
