@@ -116,10 +116,7 @@ def default_r_exclusion(koi,rmin=0.5):
     return r_excl
 
 def koi_maxAV(koi):
-    try:
-        maxAV = MAXAV.ix[ku.koistar(koi),'maxAV']
-    except KeyError:
-        maxAV = get_AV_infinity(*ku.radec(koi))
+    maxAV = MAXAV.ix[ku.koistar(koi),'maxAV']
     return maxAV
 
 def koi_propdist(koi, prop):
@@ -441,7 +438,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
     def MCMC(self,**kwargs):
         folder = '%s/%s' % (CHAINSDIR,self.name)
         if not os.path.exists(folder):
-            os.mkdir(folder)
+            os.makedirs(folder)
         super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
 
 
@@ -461,6 +458,7 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
     koi = ku.koiname(koi)
 
     maxAV = koi_maxAV(koi)
+    config['maxAV'] = maxAV
 
     mags = ku.KICmags(koi)
     for band in bands:
@@ -479,8 +477,6 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
         except:
             pass
 
-
-    config['maxAV'] = maxAV
 
     for kw,val in kwargs.items():
         config[kw] = val
