@@ -476,7 +476,11 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
     config['Kepler'] = mags['Kepler']
 
     kepid = ku.DATA.ix[koi,'kepid']
-    if re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov']):
+    try:
+        m = re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov'])
+    except KeyError:
+        raise MissingStellarError
+    if m:
         config['Teff'] = (kicu.DATA.ix[kepid, 'teff'],
                           kicu.DATA.ix[kepid, 'teff_err1'])
         config['feh'] = (kicu.DATA.ix[kepid, 'feh'],
@@ -560,6 +564,9 @@ class BadPhotometryError(Exception):
     pass
 
 class MissingKOIError(Exception):
+    pass
+
+class MissingStellarError(Exception):
     pass
 
 class BadRoweFitError(Exception):
