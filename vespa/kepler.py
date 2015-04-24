@@ -118,7 +118,11 @@ def default_r_exclusion(koi,rmin=0.5):
     return r_excl
 
 def koi_maxAV(koi):
-    maxAV = MAXAV.ix[ku.koistar(koi),'maxAV']
+    try:
+        maxAV = MAXAV.ix[ku.koistar(koi),'maxAV']
+    except IndexError:
+        ra,dec = ku.radec(koi)
+        maxAV = get_AV_infinity(ra,dec)
     return maxAV
 
 def koi_propdist(koi, prop):
