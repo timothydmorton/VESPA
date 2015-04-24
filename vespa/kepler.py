@@ -479,7 +479,7 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
     try:
         m = re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov'])
     except KeyError:
-        raise MissingStellarError
+        raise MissingStellarError('{} not in stellar table?'.format(kepid))
     if m:
         config['Teff'] = (kicu.DATA.ix[kepid, 'teff'],
                           kicu.DATA.ix[kepid, 'teff_err1'])
