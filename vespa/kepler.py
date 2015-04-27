@@ -516,16 +516,17 @@ def fpp_config(koi, **kwargs):
     config['rprs'] = rowefit.ix['RD1','val']
     config['period'] = ku.DATA.ix[koi, 'koi_period']
     
-    config['maxrad'] = default_r_exclusion(koi)
-    try:
-        config['secthresh'] = pipeline_weaksec(koi)
-    except NoWeakSecondaryError:
-        pass
-
     config['starfield'] = kepler_starfield_file(koi)
 
     for kw,val in kwargs.items():
         config[kw] = val
+
+    config['constraints'] = {}
+    config['constraints']['maxrad'] = default_r_exclusion(koi)
+    try:
+        config['constraints']['secthresh'] = pipeline_weaksec(koi)
+    except NoWeakSecondaryError:
+        pass
 
     return config
 
