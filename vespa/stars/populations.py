@@ -1659,7 +1659,7 @@ class Observed_BinaryPopulation(BinaryPopulation):
             params = self.starmodel_props
             logging.info('Fitting BinaryStarModel to {}...'.format(params))
             starmodel = BinaryStarModel(ichrone, **params)
-            starmodel.fit_mcmc()
+            starmodel.fit()
             logging.info('BinaryStarModel fit Done.')
 
         if type(starmodel) != BinaryStarModel:
@@ -1783,7 +1783,7 @@ class Observed_TriplePopulation(TriplePopulation):
             params = self.starmodel_props
             logging.info('Fitting TripleStarModel to {}...'.format(params))
             starmodel = TripleStarModel(ichrone, **params)
-            starmodel.fit_mcmc()
+            starmodel.fit()
             logging.info('TripleStarModel fit Done.')
 
         if type(starmodel) != TripleStarModel:
@@ -2238,7 +2238,7 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
 
     :param mcmc_kwargs:
         Keyword arguments to pass to 
-        :func:`isochrones.StarModel.fit_mcmc`.
+        :func:`isochrones.StarModel.fit`.
 
     :param **kwargs:
         Additional keyword arguments passed to 
@@ -2271,7 +2271,7 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
                                            logg=logg, feh=feh)
                 if mcmc_kws is None:
                     mcmc_kws = {}
-                self.starmodel.fit_mcmc(**mcmc_kws)
+                self.starmodel.fit(**mcmc_kws)
                 logging.info('Done.')
 
             samples = self.starmodel.random_samples(n)

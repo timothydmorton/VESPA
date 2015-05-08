@@ -234,7 +234,7 @@ class KOI_FPPCalculation(FPPCalculation):
                                           feh=(feh, e_feh))
                     if starmodel_mcmc_kws is None:
                         starmodel_mcmc_kws = {}
-                    starmodel.fit_mcmc(**starmodel_mcmc_kws)
+                    starmodel.fit(**starmodel_mcmc_kws)
                     logging.info('Done.')
                     kwargs['starmodel'] = starmodel
                 
