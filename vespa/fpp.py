@@ -192,7 +192,7 @@ class FPPCalculation(object):
             single_starmodel = StarModel.from_ini(ichrone, folder, 
                                            ini_file=star_ini_file)
             logging.info('Fitting single StarModel to {}...'.format(single_starmodel.properties))
-            single_starmodel.fit_mcmc()
+            single_starmodel.fit()
             single_starmodel.save_hdf(single_starmodel_file)
             triangle_base = os.path.join(folder, '{}_triangle_single'.format(starmodel_basename))
             single_starmodel.triangle_plots(triangle_base)
@@ -206,7 +206,7 @@ class FPPCalculation(object):
             binary_starmodel = BinaryStarModel.from_ini(ichrone, folder,
                                                         ini_file=star_ini_file)
             logging.info('Fitting BinaryStarModel to {}...'.format(binary_starmodel.properties))
-            binary_starmodel.fit_mcmc()
+            binary_starmodel.fit()
             binary_starmodel.save_hdf(binary_starmodel_file)
             triangle_base = os.path.join(folder, '{}_triangle_binary'.format(starmodel_basename))
             binary_starmodel.triangle_plots(triangle_base)
@@ -220,7 +220,7 @@ class FPPCalculation(object):
             triple_starmodel = TripleStarModel.from_ini(ichrone, folder,
                                                         ini_file=star_ini_file)
             logging.info('Fitting TripleStarModel to {}...'.format(triple_starmodel.properties))
-            triple_starmodel.fit_mcmc()
+            triple_starmodel.fit()
             triple_starmodel.save_hdf(triple_starmodel_file)
             triangle_base = os.path.join(folder, '{}_triangle_triple'.format(starmodel_basename))
             triple_starmodel.triangle_plots(triangle_base)
