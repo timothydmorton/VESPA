@@ -123,14 +123,14 @@ if __name__=='__main__':
                                   [StarModel, BinaryStarModel, TripleStarModel]):
                 starmodel_file = os.path.join(folder, 'dartmouth_starmodel_{}.h5'.format(mult))
                 triangle_file1 = os.path.join(folder, 
-                                              'dartmouth_starmodel_triangle_{}_physical.png'.format(mult))
+                                              'dartmouth_triangle_{}_physical.png'.format(mult))
                 triangle_file2 = os.path.join(folder, 
-                                              'dartmouth_starmodel_triangle_{}_observed.png'.format(mult))
+                                              'dartmouth_triangle_{}_observed.png'.format(mult))
                 if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
                     logger.info('Making StarModel triangle plots...')
                     starmodel = Model.load_hdf(starmodel_file)
                     triangle_base = os.path.join(folder, 
-                                                 'dartmouth_starmodel_triangle_{}'.format(mult))
+                                                 'dartmouth_triangle_{}'.format(mult))
                     starmodel.triangle_plots(triangle_base)
 
             logger.info('FPP calculation successful. ' + 
