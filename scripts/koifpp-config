@@ -16,12 +16,15 @@ if __name__=='__main__':
     parser.add_argument('kois', nargs='+', help='KOIs to config')
     parser.add_argument('--trsig_overwrite', action='store_true',
                         help='flag to re-fit transit signal')
+    parser.add_argument('--star_only', action='store_true')
+    parser.add_argument('--fpp_only', action='store_true')
 
     args = parser.parse_args()
 
     for koi in args.kois:
         try:
-            setup_fpp(koi, trsig_overwrite=args.trsig_overwrite)
+            setup_fpp(koi, trsig_overwrite=args.trsig_overwrite,
+                      star_only=args.star_only, fpp_only=args.fpp_only)
         except:
             logging.error('Error with writing config setup for {}.'.format(koi),
                           exc_info=True)
