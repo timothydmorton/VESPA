@@ -1327,6 +1327,8 @@ class Simulated_BinaryPopulation(BinaryPopulation):
                  n=1e4,ichrone=DARTMOUTH, qmin=0.1, bands=BANDS,
                  age=9.6,feh=0.0, minmass=0.12, **kwargs):
 
+        if q_fn is None:
+            q_fn = flat_massratio
         self.q_fn = q_fn
         self.qmin = qmin
         self.P_fn = P_fn
@@ -1346,8 +1348,12 @@ class Simulated_BinaryPopulation(BinaryPopulation):
 
         Called by ``__init__`` if ``M`` is passed.
         """
-        n = int(n)
+        if np.size(M) > 1:
+            n = np.size(M)
+        else:
+            n = int(n)
         M2 = M * self.q_fn(n, qmin=np.maximum(self.qmin,self.minmass/M))
+
         P = self.P_fn(n)
         ecc = self.ecc_fn(n,P)
 
