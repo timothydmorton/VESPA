@@ -1347,7 +1347,7 @@ class Simulated_BinaryPopulation(BinaryPopulation):
         Called by ``__init__`` if ``M`` is passed.
         """
         n = int(n)
-        M2 = M * self.q_fn(n, qmin=max(self.qmin,self.minmass/M))
+        M2 = M * self.q_fn(n, qmin=np.maximum(self.qmin,self.minmass/M))
         P = self.P_fn(n)
         ecc = self.ecc_fn(n,P)
 
