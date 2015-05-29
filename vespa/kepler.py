@@ -472,7 +472,8 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
 
     mags = ku.KICmags(koi)
     for band in bands:
-        config[band] = (mags[band], unc[band])
+        if not np.isnan(mags[band]):
+            config[band] = (mags[band], unc[band])
     config['Kepler'] = mags['Kepler']
 
     kepid = ku.DATA.ix[koi,'kepid']
