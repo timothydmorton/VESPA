@@ -67,9 +67,7 @@ as follows.
 
 	$  calcfpp 
 	 
-Or, if you put the files in a folder called ``mycandidate``, then you can run::
-	 
-	$ calcfpp mycandidate
+Or, if you put the files in a folder called ``mycandidate``, then you can run ``calcfpp mycandidate``::
 	 
 This will run the calculation for you, creating result files, diagnostic plots, etc.  
 It should take 20-30 minutes.  If you want to do a shorter
