@@ -34,8 +34,7 @@ Basic Usage
 The simplest way to run an FPP calculation straight out of the box is
 as follows.
 
-1.  Make a text file containing the transit photometry in three columns: 
-``t_from_midtransit`` [days], ``flux`` [relative, where out-of-transit is normalized to unity], and ``flux_err``.  The file should not have a header row (no titles); and can be either whitespace or comma-delimited (will be ingested by ``np.loadtxt``).  
+1. Make a text file containing the transit photometry in three columns: ``t_from_midtransit`` [days], ``flux`` [relative, where out-of-transit is normalized to unity], and ``flux_err``.  The file should not have a header row (no titles); and can be either whitespace or comma-delimited (will be ingested by ``np.loadtxt``).  
 
 2. Make a ``star.ini`` file that contains the observed properties of the target star (photometric and/or spectroscopic, whatever is available):: 
 
