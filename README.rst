@@ -32,14 +32,14 @@ Basic Usage
 The simplest way to run an FPP calculation straight out of the box is
 as follows.
 
-  1.  Make a text file containing the transit photometry in three
+1.  Make a text file containing the transit photometry in three
   columns: ``t_from_midtransit`` [days], ``flux`` [relative,
   where out-of-transit is normalized to unity], and ``flux_err``.
   The file should not have a header row (no titles); and can be either
   whitespace or comma-delimited (will be ingested by
   :func:`np.loadtxt`).  
 
-  2. Make a ``star.ini`` file that contains the observed properties of the target star (photometric and/or spectroscopic, whatever is available):: 
+2. Make a ``star.ini`` file that contains the observed properties of the target star (photometric and/or spectroscopic, whatever is available):: 
 
 	    #provide spectroscopic properties if available
             #Teff = 3503, 80  #value, uncertainty
@@ -53,7 +53,7 @@ as follows.
             K = 8.899, 0.02
             Kepler = 12.473
 
-  3. Make a ``fpp.ini`` file containing the following information::
+3. Make a ``fpp.ini`` file containing the following information::
 
             name = k2oi #anything
             ra = 11:30:14.510 #can be decimal form too
@@ -67,7 +67,7 @@ as follows.
 	    maxrad = 12  # aperture radius [arcsec] 
 	    secthresh = 1e-4 # Maximum allowed depth of potential secondary eclipse 
 
-  4. Run the following from the command line (from within the same folder that has ``star.ini`` and ``fpp.ini``)::
+4. Run the following from the command line (from within the same folder that has ``star.ini`` and ``fpp.ini``)::
 
 	 $  calcfpp 
 	 
