@@ -57,7 +57,7 @@ as follows.
             dec = +07:35:18.21
 
             period = 32.988 #days
-            rprs = 0.0534   #Rp/Rstar
+            rprs = 0.0534   #Rp/Rstar best estimate
             photfile = lc_k2oi.csv #contains transit photometry
 
 	    [constraints]
