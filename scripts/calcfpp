@@ -48,7 +48,7 @@ in the same directory as the ``.ini`` file:
     for each model.
   * ``trsig.png``: plot of the transit signal
   * ``FPPsummary.png``: FPP summary plot.
-  * ``run.log``: logfile of calculation.
+  * ``calcfpp.log``: logfile of calculation.
 
 This script is not yet set up to incorporate observational constraints,
 but this will be easily doable in the near future.
@@ -108,7 +108,7 @@ if __name__=='__main__':
     for folder in args.folders:
         #initialize logger for this folder:
 
-        logfile = os.path.join(folder, 'run.log')
+        logfile = os.path.join(folder, 'calcfpp.log')
         logger = initLogging(logfile, logger)
 
         try:
