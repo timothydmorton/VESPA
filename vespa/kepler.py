@@ -24,9 +24,12 @@ from .fpp import FPPCalculation
 
 from .stars import get_AV_infinity
 
-from keputils.koiutils import koiname
-from keputils import koiutils as ku
-from keputils import kicutils as kicu
+try:
+    from keputils.koiutils import koiname
+    from keputils import koiutils as ku
+    from keputils import kicutils as kicu
+except ImportError:
+    logging.warning('keputils not available')
 
 #from simpledist import distributions as dists
 
