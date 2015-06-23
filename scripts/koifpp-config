@@ -8,7 +8,27 @@ import cPickle as pickle
 import numpy as np
 import pandas as pd
 
-from vespa.kepler import setup_fpp
+from vespa.kepler import setup_fpp, KOI_FPPDIR
+from keputils.koiutils import koiname
+
+def initLogging(filename, logger):
+    if logger == None:
+        logger = logging.getLogger()
+    else:  # wish there was a logger.close()
+        for handler in logger.handlers[:]:  # make a copy of the list
+            logger.removeHandler(handler)
+
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(fmt='%(asctime)s: %(message)s')
+
+    fh = logging.FileHandler(filename)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    sh = logging.StreamHandler(sys.stdout)
+    logger.addHandler(sh)
+    return logger
+
 
 if __name__=='__main__':
     
@@ -21,10 +41,14 @@ if __name__=='__main__':
 
     args = parser.parse_args()
 
+    logger = None
+
     for koi in args.kois:
         try:
             setup_fpp(koi, trsig_overwrite=args.trsig_overwrite,
                       star_only=args.star_only, fpp_only=args.fpp_only)
         except:
-            logging.error('Error with writing config setup for {}.'.format(koi),
+            logfile = os.path.join(KOI_FPPDIR, koiname(koi), 'fppconfig.err')
+            logger = initLogging(logfile, logger)
+            logger.error('Error with writing config setup for {}.'.format(koi),
                           exc_info=True)
