@@ -125,12 +125,12 @@ def traptransit(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] pars):
 def traptransit_resid( np.ndarray[DTYPE_t] pars, np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] fs):
     cdef long npts = len(ts)
     cdef np.ndarray[DTYPE_t] resid = np.empty(npts,dtype=float)
+    cdef unsigned int i
     if pars[2] < 2 or pars[0] < 0:
         for i in xrange(npts):
             resid[i] = INFINITY
     else:
         cdef np.ndarray[DTYPE_t] fmod = traptransit(ts,pars)
-        cdef unsigned int i
         for i in xrange(npts):
             resid[i] = fmod[i]-fs[i]
     return resid
