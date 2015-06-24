@@ -280,7 +280,8 @@ class FPPCalculation(object):
             if recalc:
                 raise RuntimeError #just to get to except block
             popset = PopulationSet.load_hdf(popset_file)
-            popset['pl'] #should there be a better way to check this? (yes)
+            for m in ['eb', 'heb', 'beb', 'pl']:
+                popset[m] #should there be a better way to check this? (yes)
             logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
             if recalc:
