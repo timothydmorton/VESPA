@@ -44,11 +44,13 @@ if __name__=='__main__':
     logger = None
 
     for koi in args.kois:
+        logfile = os.path.join(KOI_FPPDIR, koiname(koi), 'fppconfig.err')
         try:
             setup_fpp(koi, trsig_overwrite=args.trsig_overwrite,
                       star_only=args.star_only, fpp_only=args.fpp_only)
+            if os.path.exists(logfile):
+                os.remove(logfile)
         except:
-            logfile = os.path.join(KOI_FPPDIR, koiname(koi), 'fppconfig.err')
             logger = initLogging(logfile, logger)
             logger.error('Error with writing config setup for {}.'.format(koi),
                           exc_info=True)
