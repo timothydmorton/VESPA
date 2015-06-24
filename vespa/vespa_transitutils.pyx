@@ -19,6 +19,7 @@ cdef extern from "math.h":
     double abs(double)
     double log(double)
     double ceil(double)
+    float INFINITY
     
 @cython.boundscheck(False)
 def bindata(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] fs, DTYPE_t dt):
@@ -40,7 +41,7 @@ def bindata(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] fs, DTYPE_t dt):
     cdef DTYPE_t fsumsq = 0
     cdef DTYPE_t tsum = 0
     cdef long count = 0
-    for i in range(npts):
+    for i in xrange(npts):
         if ts[i] > hi and count > 0:
             tbin[j] = tsum/count
             fbin[j] = fsum/count
@@ -86,7 +87,7 @@ def find_eclipse(np.ndarray[DTYPE_t] Es, DTYPE_t b,
     cdef np.ndarray[DTYPE_t] zs = np.empty(npts,dtype=float)
     cdef np.ndarray[long] in_eclipse = np.empty(npts,dtype=np.int) #how to make boolean array?
     cdef unsigned int i
-    for i in range(npts):
+    for i in xrange(npts):
         nu = 2 * atan2(sqrt(1+ecc)*sin(Es[i]/2),sqrt(1-ecc)*cos(Es[i]/2)) #true anomaly
         r = aR*(1-ecc*ecc)/(1+ecc*cos(nu))  #secondary distance from primary in units of R1
         X = -r*cos(w + nu)    
@@ -109,7 +110,7 @@ def traptransit(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] pars):
     cdef long npts = len(ts)
     cdef np.ndarray[DTYPE_t] fs = np.empty(npts,dtype=float)
     cdef unsigned int i
-    for i in range(npts):
+    for i in xrange(npts):
         if (ts[i]  > t1) and (ts[i] < t2):
             fs[i] = 1-pars[1]*pars[2]/pars[0]*(ts[i] - t1)
         elif (ts[i] > t2) and (ts[i] < t3):
@@ -124,10 +125,14 @@ def traptransit(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] pars):
 def traptransit_resid( np.ndarray[DTYPE_t] pars, np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] fs):
     cdef long npts = len(ts)
     cdef np.ndarray[DTYPE_t] resid = np.empty(npts,dtype=float)
-    cdef np.ndarray[DTYPE_t] fmod = traptransit(ts,pars)
-    cdef unsigned int i
-    for i in range(npts):
-        resid[i] = fmod[i]-fs[i]
+    if pars[2] < 2 or pars[0] < 0:
+        for i in xrange(npts):
+            resid[i] = INFINITY
+    else:
+        cdef np.ndarray[DTYPE_t] fmod = traptransit(ts,pars)
+        cdef unsigned int i
+        for i in xrange(npts):
+            resid[i] = fmod[i]-fs[i]
     return resid
 
 @cython.boundscheck(False)
@@ -137,7 +142,7 @@ def traptransit_lhood(np.ndarray[DTYPE_t] pars, np.ndarray[DTYPE_t] ts, np.ndarr
     cdef DTYPE_t lhood = 0
     cdef np.ndarray[DTYPE_t] fmod = traptransit(ts,pars)
     cdef unsigned int i
-    for i in range(npts):
+    for i in xrange(npts):
         lhood += -0.5*(fs[i]-fmod[i])*(fs[i]-fmod[i])/(sigs[i]*sigs[i])
     return lhood
     
@@ -151,7 +156,7 @@ def protopapas(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] pars):
     cdef np.ndarray[DTYPE_t] fs = np.empty(npts,dtype=float)
     cdef DTYPE_t tp = 0.
     cdef unsigned int i
-    for i in range(npts):
+    for i in xrange(npts):
         tp = T*sin(pi*(ts[i]-pars[3])/T)/pi/pars[0]
         fs[i] = 1 - pars[1] + 0.5*pars[1]*(2 - tanh(pars[2]*(tp+0.5)) + tanh(pars[2]*(tp-0.5)))
     return fs
@@ -162,7 +167,7 @@ def protopapas_resid(np.ndarray[DTYPE_t] pars, np.ndarray[DTYPE_t] ts, np.ndarra
     cdef np.ndarray[DTYPE_t] resid = np.empty(npts,dtype=float)
     cdef np.ndarray[DTYPE_t] fmod = protopapas(ts,pars)
     cdef unsigned int i
-    for i in range(npts):
+    for i in xrange(npts):
         resid[i] = fmod[i]-fs[i]
     return resid
      
