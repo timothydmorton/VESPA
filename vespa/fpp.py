@@ -283,9 +283,24 @@ class FPPCalculation(object):
             popset['pl'] #should there be a better way to check this? (yes)
             logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
+            if recalc:
+                do_only = ['eb', 'heb', 'beb', 'pl']
+            else:
+                try:
+                    popset = PopulationSet.load_hdf(popset_file)                
+                    do_only = []
+                    for m in ['eb', 'heb', 'beb', 'pl']:
+                        try:
+                            popset[m]
+                        except:
+                            do_only.append(m)
+                except:
+                    do_only = ['eb', 'heb', 'beb', 'pl']
+
             if os.path.exists(popset_file):
-                logging.warning('{} exists, but regenerating Population Set...'.format(popset_file),
+                logging.warning('{} exists, but regenerating Population Set ({})...'.format(popset_file, do_only),
                                 exc_info=True)
+
 
             popset = PopulationSet(period=period, mags=single_starmodel.mags,
                                    ra=ra, dec=dec,
