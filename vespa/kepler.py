@@ -553,7 +553,7 @@ def setup_fpp(koi, bands=['g','r','i','z','J','H','K'],
         trsig_file = os.path.join(folder,'trsig.pkl')
         if os.path.exists(trsig_file):
             if os.path.getsize(trsig_file)==0:
-                shutil.remove(trsig_file)
+                os.remove(trsig_file)
         if not os.path.exists(trsig_file) or\
                 trsig_overwrite:
             sig = JRowe_KeplerTransitSignal(koi, refit_mcmc=True,
