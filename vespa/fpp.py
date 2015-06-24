@@ -309,7 +309,7 @@ class FPPCalculation(object):
                                    starmodel=single_starmodel,
                                    binary_starmodel=binary_starmodel,
                                    triple_starmodel=triple_starmodel,
-                                   rprs=rprs,
+                                   rprs=rprs, do_only=do_only,
                                    savefile=popset_file, **kwargs)
             
         
