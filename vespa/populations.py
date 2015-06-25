@@ -1705,7 +1705,9 @@ class PopulationSet(object):
         """
         Generates PopulationSet.
         """
+        do_all = False
         if do_only is None:
+            do_all = True
             do_only = ['beb','heb','eb','pl']
 
         if MAfn is None:
@@ -1731,7 +1733,10 @@ class PopulationSet(object):
                 if fit_trap:
                     hebpop.fit_trapezoids(MAfn=MAfn)
                 if savefile is not None:
-                    hebpop.save_hdf(savefile, 'heb', overwrite=True)
+                    if do_all:
+                        hebpop.save_hdf(savefile, 'heb', overwrite=True)
+                    else:
+                        hebpop.save_hdf(savefile, 'heb', append=True)
             except:
                 logging.error('Error generating HEB population.')
                 if not hide_exceptions:
@@ -1783,6 +1788,12 @@ class PopulationSet(object):
                 logging.error('Error generating Planet population.')
                 if not hide_exceptions:
                     raise
+
+        if not do_all and savefile is not None:
+            hebpop = HEBPopulation.load_hdf(savefile, 'heb')
+            ebpop = HEBPopulation.load_hdf(savefile, 'eb')
+            bebpop = HEBPopulation.load_hdf(savefile, 'beb')
+            plpop = HEBPopulation.load_hdf(savefile, 'pl')
 
         self.poplist = [hebpop, ebpop, bebpop, plpop]
 
