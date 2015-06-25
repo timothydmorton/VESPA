@@ -487,17 +487,17 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
     if m:
         teff, e_teff = (kicu.DATA.ix[kepid, 'teff'],
                           kicu.DATA.ix[kepid, 'teff_err1'])
-        if np.nan not in [teff, e_teff]:
+        if not any(np.isnan([teff, e_teff])):
             config['Teff'] = (teff, e_teff)
 
         feh, e_feh = (kicu.DATA.ix[kepid, 'feh'],
                          kicu.DATA.ix[kepid, 'feh_err1'])
-        if np.nan not in [feh, e_feh]:
+        if not any(np.isnan([feh, e_feh])):
             config['feh'] = (feh, e_feh)
         try:
             logg, e_logg = (kicu.DATA.ix[kepid, 'logg'],
                               kicu.DATA.ix[kepid, 'logg_err1'])
-            if np.nan not in [logg, e_logg]:
+            if not any(np.isnan([logg, e_logg])):
                 config['logg'] = (logg, e_logg)
         except:
             pass
