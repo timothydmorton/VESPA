@@ -105,16 +105,17 @@ def traptransit(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] pars):
     """pars = [T,delta,T_over_tau,tc]"""
     cdef long npts = len(ts)
     cdef np.ndarray[DTYPE_t] fs = np.empty(npts,dtype=float)
+    cdef DTYPE_t t1, t2, t3, t4
+    cdef unsigned int i
 
     if pars[2] < 2 or pars[0] <= 0:
         for i in xrange(npts):
             fs[i] = INFINITY
     else:
-        cdef DTYPE_t t1 = pars[3] - pars[0]/2.
-        cdef DTYPE_t t2 = pars[3] - pars[0]/2. + pars[0]/pars[2]
-        cdef DTYPE_t t3 = pars[3] + pars[0]/2. - pars[0]/pars[2]
-        cdef DTYPE_t t4 = pars[3] + pars[0]/2.
-        cdef unsigned int i
+        t1 = pars[3] - pars[0]/2.
+        t2 = pars[3] - pars[0]/2. + pars[0]/pars[2]
+        t3 = pars[3] + pars[0]/2. - pars[0]/pars[2]
+        t4 = pars[3] + pars[0]/2.
         for i in xrange(npts):
             if (ts[i]  > t1) and (ts[i] < t2):
                 fs[i] = 1-pars[1]*pars[2]/pars[0]*(ts[i] - t1)
