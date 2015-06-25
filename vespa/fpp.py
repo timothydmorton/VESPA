@@ -68,7 +68,7 @@ class FPPCalculation(object):
             logging.warning('TransitSignal trapezoid shape has not been fit with MCMC.')
         else:
             if not self.trsig.fit_converged:
-                raise MCMCError('TransitSignal trapezoid fit not converged.')
+                raise MCMCError('TransitSignal trapezoid fit not converged ({}).'.format(self.trsig.name))
 
         lhoodcachefile = os.path.join(self.folder,'lhoodcache.dat')
 
