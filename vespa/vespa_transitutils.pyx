@@ -103,22 +103,27 @@ def find_eclipse(np.ndarray[DTYPE_t] Es, DTYPE_t b,
 @cython.boundscheck(False)
 def traptransit(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] pars):
     """pars = [T,delta,T_over_tau,tc]"""
-    cdef DTYPE_t t1 = pars[3] - pars[0]/2.
-    cdef DTYPE_t t2 = pars[3] - pars[0]/2. + pars[0]/pars[2]
-    cdef DTYPE_t t3 = pars[3] + pars[0]/2. - pars[0]/pars[2]
-    cdef DTYPE_t t4 = pars[3] + pars[0]/2.
     cdef long npts = len(ts)
     cdef np.ndarray[DTYPE_t] fs = np.empty(npts,dtype=float)
-    cdef unsigned int i
-    for i in xrange(npts):
-        if (ts[i]  > t1) and (ts[i] < t2):
-            fs[i] = 1-pars[1]*pars[2]/pars[0]*(ts[i] - t1)
-        elif (ts[i] > t2) and (ts[i] < t3):
-            fs[i] = 1-pars[1]
-        elif (ts[i] > t3) and (ts[i] < t4):
-            fs[i] = 1-pars[1] + pars[1]*pars[2]/pars[0]*(ts[i]-t3)
-        else:
-            fs[i] = 1
+
+    if pars[2] < 2 or pars[0] <= 0:
+        for i in xrange(npts):
+            fs[i] = INFINITY
+    else:
+        cdef DTYPE_t t1 = pars[3] - pars[0]/2.
+        cdef DTYPE_t t2 = pars[3] - pars[0]/2. + pars[0]/pars[2]
+        cdef DTYPE_t t3 = pars[3] + pars[0]/2. - pars[0]/pars[2]
+        cdef DTYPE_t t4 = pars[3] + pars[0]/2.
+        cdef unsigned int i
+        for i in xrange(npts):
+            if (ts[i]  > t1) and (ts[i] < t2):
+                fs[i] = 1-pars[1]*pars[2]/pars[0]*(ts[i] - t1)
+            elif (ts[i] > t2) and (ts[i] < t3):
+                fs[i] = 1-pars[1]
+            elif (ts[i] > t3) and (ts[i] < t4):
+                fs[i] = 1-pars[1] + pars[1]*pars[2]/pars[0]*(ts[i]-t3)
+            else:
+                fs[i] = 1
     return fs
 
 @cython.boundscheck(False)
@@ -127,12 +132,8 @@ def traptransit_resid( np.ndarray[DTYPE_t] pars, np.ndarray[DTYPE_t] ts, np.ndar
     cdef np.ndarray[DTYPE_t] resid = np.empty(npts,dtype=float)
     cdef unsigned int i
     cdef np.ndarray[DTYPE_t] fmod = traptransit(ts,pars)
-    if pars[2] < 2 or pars[0] < 0:
-        for i in xrange(npts):
-            resid[i] = INFINITY
-    else:
-        for i in xrange(npts):
-            resid[i] = fmod[i]-fs[i]
+    for i in xrange(npts):
+        resid[i] = fmod[i]-fs[i]
     return resid
 
 @cython.boundscheck(False)
