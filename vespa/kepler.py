@@ -485,13 +485,20 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
     except KeyError:
         raise MissingStellarError('{} not in stellar table?'.format(kepid))
     if m:
-        config['Teff'] = (kicu.DATA.ix[kepid, 'teff'],
+        teff, e_teff = (kicu.DATA.ix[kepid, 'teff'],
                           kicu.DATA.ix[kepid, 'teff_err1'])
-        config['feh'] = (kicu.DATA.ix[kepid, 'feh'],
+        if np.nan not in [teff, e_teff]:
+            config['Teff'] = (teff, e_teff)
+
+        feh, e_feh = (kicu.DATA.ix[kepid, 'feh'],
                          kicu.DATA.ix[kepid, 'feh_err1'])
+        if np.nan not in [feh, e_feh]:
+            config['feh'] = (feh, e_feh)
         try:
-            config['logg'] = (kicu.DATA.ix[kepid, 'logg'],
+            logg, e_logg = (kicu.DATA.ix[kepid, 'logg'],
                               kicu.DATA.ix[kepid, 'logg_err1'])
+            if np.nan not in [logg, e_logg]:
+                config['logg'] = (logg, e_logg)
         except:
             pass
 
