@@ -346,10 +346,10 @@ class TransitSignal(object):
             self.slopefit = (slopemed,np.array([slopemed-slopeconf[0],slopeconf[1]-slopemed]))
 
         else:
-            self.durfit = (np.nan,np.nan,np.nan)
-            self.depthfit = (np.nan,np.nan,np.nan)
-            self.logdepthfit = (np.nan,np.nan,np.nan)
-            self.slopefit = (np.nan,np.nan,np.nan)
+            self.durfit = (np.nan,(np.nan,np.nan))
+            self.depthfit = (np.nan,(np.nan,np.nan))
+            self.logdepthfit = (np.nan,(np.nan,np.nan))
+            self.slopefit = (np.nan,(np.nan,np.nan))
 
 
         points = np.array([self.durs,self.logdeps,self.slopes])

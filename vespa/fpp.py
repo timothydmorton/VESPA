@@ -15,7 +15,7 @@ except ImportError:
 
     
 from .populations import PopulationSet
-from .transitsignal import TransitSignal
+from .transitsignal import TransitSignal, MCMCError
 
 from .stars.contrastcurve import ContrastCurveFromFile
 
@@ -63,6 +63,12 @@ class FPPCalculation(object):
         self.folder = folder
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
+
+        if not self.trsig.hasMCMC:
+            logging.warning('TransitSignal trapezoid shape has not been fit with MCMC.')
+        else:
+            if not self.trsig.fit_converged:
+                raise MCMCError('TransitSignal trapezoid fit not converged.')
 
         lhoodcachefile = os.path.join(self.folder,'lhoodcache.dat')
 
