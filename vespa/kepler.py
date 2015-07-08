@@ -92,9 +92,27 @@ def kepler_starfield_file(koi):
     return '{}/kepler_starfield_{}.h5'.format(STARFIELD_DIR,chip)
 
 def modelshift_weaksec(koi):
-    pass
+    """
+    Max secondary depth based on model-shift secondary test from Jeff Coughlin
+
+    secondary metric: D_sec_dv * (1 + 3*F_red_dv / sig_sec_dv)
+    """
+    tce = ku.DATA.ix[ku.koiname(koi), 'koi_tce_plnt_num']
+    
+    #return largest depth between DV detrending and alternate detrending
+    try:
+        r = ROBOVETDATA.ix[tce]
+    except KeyError:
+        raise NoWeakSecondaryError(koi)
+
+    depth_dv = r['D_sec_dv'] * (1 + 3*r['F_red_dv'] / r['sig_sec_dv'])
+    depth_alt = r['D_sec_alt'] * (1 + 3*r['F_red_alt'] / r['sig_sec_alt'])
+    
+    return max(depth_dv, depth_alt)
 
 def pipeline_weaksec(koi):
+    return modelshift_weaksec(koi)
+    #below is old
     try:
         weaksec = WEAKSECDATA.ix[ku.koiname(koi)]
         secthresh = (weaksec['depth'] + 3*weaksec['e_depth'])*1e-6
