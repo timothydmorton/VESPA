@@ -97,8 +97,10 @@ def modelshift_weaksec(koi):
 
     secondary metric: D_sec_dv * (1 + 3*F_red_dv / sig_sec_dv)
     """
-    tce = ku.DATA.ix[ku.koiname(koi), 'koi_tce_plnt_num']
-    
+    num = ku.DATA.ix[ku.koiname(koi), 'koi_tce_plnt_num']
+    kid = ku.DATA.ix[ku.koiname(koi), 'kepid']
+    tce = '{:09.0f}-{:02.0f}'.format(kid,num)
+
     #return largest depth between DV detrending and alternate detrending
     try:
         r = ROBOVETDATA.ix[tce]
