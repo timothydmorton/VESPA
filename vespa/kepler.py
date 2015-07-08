@@ -110,7 +110,9 @@ def modelshift_weaksec(koi):
     depth_dv = r['D_sec_dv'] * (1 + 3*r['F_red_dv'] / r['sig_sec_dv'])
     depth_alt = r['D_sec_alt'] * (1 + 3*r['F_red_alt'] / r['sig_sec_alt'])
     
-    if np.isnan(depth_dv):
+    if np.isnan(depth_dv) and np.isnan(depth_alt):
+        raise NoWeakSecondaryError(koi)
+    elif np.isnan(depth_dv):
         return depth_alt
     elif np.isnan(depth_alt):
         return depth_dv
