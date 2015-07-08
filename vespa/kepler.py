@@ -149,7 +149,7 @@ def default_r_exclusion(koi,rmin=0.5):
 
 def koi_maxAV(koi):
     try:
-        maxAV = MAXAV.ix[ku.koistar(koi),'maxAV']
+        maxAV = MAXAV.ix[ku.koiname(koi),'maxAV']
     except KeyError:
         ra,dec = ku.radec(koi)
         maxAV = get_AV_infinity(ra,dec)
