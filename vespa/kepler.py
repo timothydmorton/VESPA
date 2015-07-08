@@ -54,6 +54,10 @@ WEAKSECFILE = os.path.join(DATAFOLDER, 'weakSecondary_socv9p2vv.csv')
 WEAKSECDATA = pd.read_csv(WEAKSECFILE,skiprows=8)
 WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
 
+ROBOVETFILE = os.path.join(DATAFOLDER, 'RoboVetter-Input.txt')
+ROBOVETDATA = pd.read_table(ROBOVETFILE, delim_whitespace=True)
+ROBOVETDATA.index = ROBOVETDATA['TCE']
+
 MAXAV = pd.read_table(os.path.join(DATAFOLDER,
                                    'koi_maxAV.txt'),
                       delim_whitespace=True,
@@ -87,6 +91,8 @@ def kepler_starfield_file(koi):
     chip = chips[np.argmin(ds)]
     return '{}/kepler_starfield_{}.h5'.format(STARFIELD_DIR,chip)
 
+def modelshift_weaksec(koi):
+    pass
 
 def pipeline_weaksec(koi):
     try:
@@ -107,6 +113,7 @@ def pipeline_weaksec(koi):
         raise NoWeakSecondaryError(koi)
 
     return secthresh
+
 
 def default_r_exclusion(koi,rmin=0.5):
     try:
