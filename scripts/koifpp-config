@@ -44,7 +44,10 @@ if __name__=='__main__':
     logger = None
 
     for koi in args.kois:
-        logfile = os.path.join(KOI_FPPDIR, koiname(koi), 'fppconfig.err')
+        folder = os.path.join(KOI_FPPDIR, koiname(koi))
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        logfile = os.path.join(folder, 'fppconfig.err')
         try:
             setup_fpp(koi, trsig_overwrite=args.trsig_overwrite,
                       star_only=args.star_only, fpp_only=args.fpp_only)
