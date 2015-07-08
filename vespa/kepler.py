@@ -110,7 +110,12 @@ def modelshift_weaksec(koi):
     depth_dv = r['D_sec_dv'] * (1 + 3*r['F_red_dv'] / r['sig_sec_dv'])
     depth_alt = r['D_sec_alt'] * (1 + 3*r['F_red_alt'] / r['sig_sec_alt'])
     
-    return max(depth_dv, depth_alt)
+    if np.isnan(depth_dv):
+        return depth_alt
+    elif np.isnan(depth_alt):
+        return depth_dv
+    else:
+        return max(depth_dv, depth_alt)
 
 def pipeline_weaksec(koi):
     return modelshift_weaksec(koi)
