@@ -1,7 +1,7 @@
 from __future__  import print_function, division
 import numpy as np
 import pandas as pd
-import os, os.path
+import os, os.path, shutil
 import re
 import logging
 import cPickle as pickle
@@ -28,9 +28,9 @@ from keputils.koiutils import koiname
 from keputils import koiutils as ku
 from keputils import kicutils as kicu
 
-from simpledist import distributions as dists
+#from simpledist import distributions as dists
 
-import kplr
+#import kplr
 
 KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
@@ -43,13 +43,19 @@ STARMODEL_DIR = os.path.join(KOI_FPPDIR, 'starmodels')
 CHIPLOC_FILE = resource_filename('vespa','data/kepler_chiplocs.txt')
 
 #temporary, only local solution
-CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
+#CHAINSDIR = '{}/data/chains'.format(os.getenv('KEPLERDIR','~/.kepler'))
+CHAINSDIR = os.path.join(KOI_FPPDIR, 'trap_chains')
 
 DATAFOLDER = resource_filename('vespa','data')
 WEAKSECFILE = os.path.join(DATAFOLDER, 'weakSecondary_socv9p2vv.csv')
 WEAKSECDATA = pd.read_csv(WEAKSECFILE,skiprows=8)
 WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
 
+MAXAV = pd.read_table(os.path.join(DATAFOLDER,
+                                   'koi_maxAV.txt'),
+                      delim_whitespace=True,
+                      names=['koi','maxAV'])
+MAXAV.index = MAXAV['koi']
 
 import astropy.constants as const
 G = const.G.cgs.value
@@ -76,7 +82,7 @@ def kepler_starfield_file(koi):
     chips,ras,decs = np.loadtxt(CHIPLOC_FILE,unpack=True)
     ds = ((c.ra.deg-ras)**2 + (c.dec.deg-decs)**2)
     chip = chips[np.argmin(ds)]
-    return '{}/kepler_starfield_{}'.format(STARFIELD_DIR,chip)
+    return '{}/kepler_starfield_{}.h5'.format(STARFIELD_DIR,chip)
 
 
 def pipeline_weaksec(koi):
@@ -110,6 +116,14 @@ def default_r_exclusion(koi,rmin=0.5):
         logging.warning('No koi_dicco_msky_err info for {}. Defaulting to 4 arcsec.'.format(koi))
         
     return r_excl
+
+def koi_maxAV(koi):
+    try:
+        maxAV = MAXAV.ix[ku.koistar(koi),'maxAV']
+    except KeyError:
+        ra,dec = ku.radec(koi)
+        maxAV = get_AV_infinity(ra,dec)
+    return maxAV
 
 def koi_propdist(koi, prop):
     """
@@ -294,6 +308,19 @@ class KeplerTransitSignal(TransitSignal):
         # 2x duration of transit center, masking out any other
         # kois, etc., etc.
         
+def jrowe_fit(koi):
+    koinum = koiname(koi, star=True, koinum=True)
+    folder = os.path.join(JROWE_DIR, 'koi{}.n'.format(koinum))
+
+    num = np.round(koiname(koi,koinum=True) % 1 * 100)
+    fitfile = os.path.join(folder, 'n{:.0f}.dat'.format(num))
+
+    logging.debug('JRowe fitfile: {}'.format(fitfile))    
+
+    return pd.read_table(fitfile,index_col=0,usecols=(0,1,3),
+                         names=['par','val','a','err','c'],
+                         delimiter='\s+')
+
 class JRowe_KeplerTransitSignal(KeplerTransitSignal):
     def __init__(self,koi,mcmc=True,maxslope=None,refit_mcmc=False,
                  **kwargs):
@@ -325,13 +352,13 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
                 logging.debug('Reading transit times from {}'.format(self.ttfile))
                 tts = pd.read_table(self.ttfile,names=['tc','foo1','foo2'],delimiter='\s+')
 
-        self.rowefitfile = '%s/n%i.dat' % (self.folder,num)
+        #self.rowefitfile = '%s/n%i.dat' % (self.folder,num)
 
-        self.rowefit = pd.read_table(self.rowefitfile,index_col=0,usecols=(0,1,3),
-                                    names=['par','val','a','err','c'],
-                                    delimiter='\s+')
+        #self.rowefit = pd.read_table(self.rowefitfile,index_col=0,usecols=(0,1,3),
+        #                            names=['par','val','a','err','c'],
+        #                            delimiter='\s+')
+        self.rowefit = jrowe_fit(koi)
 
-        logging.debug('JRowe fitfile: {}'.format(self.rowefitfile))
 
         P = self.rowefit.ix['PE1','val']
         RR = self.rowefit.ix['RD1','val']
@@ -417,28 +444,43 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
     def MCMC(self,**kwargs):
         folder = '%s/%s' % (CHAINSDIR,self.name)
         if not os.path.exists(folder):
-            os.mkdir(folder)
-        super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
+            os.makedirs(folder)
+        try:
+            super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
+        except IOError:
+            shutil.rmtree(folder)
+            os.makedirs(folder)
+            super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)            
 
 
+def star_config(koi, bands=['g','r','i','z','J','H','K'], 
+                unc=dict(g=0.05, r=0.05, i=0.05, z=0.05,
+                         J=0.02, H=0.02, K=0.02), **kwargs):
 
-def star_config(koi, bands=['J','H','K'], unc=0.02,
-                write=True):
     """returns star config object for given KOI
     """
-    config = ConfigObj()
+    folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    config = ConfigObj(os.path.join(folder,'star.ini'))
 
     koi = ku.koiname(koi)
 
-    maxAV = get_AV_infinity(*ku.radec(koi))
+    maxAV = koi_maxAV(koi)
+    config['maxAV'] = maxAV
 
     mags = ku.KICmags(koi)
     for band in bands:
-        config[band] = (mags[band], unc)
+        config[band] = (mags[band], unc[band])
     config['Kepler'] = mags['Kepler']
 
     kepid = ku.DATA.ix[koi,'kepid']
-    if re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov']):
+    try:
+        m = re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov'])
+    except KeyError:
+        raise MissingStellarError('{} not in stellar table?'.format(kepid))
+    if m:
         config['Teff'] = (kicu.DATA.ix[kepid, 'teff'],
                           kicu.DATA.ix[kepid, 'teff_err1'])
         config['feh'] = (kicu.DATA.ix[kepid, 'feh'],
@@ -450,32 +492,28 @@ def star_config(koi, bands=['J','H','K'], unc=0.02,
             pass
 
 
-    config['maxAV'] = maxAV
-
-    if write:
-        folder = os.path.join(KOI_FPPDIR, koi)
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        config.filename = os.path.join(folder,
-                                       'star.ini')
-        config.write()
+    for kw,val in kwargs.items():
+        config[kw] = val
 
     return config
 
-def fpp_config(koi):
+def fpp_config(koi, **kwargs):
     """returns config object for given KOI
     """
+    folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    config = ConfigObj(os.path.join(folder,'fpp.ini'))
+
     koi = ku.koiname(koi)
 
-    sig = JRowe_KeplerTransitSignal(koi)
+    rowefit = jrowe_fit(koi)
 
-    config = ConfigObj()
     config['name'] = koi
     ra,dec = ku.radec(koi)
     config['ra'] = ra
     config['dec'] = dec
-    config['rprs'] = sig.rowefit.ix['RD1','val']
+    config['rprs'] = rowefit.ix['RD1','val']
     config['period'] = ku.DATA.ix[koi, 'koi_period']
     
     config['maxrad'] = default_r_exclusion(koi)
@@ -484,12 +522,41 @@ def fpp_config(koi):
     except NoWeakSecondaryError:
         pass
 
-    folder = os.path.join(KOI_FPPDIR, koi)
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+    config['starfield'] = kepler_starfield_file(koi)
+
+    for kw,val in kwargs.items():
+        config[kw] = val
+
+    return config
+
+def setup_fpp(koi, bands=['g','r','i','z','J','H','K'], 
+              unc=dict(g=0.05, r=0.05, i=0.05, z=0.05,
+                       J=0.02, H=0.02, K=0.02), 
+              star_kws=None, fpp_kws=None, trsig_kws=None,
+              trsig_overwrite=False):
+    if star_kws is None:
+        star_kws = {}
+    if fpp_kws is None:
+        fpp_kws = {}
+    if trsig_kws is None:
+        trsig_kws = {}
         
-    config.filename = os.path.join(folder, 'fpp.ini')
-    config.write()
+    #save transit signal
+    folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))
+    trsig_file = os.path.join(folder,'trsig.pkl')
+    if not os.path.exists(trsig_file) or\
+            trsig_overwrite:
+        sig = JRowe_KeplerTransitSignal(koi, refit_mcmc=True,
+                                        **trsig_kws)
+        sig.save(os.path.join(folder,'trsig.pkl'))
+
+    star = star_config(koi, bands=bands, unc=unc, **star_kws)
+    fpp = fpp_config(koi, **fpp_kws)
+
+    star.write()
+    fpp.write()
+
+
 
 ###############Exceptions################
 
@@ -497,6 +564,9 @@ class BadPhotometryError(Exception):
     pass
 
 class MissingKOIError(Exception):
+    pass
+
+class MissingStellarError(Exception):
     pass
 
 class BadRoweFitError(Exception):
