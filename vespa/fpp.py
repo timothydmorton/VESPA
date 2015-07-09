@@ -324,8 +324,8 @@ class FPPCalculation(object):
         maxrad = float(config['constraints']['maxrad'])
         fpp.set_maxrad(maxrad)
         if 'secthresh' in config['constraints']:
+            secthresh = float(config['constraints']['secthresh'])
             if not np.isnan(secthresh):
-                secthresh = float(config['constraints']['secthresh'])
                 fpp.apply_secthresh(secthresh)
 
 
