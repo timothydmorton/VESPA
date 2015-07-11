@@ -459,7 +459,7 @@ class FPPCalculation(object):
             folder = self.folder
         fout = open(folder+'/'+'results.txt','w')
         for m in self.popset.shortmodelnames:
-            fout.write('L_{0} pr_{0}'.format(m))
+            fout.write('L_{0} pr_{0} '.format(m))
         fout.write('fpV fp FPP\n')
         Ls = {}
         Ltot = 0
