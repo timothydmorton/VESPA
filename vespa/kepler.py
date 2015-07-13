@@ -98,6 +98,8 @@ def modelshift_weaksec(koi):
     secondary metric: D_sec_dv * (1 + 3*F_red_dv / sig_sec_dv)
     """
     num = ku.DATA.ix[ku.koiname(koi), 'koi_tce_plnt_num']
+    if np.isnan(num):
+        num = 1
     kid = ku.DATA.ix[ku.koiname(koi), 'kepid']
     tce = '{:09.0f}-{:02.0f}'.format(kid,num)
 
