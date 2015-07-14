@@ -122,24 +122,25 @@ def modelshift_weaksec(koi):
         return max(depth_dv, depth_alt)
 
 def pipeline_weaksec(koi):
-    return modelshift_weaksec(koi)
-    #below is old
     try:
-        weaksec = WEAKSECDATA.ix[ku.koiname(koi)]
-        secthresh = (weaksec['depth'] + 3*weaksec['e_depth'])*1e-6
-        if weaksec['depth'] <= 0:
-            raise KeyError
+        return modelshift_weaksec(koi)
+    except NoWeakSecondaryError:
+        try:
+            weaksec = WEAKSECDATA.ix[ku.koiname(koi)]
+            secthresh = (weaksec['depth'] + 3*weaksec['e_depth'])*1e-6
+            if weaksec['depth'] <= 0:
+                raise KeyError
 
-    except KeyError:
-        secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
+        except KeyError:
+            secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
+            if np.isnan(secthresh):
+                secthresh = ku.DATA.ix[koi,'koi_depth'] / 2 * 1e-6
+                logging.warning('No (or bad) weak secondary info for {}, and no reported depth error. Defaulting to 1/2 reported depth = {}'.format(koi, secthresh))
+            else:
+                logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+
         if np.isnan(secthresh):
-            secthresh = ku.DATA.ix[koi,'koi_depth'] / 2 * 1e-6
-            logging.warning('No (or bad) weak secondary info for {}, and no reported depth error. Defaulting to 1/2 reported depth = {}'.format(koi, secthresh))
-        else:
-            logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
-
-    if np.isnan(secthresh):
-        raise NoWeakSecondaryError(koi)
+            raise NoWeakSecondaryError(koi)
 
     return secthresh
 
