@@ -132,6 +132,7 @@ def pipeline_weaksec(koi):
                 raise KeyError
 
         except KeyError:
+            koi = ku.koiname(koi)
             secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
             if np.isnan(secthresh):
                 secthresh = ku.DATA.ix[koi,'koi_depth'] / 2 * 1e-6
