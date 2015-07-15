@@ -113,6 +113,7 @@ def modelshift_weaksec(koi):
     depth_alt = r['D_sec_alt'] * (1 + 3*r['F_red_alt'] / r['sig_sec_alt'])
     
     if np.isnan(depth_dv) and np.isnan(depth_alt):
+        #return weaksec_vv2(koi)
         raise NoWeakSecondaryError(koi)
     elif np.isnan(depth_dv):
         return depth_alt
@@ -125,23 +126,26 @@ def pipeline_weaksec(koi):
     try:
         return modelshift_weaksec(koi)
     except NoWeakSecondaryError:
-        try:
-            weaksec = WEAKSECDATA.ix[ku.koiname(koi)]
-            secthresh = (weaksec['depth'] + 3*weaksec['e_depth'])*1e-6
-            if weaksec['depth'] <= 0:
-                raise KeyError
+        return weaksec_vv2(koi)
 
-        except KeyError:
-            koi = ku.koiname(koi)
-            secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
-            if np.isnan(secthresh):
-                secthresh = ku.DATA.ix[koi,'koi_depth'] / 2 * 1e-6
-                logging.warning('No (or bad) weak secondary info for {}, and no reported depth error. Defaulting to 1/2 reported depth = {}'.format(koi, secthresh))
-            else:
-                logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+def weaksec_vv2(koi):
+    try:
+        weaksec = WEAKSECDATA.ix[ku.koiname(koi)]
+        secthresh = (weaksec['depth'] + 3*weaksec['e_depth'])*1e-6
+        if weaksec['depth'] <= 0:
+            raise KeyError
 
+    except KeyError:
+        koi = ku.koiname(koi)
+        secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
         if np.isnan(secthresh):
-            raise NoWeakSecondaryError(koi)
+            secthresh = ku.DATA.ix[koi,'koi_depth'] / 2 * 1e-6
+            logging.warning('No (or bad) weak secondary info for {}, and no reported depth error. Defaulting to 1/2 reported depth = {}'.format(koi, secthresh))
+        else:
+            logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
+
+    if np.isnan(secthresh):
+        raise NoWeakSecondaryError(koi)
 
     return secthresh
 

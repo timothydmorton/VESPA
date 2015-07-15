@@ -412,10 +412,10 @@ class FPPCalculation(object):
         if folder is None:
             folder = self.folder
 
+        self.write_results(folder=folder)
         self.lhoodplots(folder=folder,figformat=format,tag=tag,**kwargs)
         self.FPPsummary(folder=folder,saveplot=True,figformat=format,tag=tag)
         self.plotsignal(folder=folder,saveplot=True,figformat=format)
-        self.write_results(folder=folder)
 
     def plotsignal(self,fig=None,saveplot=True,folder=None,figformat='png',**kwargs):
         """
