@@ -69,7 +69,8 @@ from isochrones import StarModel, BinaryStarModel, TripleStarModel
 import warnings
 warnings.simplefilter("error")
 warnings.simplefilter("ignore", DeprecationWarning)
-warnings.simplefilter("ignore",RuntimeWarning)
+warnings.simplefilter("ignore", RuntimeWarning)
+warnings.simplefilter("ignore", UserWarning)
 
 import logging
 
