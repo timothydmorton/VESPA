@@ -295,6 +295,7 @@ class FPPCalculation(object):
                 popset = PopulationSet.load_hdf(popset_file)
             except HDF5ExtError:
                 os.remove(popset_file)
+                logging.warning('{} file corrupted; removing.'.format(popset_file))
                 raise RuntimeError #to get to except block
             for m in ['eb', 'heb', 'beb', 'pl']:
                 popset[m] #should there be a better way to check this? (yes)
