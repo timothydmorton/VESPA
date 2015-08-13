@@ -28,6 +28,11 @@ except ImportError:
     StarModel = None
 from .stars.populations import DARTMOUTH
 
+try:
+    from tables.exceptions import HDF5ExtError
+except ImportError:
+    HDF5ExtError = None
+
 class FPPCalculation(object):
     """
     An object to organize an FPP calculation.
@@ -285,7 +290,12 @@ class FPPCalculation(object):
         try:
             if recalc:
                 raise RuntimeError #just to get to except block
-            popset = PopulationSet.load_hdf(popset_file)
+
+            try:
+                popset = PopulationSet.load_hdf(popset_file)
+            except HDF5ExtError:
+                os.remove(popset_file)
+                raise RuntimeError #to get to except block
             for m in ['eb', 'heb', 'beb', 'pl']:
                 popset[m] #should there be a better way to check this? (yes)
             logging.info('PopulationSet loaded from {}'.format(popset_file))
