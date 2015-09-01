@@ -115,6 +115,9 @@ def modelshift_weaksec(koi):
     depth_dv = r['D_sec_dv'] * (1 + 3*r['F_red_dv'] / r['sig_sec_dv'])
     depth_alt = r['D_sec_alt'] * (1 + 3*r['F_red_alt'] / r['sig_sec_alt'])
     
+    logging.debug(r[['D_sec_dv','F_red_dv','sig_sec_dv']])
+    logging.debug(r[['D_sec_alt','F_red_alt','sig_sec_alt']])
+
     if np.isnan(depth_dv) and np.isnan(depth_alt):
         #return weaksec_vv2(koi)
         raise NoWeakSecondaryError(koi)
@@ -127,9 +130,9 @@ def modelshift_weaksec(koi):
 
 def pipeline_weaksec(koi):
     try:
-        return modelshift_weaksec(koi)
+        val = modelshift_weaksec(koi)
     except NoWeakSecondaryError:
-        return weaksec_vv2(koi)
+        val = weaksec_vv2(koi)
 
 def weaksec_vv2(koi):
     try:
@@ -578,7 +581,7 @@ def fpp_config(koi, **kwargs):
     config['ra'] = ra
     config['dec'] = dec
     config['rprs'] = rowefit.ix['RD1','val']
-    config['period'] = ku.DATA.ix[koi, 'koi_period']
+    config['period'] = rowefit.ix['PE1', 'val']
     
     config['starfield'] = kepler_starfield_file(koi)
 
