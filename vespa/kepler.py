@@ -37,6 +37,9 @@ except ImportError:
 
 KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
+JROWE_FILE = resource_filename('vespa','data/jrowe_mcmc_fits.csv')
+JROWE_DATA = pd.read_csv(JROWE_FILE, index_col=0)
+
 
 KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
 STARFIELD_DIR = os.path.join(KOI_FPPDIR, 'starfields')
@@ -353,7 +356,7 @@ class KeplerTransitSignal(TransitSignal):
         # 2x duration of transit center, masking out any other
         # kois, etc., etc.
         
-def jrowe_fit(koi):
+def jrowe_fit_old(koi):
     koinum = koiname(koi, star=True, koinum=True)
     folder = os.path.join(JROWE_DIR, 'koi{}.n'.format(koinum))
 
@@ -365,6 +368,14 @@ def jrowe_fit(koi):
     return pd.read_table(fitfile,index_col=0,usecols=(0,1,3),
                          names=['par','val','a','err','c'],
                          delimiter='\s+')
+
+def jrowe_fit(koi):
+    koi = koiname(koi)
+
+    pars = ['RHO', 'EP1','PE1', 'BB1', 'RD1']
+    vals = list(JROWE_DATA.ix[koi,['rhostar','T0','P','b','rdr']])
+
+    return pd.DataFrame({'val':vals}, index=pars)
 
 class JRowe_KeplerTransitSignal(KeplerTransitSignal):
     def __init__(self,koi,mcmc=True,maxslope=None,refit_mcmc=False,
