@@ -133,6 +133,8 @@ def pipeline_weaksec(koi):
         val = modelshift_weaksec(koi)
     except NoWeakSecondaryError:
         val = weaksec_vv2(koi)
+        
+    return val
 
 def weaksec_vv2(koi):
     try:
