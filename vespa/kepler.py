@@ -134,8 +134,8 @@ def pipeline_weaksec(koi):
     except NoWeakSecondaryError:
         val = weaksec_vv2(koi)
         
-    if val < 30:
-        val = 30
+    if val < 30e-6:
+        val = 30e-6
 
     return val
 
