@@ -458,7 +458,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         logging.debug('best-fit impact parameter={:.2f}'.format(self.rowefit.ix['BB1','val']))
 
         lc['t'] += (2450000+0.5)
-        lc['f'] += 1 - self.rowefit.ix['ZPT','val']
+        lc['f'] += 1 # - self.rowefit.ix['ZPT','val']
 
         if self.has_ttvs:
             tts['tc'] += 2504900
