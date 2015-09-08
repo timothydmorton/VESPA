@@ -14,7 +14,7 @@ except ImportError:
     ConfigObj, np, plt, cm = (None, None, None, None)
 
     
-from .populations import PopulationSet
+from .populations import PopulationSet, DEFAULT_MODELS
 from .transitsignal import TransitSignal, MCMCError
 
 from .stars.contrastcurve import ContrastCurveFromFile
@@ -302,18 +302,18 @@ class FPPCalculation(object):
             logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
             if recalc:
-                do_only = ['eb', 'heb', 'beb', 'pl']
+                do_only = DEFAULT_MODELS
             else:
                 try:
                     popset = PopulationSet.load_hdf(popset_file)                
                     do_only = []
-                    for m in ['eb', 'heb', 'beb', 'pl']:
+                    for m in DEFAULT_MODELS:
                         try:
                             popset[m]
                         except:
                             do_only.append(m)
                 except:
-                    do_only = ['eb', 'heb', 'beb', 'pl']
+                    do_only = DEFAULT_MODELS
 
             if os.path.exists(popset_file):
                 logging.warning('{} exists, but regenerating Population Set ({})...'.format(popset_file, do_only),

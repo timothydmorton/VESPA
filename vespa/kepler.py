@@ -396,7 +396,10 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
 
         self.lcfile = '%s/tremove.%i.dat' % (self.folder,num)
         if not os.path.exists(self.lcfile):
-            raise MissingKOIError('{} does not exist.'.format(self.lcfile))
+            kepid = ku.kepid(koi)
+            self.lcfile = '{}/klc{08.0f}.dct.dat'.format(self.folder,kepid)
+            if not os.path.exists(self.lcfile):
+                raise MissingKOIError('{} does not exist.'.format(self.lcfile))
         logging.debug('Reading photometry from {}'.format(self.lcfile))
 
         #break if photometry file is empty

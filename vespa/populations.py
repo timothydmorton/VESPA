@@ -58,11 +58,18 @@ SHORT_MODELNAMES = {'Planets':'pl',
                     'EBs':'eb',
                     'HEBs':'heb',
                     'BEBs':'beb',
+                    'EBs (Double Period)':'eb-Px2',
+                    'HEBs (Double Period)':'heb-Px2',
+                    'BEBs (Double Period)':'beb-Px2',
                     'Blended Planets':'bpl',
                     'Specific BEB':'sbeb',
                     'Specific HEB':'sheb'}
                         
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
+
+DEFAULT_MODELs = ['beb','heb','eb',
+                  'beb-Px2','heb-Px2','eb-Px2',
+                  'pl']
 
 try:
     from astropy.units import Quantity
@@ -1135,6 +1142,14 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
                                    priorfactors=priorfactors, prob=tot_prob,
                                    lhoodcachefile=self.lhoodcachefile)
 
+class EBPopulation_Px2(EBPopulation):
+    def __init__(self, period=None, **kwargs):
+        try: 
+            period *= 2
+        except TypeError:
+            raise TypeError('Must provide period')
+
+        super(EBPopulation_Px2, self).__init__(period=period, **kwargs)
 
 class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
     """Population of Hierarchical Eclipsing Binaries
@@ -1337,6 +1352,14 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
                                    priorfactors=priorfactors, prob=tot_prob,
                                    lhoodcachefile=self.lhoodcachefile)            
 
+class HEBPopulation_Px2(HEBPopulation):
+    def __init__(self, period=None, **kwargs):
+        try: 
+            period *= 2
+        except TypeError:
+            raise TypeError('Must provide period')
+
+        super(HEBPopulation_Px2, self).__init__(period=period, **kwargs)
 
 class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
                     BGStarPopulation):
@@ -1572,6 +1595,15 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
           super(BEBPopulation, self)._properties
 
             
+class BEBPopulation_Px2(BEBPopulation):
+    def __init__(self, period=None, **kwargs):
+        try: 
+            period *= 2
+        except TypeError:
+            raise TypeError('Must provide period')
+
+        super(BEBPopulation_Px2, self).__init__(period=period, **kwargs)
+
 class PopulationSet(object):
     """
     A set of EclipsePopulations used to calculate a transit signal FPP
@@ -1708,7 +1740,7 @@ class PopulationSet(object):
         do_all = False
         if do_only is None:
             do_all = True
-            do_only = ['beb','heb','eb','pl']
+            do_only = DEFAULT_MODELS
 
         if MAfn is None:
             MAfn = MAInterpolationFunction(pmin=0.007, pmax=1/0.007, nzs=200, nps=400)
@@ -1742,6 +1774,26 @@ class PopulationSet(object):
                 if not hide_exceptions:
                     raise
 
+        if 'heb-Px2' in do_only:
+            try:
+                hebpop_Px2 = HEBPopulation_Px2(mags=mags, 
+                                       Teff=Teff, logg=logg, feh=feh, 
+                                       period=period,
+                                       starmodel=triple_starmodel,
+                                       starfield=trilegal_filename,
+                                       MAfn=MAfn, n=n, **heb_kws)
+                if fit_trap:
+                    hebpop_Px2.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    if do_all:
+                        hebpop_Px2.save_hdf(savefile, 'heb-Px2', overwrite=True)
+                    else:
+                        hebpop_Px2.save_hdf(savefile, 'heb-Px2', append=True)
+            except:
+                logging.error('Error generating HEB-Px2 population.')
+                if not hide_exceptions:
+                    raise
+
         if 'eb' in do_only:
             try:
                 ebpop = EBPopulation(mags=mags, 
@@ -1759,6 +1811,23 @@ class PopulationSet(object):
                 if not hide_exceptions:
                     raise
 
+        if 'eb-Px2' in do_only:
+            try:
+                ebpop_Px2 = EBPopulation_Px2(mags=mags, 
+                                     Teff=Teff, logg=logg, feh=feh, 
+                                     period=period,
+                                     starmodel=binary_starmodel,
+                                     starfield=trilegal_filename,
+                                     MAfn=MAfn, n=n, **eb_kws)
+                if fit_trap:
+                    ebpop_Px2.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    ebpop_Px2.save_hdf(savefile, 'eb-Px2', append=True)
+            except:
+                logging.error('Error generating EB-Px2 population.')
+                if not hide_exceptions:
+                    raise
+
         if 'beb' in do_only:
             try:
                 bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
@@ -1773,7 +1842,20 @@ class PopulationSet(object):
                 if not hide_exceptions:
                     raise
                 
-
+        if 'beb-Px2' in do_only:
+            try:
+                bebpop_Px2 = BEBPopulation_Px2(trilegal_filename=trilegal_filename,
+                                       ra=ra, dec=dec, period=period, 
+                                       mags=mags, MAfn=MAfn, n=n, **beb_kws)
+                if fit_trap:
+                    bebpop_Px2.fit_trapezoids(MAfn=MAfn)
+                if savefile is not None:
+                    bebpop_Px2.save_hdf(savefile, 'beb-Px2', append=True)
+            except:
+                logging.error('Error generating BEB-Px2 population.')
+                if not hide_exceptions:
+                    raise
+                
         if 'pl' in do_only:
             try:
                 plpop = PlanetPopulation(period=period, rprs=rprs,
@@ -1791,11 +1873,17 @@ class PopulationSet(object):
 
         if not do_all and savefile is not None:
             hebpop = HEBPopulation.load_hdf(savefile, 'heb')
-            ebpop = HEBPopulation.load_hdf(savefile, 'eb')
-            bebpop = HEBPopulation.load_hdf(savefile, 'beb')
-            plpop = HEBPopulation.load_hdf(savefile, 'pl')
+            hebpop_Px2 = HEBPopulation.load_hdf(savefile, 'heb-Px2')
+            ebpop = EBPopulation.load_hdf(savefile, 'eb')
+            ebpop_Px2 = EBPopulation.load_hdf(savefile, 'eb-Px2')
+            bebpop = BEBPopulation.load_hdf(savefile, 'beb')
+            bebpop_Px2 = BEBPopulation.load_hdf(savefile, 'beb-Px2')
+            plpop = PlanetPopulation.load_hdf(savefile, 'pl')
+            
 
-        self.poplist = [hebpop, ebpop, bebpop, plpop]
+        self.poplist = [hebpop, hebpop_Px2, 
+                        ebpop, ebpop_Px2,
+                        bebpop, bebpop_Px2, plpop]
 
     @property
     def constraints(self):
