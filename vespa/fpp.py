@@ -297,7 +297,7 @@ class FPPCalculation(object):
                 os.remove(popset_file)
                 logging.warning('{} file corrupted; removing.'.format(popset_file))
                 raise RuntimeError #to get to except block
-            for m in ['eb', 'heb', 'beb', 'pl']:
+            for m in DEFAULT_MODELS:
                 popset[m] #should there be a better way to check this? (yes)
             logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
