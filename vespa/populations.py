@@ -1143,13 +1143,15 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
                                    lhoodcachefile=self.lhoodcachefile)
 
 class EBPopulation_Px2(EBPopulation):
-    def __init__(self, period=None, **kwargs):
+    def __init__(self, period=None, model='EBs (Double Period)',
+                 **kwargs):
         try: 
             period *= 2
         except TypeError:
             raise TypeError('Must provide period')
 
-        super(EBPopulation_Px2, self).__init__(period=period, **kwargs)
+        super(EBPopulation_Px2, self).__init__(period=period, model=model,
+                                               **kwargs)
 
 class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
     """Population of Hierarchical Eclipsing Binaries
@@ -1353,13 +1355,15 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
                                    lhoodcachefile=self.lhoodcachefile)            
 
 class HEBPopulation_Px2(HEBPopulation):
-    def __init__(self, period=None, **kwargs):
+    def __init__(self, period=None, model='HEBs (Double Period)',
+                 **kwargs):
         try: 
             period *= 2
         except TypeError:
             raise TypeError('Must provide period')
 
-        super(HEBPopulation_Px2, self).__init__(period=period, **kwargs)
+        super(HEBPopulation_Px2, self).__init__(period=period, model=model,
+                                                **kwargs)
 
 class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
                     BGStarPopulation):
@@ -1596,13 +1600,15 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
             
 class BEBPopulation_Px2(BEBPopulation):
-    def __init__(self, period=None, **kwargs):
+    def __init__(self, period=None, model='BEBs (Double Period)',
+                 **kwargs):
         try: 
             period *= 2
         except TypeError:
             raise TypeError('Must provide period')
 
-        super(BEBPopulation_Px2, self).__init__(period=period, **kwargs)
+        super(BEBPopulation_Px2, self).__init__(period=period, model=model,
+                                                **kwargs)
 
 class PopulationSet(object):
     """
