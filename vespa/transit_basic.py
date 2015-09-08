@@ -30,6 +30,8 @@ else:
     find_eclipse, traptransit, traptransit_resid = (None, None, None)
     emcee = None
 
+from transit import Central, System, Body
+    
 if not on_rtd:
     import astropy.constants as const
     AU = const.au.cgs.value
@@ -37,7 +39,8 @@ if not on_rtd:
     MSUN = const.M_sun.cgs.value
     REARTH = const.R_earth.cgs.value
     MEARTH = const.M_earth.cgs.value
-    DAY = 86400
+    G = const.G.cgs.value
+    DAY = 86400.
 
     DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
@@ -550,7 +553,27 @@ def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
         p0 = R2/R1
     return p0,b,aR
 
+
+
 def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
+    """
+
+    """
+
+    # Given both a/R* and P.
+    #  Assume R* = Rsun
+    a = aR * RSUN
+    M = a**3 / G * (4*np.pi**2)/(P*DAY)**2 / MSUN
+    central = Central(mu1=u1, mu2=u2, mass=M)
+    s = System(central)
+    body = Body(r=p0, a=aR, b=b, e=ecc, omega=w)
+    s.add_body(body)
+
+    ts = np.linspace(-1.5*body.duration, 1.5*body.duration, npts)
+    fs = s.light_curve(ts, texp=cadence)
+    return ts, fs
+
+def eclipse_old(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
     """Returns ts, fs of simulated eclipse.
 
 
