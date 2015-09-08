@@ -67,7 +67,7 @@ SHORT_MODELNAMES = {'Planets':'pl',
                         
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 
-DEFAULT_MODELs = ['beb','heb','eb',
+DEFAULT_MODELS = ['beb','heb','eb',
                   'beb-Px2','heb-Px2','eb-Px2',
                   'pl']
 
