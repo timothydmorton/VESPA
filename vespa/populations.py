@@ -1993,11 +1993,11 @@ class PopulationSet(object):
         elif name in ['sheb','shebs']:
             name = 'specific heb'
         elif name in ['eb-Px2', 'ebs-Px2']:
-            name = 'ebs-Px2'
+            name = 'ebs-px2'
         elif name in ['heb-Px2', 'hebs-Px2']:
-            name = 'hebs-Px2'
+            name = 'hebs-px2'
         elif name in ['beb-Px2', 'bebs-Px2']:
-            name = 'bebs-Px2'
+            name = 'bebs-px2'
         for pop in self.poplist:
             if name==pop.model.lower():
                 return pop
