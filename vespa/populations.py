@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import logging
 import os, os.path
 import re
+import math
 
 try:
     import numpy as np
@@ -25,9 +26,11 @@ except ImportError:
     GridSearchCV = None
     
 from isochrones import StarModel
+from transit import Central, System, Body
         
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
+from .transit_basic import eclipse
 from .fitebs import fitebs
 
 from .plotutils import setfig, plot2dhist
@@ -683,9 +686,85 @@ class EclipsePopulation(StarPopulation):
                          xy=(0.5,0.5),ha='center',va='center',
                          bbox=dict(boxstyle='round',fc='w'),
                          xycoords='figure fraction',fontsize=15)
-           
+    
+    def eclipse(self, i, secondary=False, npoints=200, width=3,
+                texp=0.020434028):
+        s = self.stars.iloc[i]
+
+        e = s['ecc']
+        P = s['P']
+        a = semimajor(P, s['mass_1']+s['mass_2']) * AU
+        aR = a / (s['radius_1'] * RSUN)
+        w = s['w']
+        p0 = s['radius_2']/s['radius_1']
+        
+        if secondary:
+            mu1, mu2 = s[['u1_2', 'u2_2']]
+            b = s['b_sec']
+            frac = s['fluxfrac_2']
+        else:
+            mu1, mu2 = s[['u1_1', 'u2_1']]
+            b = s['b_pri'] 
+            frac = s['fluxfrac_1']
+
+        return eclipse(p0, b, aR, P=P, ecc=e, w=w, npts=npoints,
+                       cadence=texp, frac=frac, conv=True,
+                       sec=secondary)
+        
+    def eclipse_new(self, i, secondary=False, npoints=200, width=3,
+                texp=0.020434028):
+        """
+        Returns times and fluxes of eclipse i (centered at t=0)
+        """
+        s = self.stars.iloc[i]
+        
+        e = s['ecc']
+        P = s['P']
+        if secondary:
+            mu1, mu2 = s[['u1_2', 'u2_2']]
+            w = np.mod(np.deg2rad(s['w']) + np.pi, 2*np.pi)
+            mass_central, radius_central = s[['mass_2','radius_2']]
+            mass_body, radius_body = s[['mass_1','radius_1']]
+            b = s['b_sec'] * s['radius_1']/s['radius_2']
+            frac = s['fluxfrac_2']
+        else:
+            mu1, mu2 = s[['u1_1', 'u2_1']]
+            w = np.deg2rad(s['w'])
+            mass_central, radius_central = s[['mass_1','radius_1']]
+            mass_body, radius_body = s[['mass_2','radius_2']]
+            b = s['b_pri'] 
+            frac = s['fluxfrac_1']
 
 
+        central_kwargs = dict(mass=mass_central, radius=radius_central,
+                              mu1=mu1, mu2=mu2)
+        central = Central(**central_kwargs)
+        
+        body_kwargs = dict(r=radius_body, mass=mass_body, b=b,
+                           period=P, e=e, omega=w) 
+        body = Body(**body_kwargs)
+
+        logging.debug('central: {}'.format(central_kwargs))
+        logging.debug('body: {}'.format(body_kwargs))
+        
+        s = System(central)
+        s.add_body(body)
+
+        # As of now, body.duration returns strictly circular duration
+        try:
+            dur = body.duration
+        except ValueError:
+            raise NoEclipseError
+
+        dur *= math.sqrt(1 - e*e)/(1 + e*math.sin(w))
+
+        logging.debug('duration: {}'.format(dur))
+        
+        ts = np.linspace(-width/2*dur, width/2*dur, npoints)
+        fs = s.light_curve(ts, texp=texp)
+        fs = 1 - frac*(1-fs)
+        return ts, fs
+            
     @property
     def _properties(self):
         return ['period','model','priorfactors','prob','lhoodcachefile',
@@ -2575,6 +2654,9 @@ def _loadcache(cachefile):
     
 
 ####### Exceptions
+
+class NoEclipseError(Exception):
+    pass
 
 class EmptyPopulationError(Exception):
     pass

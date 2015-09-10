@@ -4,6 +4,11 @@ import os
 import logging
 import pkg_resources
 
+import warnings
+import math
+
+warnings.filterwarnings('ignore', '.*duration.*')
+
 #test if building documentation on readthedocs.org
 on_rtd = False
 
@@ -400,9 +405,9 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         
     if new:
         #finding the mean anomaly boundaries of the eclipse
-
+        
         #shoot for at least 100 pts in transit
-        n = 100 * (np.pi * aR)
+        n = 100 * (np.pi * aR) #change this to be adaptive....
 
         Ms = np.linspace(-np.pi,np.pi,n)
         if ecc != 0:
@@ -555,7 +560,7 @@ def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
 
 
 
-def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
+def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
     """
 
     """
@@ -564,16 +569,28 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
     #  Assume R* = Rsun
     a = aR * RSUN
     M = a**3 / G * (4*np.pi**2)/(P*DAY)**2 / MSUN
-    central = Central(mu1=u1, mu2=u2, mass=M)
-    s = System(central)
-    body = Body(r=p0, a=aR, b=b, e=ecc, omega=w)
-    s.add_body(body)
 
-    ts = np.linspace(-1.5*body.duration, 1.5*body.duration, npts)
+    if sec:
+        central = Central(mu1=u1, mu2=u2, mass=M, radius=p0)
+        s = System(central)
+        body = Body(r=1, a=aR, b=b, e=ecc, omega=np.mod(w+math.pi, 2*math.pi))
+        s.add_body(body)
+        incl = body.incl
+        si = math.sin(math.radians(incl))
+        arg = 1./aR * math.sqrt((1+1/p0) ** 2 - b**2) / si
+        dur = math.asin(arg) * P * math.pi #*
+    else:
+        central = Central(mu1=u1, mu2=u2, mass=M)
+        s = System(central)
+        body = Body(r=p0, a=aR, b=b, e=ecc, omega=w)
+        s.add_body(body)
+
+    dur = body.duration
+    ts = np.linspace(-1.5*dur, 1.5*dur, npts)
     fs = s.light_curve(ts, texp=cadence)
     return ts, fs
 
-def eclipse_old(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
     """Returns ts, fs of simulated eclipse.
 
 
