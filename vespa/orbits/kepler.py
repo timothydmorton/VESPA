@@ -8,6 +8,7 @@ import math
 on_rtd = False 
 
 try:
+    from numba import jit, vectorize
     import numpy as np
     from scipy.optimize import newton
     from scipy.interpolate import LinearNDInterpolator as interpnd
@@ -49,8 +50,31 @@ def Efn(Ms,eccs):
     Es += unit*(2*np.pi)
     return Es
 
-
+@jit(nopython=True)
 def calculate_eccentric_anomaly(mean_anomaly, eccentricity):
+    done = False
+    guess = mean_anomaly
+    i = 0
+    tol = 1e-5
+    maxiter = 100
+    while not done:
+        f = guess - eccentricity * math.sin(guess) - mean_anomaly
+        f_prime = 1 - eccentricity * math.cos(guess)
+        newguess = guess - f/f_prime
+        if abs(newguess - guess) < tol:
+            done = True
+        i += 1
+        if i > maxiter:
+            done = True
+        guess = newguess
+
+    return guess
+
+@vectorize
+def calculate_eccentric_anomalies(M, e):
+    return calculate_eccentric_anomaly(M, e)
+
+def calculate_eccentric_anomaly_old(mean_anomaly, eccentricity):
 
     def f(eccentric_anomaly_guess):
         return eccentric_anomaly_guess - eccentricity * math.sin(eccentric_anomaly_guess) - mean_anomaly
@@ -58,9 +82,9 @@ def calculate_eccentric_anomaly(mean_anomaly, eccentricity):
     def f_prime(eccentric_anomaly_guess):
         return 1 - eccentricity * math.cos(eccentric_anomaly_guess)
 
-    return newton(f, mean_anomaly, f_prime,maxiter=100)
+    return newton(f, mean_anomaly, f_prime, maxiter=100)
 
-def calculate_eccentric_anomalies(eccentricity, mean_anomalies):
+def calculate_eccentric_anomalies_old(eccentricity, mean_anomalies):
     def _calculate_one_ecc_anom(mean_anomaly):
         return calculate_eccentric_anomaly(mean_anomaly, eccentricity)
 

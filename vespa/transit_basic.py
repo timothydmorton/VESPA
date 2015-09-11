@@ -14,6 +14,7 @@ on_rtd = False
 
 try:
     import numpy as np
+    from numba import jit
     import numpy.random as rand
     from scipy.optimize import leastsq
     from scipy.ndimage import convolve1d
@@ -24,6 +25,7 @@ except ImportError:
     
 
 from .orbits.kepler import Efn
+from .orbits.kepler import calculate_eccentric_anomaly, calculate_eccentric_anomalies
 from .stars.utils import rochelobe, withinroche, semimajor
 
 if not on_rtd:
@@ -360,7 +362,109 @@ def a_over_Rs(P,R2,M2,M1=1,R1=1,planet=True):
         R2 *= MEARTH/MSUN
     return semimajor(P,M1+M2)*AU/(R1*RSUN)
 
+@jit(nopython=True)
+def true_anomaly(M, ecc):
+    """
+    Return true anomaly given mean anomaly & eccentricity
+    """
+    E = calculate_eccentric_anomaly(M, ecc)
+    return 2 * math.atan2(math.sqrt(1 + ecc)*math.sin(E/2),
+                          math.sqrt(1-ecc)*math.cos(E/2))
+@jit(nopython=True)
+def z_of_M(M, b, aR, ecc, w, sec=False):
+    """
+    Returns z (instantaneous impact parameter) given mean anomaly
+
+    :param M: 
+        mean anomaly
+
+    :param b,aR,ecc,w:
+        Impact parameter (minimum), a/R*, eccentricity, argument of periapse (rad)
+
+    :param sec:
+        Whether we're talking about the secondary ("back half" of orbit)
+        or not.
+
+    """
+    if sec:
+        inc = math.acos(b/aR * (1 - ecc*math.sin(w))/(1 - ecc*ecc))
+    else:
+        inc = math.acos(b/aR * (1 + ecc*math.sin(w))/(1 - ecc*ecc))
+        
+    nu = true_anomaly(M, ecc)
+
+    # Winn (2010) Eq 5:
+    sin_i = math.sin(inc)
+    sin_wf = math.sin(w + nu)
+
+    r_sky = (aR*(1-ecc*ecc) / (1 + ecc*math.cos(nu)) *
+             math.sqrt(1 - sin_wf*sin_wf * sin_i*sin_i))
+    
+    #r = aR * (1-ecc*ecc)/(1 + ecc*math.cos(nu)) #secondary distance from primary in units of R1
+    #X = -r * math.cos(w + nu)
+    #Y = -r * math.sin(w + nu)*math.cos(inc)
+    #r_sky = math.sqrt(X**2 + Y**2)
+
+    if sec:
+        on_rightside = (math.sin(nu + w) < 0)
+    else:
+        on_rightside = (math.sin(nu + w) >= 0)    
+
+        
+    return r_sky, on_rightside
+
+@jit(nopython=True)
 def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
+    
+    Mlo = -np.pi
+    Mhi = np.pi
+    
+    done = False
+    n = 0
+    ncalc = 0
+    maxiter = 10
+    while not done and n <= maxiter:
+        n += 1
+        Ms = np.linspace(Mlo, Mhi, npts)
+        zs = np.zeros(npts)
+
+        zmin = 1000
+        Mmin = 0.
+        imin = 0
+        for i in range(npts):
+            M = Ms[i]
+            z, rightside = z_of_M(M, b, aR, ecc, w, sec)
+            ncalc += 1
+            if z < zmin and rightside:
+                Mmin = M
+                zmin = z
+                imin = i
+            zs[i] = z    
+
+        ilo = imin - 1
+        while zs[ilo] < width:
+            ilo -= 1
+
+        ihi = imin + 1
+        while zs[ihi] < width:
+            ihi += 1
+
+        Mlo = Ms[ilo]
+        Mhi = Ms[ihi]
+        if Mhi < Mlo:
+            Mlo += 2*np.pi
+    
+        zlo = zs[ilo]
+        zhi = zs[ihi]
+        if abs(zlo - width) < 0.01 and abs(zhi - width) < 0.01:
+            done = True
+            
+    phs = (Ms - Mmin) / (2*np.pi)
+    ts = phs*P
+        
+    return ts, zs
+    
+def eclipse_tz_old(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
     """Returns ts and zs for an eclipse (npts points right around the eclipse)
 
     
@@ -990,9 +1094,6 @@ def ellpic_bulirsch(n,k):
         else:
             return 0.5*np.pi*(c*m0+d)/(m0*(m0+p))
 
-
-#def traptransit(ts,p):
-#    return traptransit(ts,p)
 
 def fit_traptransit(ts,fs,p0):
     """
