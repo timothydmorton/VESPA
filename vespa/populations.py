@@ -689,7 +689,7 @@ class EclipsePopulation(StarPopulation):
                          xycoords='figure fraction',fontsize=15)
     
     def eclipse(self, i, secondary=False, npoints=200, width=3,
-                texp=0.020434028):
+                texp=0.020434028, MAfn=None):
         s = self.stars.iloc[i]
         P = s['P']
 
@@ -709,7 +709,7 @@ class EclipsePopulation(StarPopulation):
 
         return eclipse(p0, b, aR, P=P, ecc=s['ecc'], w=s['w'], npts=npoints,
                        cadence=texp, frac=frac, conv=True,
-                       sec=secondary)
+                       sec=secondary, MAfn=MAfn)
         
     def eclipse_new(self, i, secondary=False, npoints=200, width=3,
                 texp=0.020434028):
@@ -756,7 +756,7 @@ class EclipsePopulation(StarPopulation):
         except ValueError:
             raise NoEclipseError
 
-        dur *= math.sqrt(1 - e*e)/(1 + e*math.sin(w))
+        #dur *= math.sqrt(1 - e*e)/(1 + e*math.sin(w))
 
         logging.debug('duration: {}'.format(dur))
         

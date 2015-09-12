@@ -437,7 +437,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         imin = 0
         for i in range(npts):
             M = Ms[i]
-            z, rightside = z_of_M(M, b, aR, ecc, w, sec)
+            z, rightside = z_of_M(M, b, aR, ecc, w*np.pi/180, sec)
             ncalc += 1
             if z < zmin and rightside:
                 Mmin = M
@@ -739,7 +739,7 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
         Orbital period
 
     :param ecc,w: (optional)
-        Eccentricity, argument of periapse.
+        Eccentricity, argument of periapse (degrees)
 
     :param npts: (optional)
         Number of points to simulate.
