@@ -30,7 +30,7 @@ from transit import Central, System, Body
         
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
-from .transit_basic import eclipse
+from .transit_basic import eclipse, NoEclipseError
 from .fitebs import fitebs
 
 from .plotutils import setfig, plot2dhist
@@ -2654,9 +2654,6 @@ def _loadcache(cachefile):
     
 
 ####### Exceptions
-
-class NoEclipseError(Exception):
-    pass
 
 class EmptyPopulationError(Exception):
     pass

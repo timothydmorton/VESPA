@@ -74,6 +74,7 @@ def fitebs(data, MAfn=None, conv=True, cadence=0.020434028,
         pbar.start()
 
     for i in xrange(n):
+        logging.debug('Fitting star {}'.format(i))
         pri = (data['dpri'][i] > data['dsec'][i]) or np.isnan(data['dsec'][i])
         sec = not pri
         secs[i] = sec

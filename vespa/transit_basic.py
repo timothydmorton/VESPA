@@ -423,7 +423,9 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
     n = 0
     ncalc = 0
     maxiter = 10
-    while not done and n <= maxiter:
+    Mlo_pegged = False
+    Mhi_pegged = False
+    while not done and n < maxiter:
         n += 1
         Ms = np.linspace(Mlo, Mhi, npts)
         zs = np.zeros(npts)
@@ -441,14 +443,37 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
                 imin = i
             zs[i] = z    
 
-        ilo = imin - 1
-        while zs[ilo] < width:
-            ilo -= 1
+        if (imin==0 or imin==npts-1) and n==1:
+            Mlo += np.pi/2
+            Mhi += np.pi/2
+            n -= 1
+            continue
 
-        ihi = imin + 1
-        while zs[ihi] < width:
-            ihi += 1
+            
+        if Mlo_pegged:
+            ilo = 0
+        else:
+            ilo = imin - 1
+            while zs[ilo] < width:
+                ilo -= 1
+                if ilo==0 and n > 1:
+                    Mlo_pegged = True
+                    break
 
+        if Mhi_pegged:
+            ihi = npts - 1
+        else:
+            ihi = imin + 1
+            while zs[ihi] < width:
+                ihi += 1
+                if ihi == npts - 1 and n > 1:
+                    Mhi_pegged = True
+                    break
+
+        if Mlo_pegged and Mhi_pegged:
+            done = True
+            continue
+            
         Mlo = Ms[ilo]
         Mhi = Ms[ihi]
         if Mhi < Mlo:
@@ -458,11 +483,14 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         zhi = zs[ihi]
         if abs(zlo - width) < 0.01 and abs(zhi - width) < 0.01:
             done = True
+
+    if zmin > width:
+        raise NoEclipseError
             
     phs = (Ms - Mmin) / (2*np.pi)
     ts = phs*P
         
-    return ts, zs
+    return ts, zs, ncalc
     
 def eclipse_tz_old(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
     """Returns ts and zs for an eclipse (npts points right around the eclipse)
@@ -777,7 +805,7 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
 
     if conv:
         dt = ts[1]-ts[0]
-        npts = np.round(cadence/dt)
+        npts = int(np.round(cadence/dt))
         if npts % 2 == 0:
             npts += 1
         boxcar = np.ones(npts)/npts
