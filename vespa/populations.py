@@ -30,6 +30,7 @@ from transit import Central, System, Body
         
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
+from .transit_basic import eclipse_pars
 from .transit_basic import eclipse, NoEclipseError
 from .fitebs import fitebs
 
@@ -690,13 +691,12 @@ class EclipsePopulation(StarPopulation):
     def eclipse(self, i, secondary=False, npoints=200, width=3,
                 texp=0.020434028):
         s = self.stars.iloc[i]
-
-        e = s['ecc']
         P = s['P']
-        a = semimajor(P, s['mass_1']+s['mass_2']) * AU
-        aR = a / (s['radius_1'] * RSUN)
-        w = s['w']
-        p0 = s['radius_2']/s['radius_1']
+
+        p0, b, aR = eclipse_pars(P, s['mass_1'], s['mass_2'],
+                                 s['radius_1'], s['radius_2'],
+                                 ecc=s['ecc'], inc=s['inc'],
+                                 w=s['w'])
         
         if secondary:
             mu1, mu2 = s[['u1_2', 'u2_2']]
@@ -707,7 +707,7 @@ class EclipsePopulation(StarPopulation):
             b = s['b_pri'] 
             frac = s['fluxfrac_1']
 
-        return eclipse(p0, b, aR, P=P, ecc=e, w=w, npts=npoints,
+        return eclipse(p0, b, aR, P=P, ecc=s['ecc'], w=s['w'], npts=npoints,
                        cadence=texp, frac=frac, conv=True,
                        sec=secondary)
         

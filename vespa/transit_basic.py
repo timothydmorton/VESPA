@@ -427,9 +427,11 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
     Mhi_pegged = False
     while not done and n < maxiter:
         n += 1
+        #print(Mlo,Mhi)
         Ms = np.linspace(Mlo, Mhi, npts)
         zs = np.zeros(npts)
-
+        rightsides = np.zeros(npts)
+        
         zmin = 1000
         Mmin = 0.
         imin = 0
@@ -442,19 +444,21 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
                 zmin = z
                 imin = i
             zs[i] = z    
-
-        if (imin==0 or imin==npts-1) and n==1:
-            Mlo += np.pi/2
-            Mhi += np.pi/2
-            n -= 1
-            continue
-
+            rightsides[i] = rightside
             
+        #print('zmin: {}, imin: {}, Mmin: {}'.format(zmin,imin,Mmin))
+            
+        if (imin==0 or imin==npts-1):
+            Mlo = Mmin - np.pi/2
+            Mhi = Mmin + np.pi/2
+            n = 1
+            continue
+        
         if Mlo_pegged:
             ilo = 0
         else:
             ilo = imin - 1
-            while zs[ilo] < width:
+            while zs[ilo] < width and rightsides[ilo]:
                 ilo -= 1
                 if ilo==0 and n > 1:
                     Mlo_pegged = True
@@ -464,7 +468,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
             ihi = npts - 1
         else:
             ihi = imin + 1
-            while zs[ihi] < width:
+            while zs[ihi] < width and rightsides[ihi]:
                 ihi += 1
                 if ihi == npts - 1 and n > 1:
                     Mhi_pegged = True
@@ -474,16 +478,18 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
             done = True
             continue
             
-        Mlo = Ms[ilo]
-        Mhi = Ms[ihi]
-        if Mhi < Mlo:
-            Mlo += 2*np.pi
+        Mlo = Ms[ilo] 
+        Mhi = Ms[ihi] 
     
         zlo = zs[ilo]
         zhi = zs[ihi]
         if abs(zlo - width) < 0.01 and abs(zhi - width) < 0.01:
             done = True
-
+            
+        
+        if zmin > width and n > 3:
+            done = True
+                    
     if zmin > width:
         raise NoEclipseError
             
