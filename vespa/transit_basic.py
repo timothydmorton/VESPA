@@ -490,7 +490,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
     phs = (Ms - Mmin) / (2*np.pi)
     ts = phs*P
         
-    return ts, zs, ncalc
+    return ts, zs
     
 def eclipse_tz_old(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
     """Returns ts and zs for an eclipse (npts points right around the eclipse)
