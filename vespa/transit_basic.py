@@ -23,7 +23,12 @@ except ImportError:
     on_rtd = True
     np, rand, leastsq, convolve1d, interpnd = (None, None, None, None, None)
     
+try:
+    from batman import _quadratic_ld
+except ImportError:
+    _quadratic_ld = None
 
+    
 #from .orbits.kepler import Efn
 from .orbits.kepler import calculate_eccentric_anomaly, calculate_eccentric_anomalies
 from .stars.utils import rochelobe, withinroche, semimajor
@@ -727,11 +732,6 @@ def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width
     fs = s.light_curve(ts, texp=cadence)
     return ts, fs
 
-
-try:
-    from batman import _quadratic_ld
-except ImportError:
-    _quadratic_ld = None
 
 def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True,
             batman=True):
