@@ -734,7 +734,7 @@ except ImportError:
     _quadratic_ld = None
 
 def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True,
-            batman=False):
+            batman=True):
     """Returns ts, fs of simulated eclipse.
 
 
