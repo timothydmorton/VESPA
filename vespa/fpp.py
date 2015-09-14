@@ -332,6 +332,10 @@ class FPPCalculation(object):
         
         fpp = cls(trsig, popset, folder=folder)
 
+        #############
+        # Apply constraints
+
+        # Exclusion radius
         maxrad = float(config['constraints']['maxrad'])
         fpp.set_maxrad(maxrad)
         if 'secthresh' in config['constraints']:
@@ -339,6 +343,9 @@ class FPPCalculation(object):
             if not np.isnan(secthresh):
                 fpp.apply_secthresh(secthresh)
 
+        # Odd-even constraint
+        diff = 3 * np.max(trsig.depthfit[1])
+        fpp.constrain_oddeven(diff)
 
         #apply contrast curve constraints if present
         if 'ccfiles' in config['constraints']:

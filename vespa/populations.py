@@ -72,7 +72,7 @@ SHORT_MODELNAMES = {'Planets':'pl',
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 
 DEFAULT_MODELS = ['beb','heb','eb',
-#                  'beb_Px2','heb_Px2','eb_Px2',
+                  'beb_Px2', 'heb_Px2','eb_Px2',
                   'pl']
 
 try:
@@ -788,6 +788,17 @@ class EclipsePopulation(StarPopulation):
             logging.warning('Trapezoid fit not done.')
         return new
 
+class EclipsePopulation_Px2(EclipsePopulation):
+    def apply_secthresh(self, *args, **kwargs):
+        logging.warning('Secondary depth cut should not be used on a double-period scenario!')
+
+    @property
+    def depth_difference(self):
+        return np.absolute(self.depth - self.secondary_depth)
+
+    def constrain_oddeven(self, diff):
+        self.apply_constraint(UpperLimit(self.depth_difference, diff, name='odd-even'))
+
 class PlanetPopulation(EclipsePopulation):
     """Population of Transiting Planets
 
@@ -1216,16 +1227,16 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
                                    priorfactors=priorfactors, prob=tot_prob,
                                    lhoodcachefile=self.lhoodcachefile)
 
-class EBPopulation_Px2(EBPopulation):
+class EBPopulation_Px2(EclipsePopulation_Px2, EBPopulation):
     def __init__(self, period=None, model='EBs (Double Period)',
                  **kwargs):
         try: 
             period *= 2
-        except TypeError:
-            raise TypeError('Must provide period')
+        except:
+            pass
 
-        super(EBPopulation_Px2, self).__init__(period=period, model=model,
-                                               **kwargs)
+        EBPopulation.__init__(self, period=period, model=model,
+                              **kwargs)
 
 class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
     """Population of Hierarchical Eclipsing Binaries
@@ -1428,16 +1439,16 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
                                    priorfactors=priorfactors, prob=tot_prob,
                                    lhoodcachefile=self.lhoodcachefile)            
 
-class HEBPopulation_Px2(HEBPopulation):
+class HEBPopulation_Px2(EclipsePopulation_Px2, HEBPopulation):
     def __init__(self, period=None, model='HEBs (Double Period)',
                  **kwargs):
         try: 
             period *= 2
         except TypeError:
-            raise TypeError('Must provide period')
+            pass
 
-        super(HEBPopulation_Px2, self).__init__(period=period, model=model,
-                                                **kwargs)
+        HEBPopulation.__init__(self, period=period, model=model,
+                               **kwargs)
 
 class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
                     BGStarPopulation):
@@ -1673,16 +1684,16 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
           super(BEBPopulation, self)._properties
 
             
-class BEBPopulation_Px2(BEBPopulation):
+class BEBPopulation_Px2(EclipsePopulation_Px2, BEBPopulation):
     def __init__(self, period=None, model='BEBs (Double Period)',
                  **kwargs):
         try: 
             period *= 2
         except TypeError:
-            raise TypeError('Must provide period')
+            pass
 
-        super(BEBPopulation_Px2, self).__init__(period=period, model=model,
-                                                **kwargs)
+        BEBPopulation.__init__(self, period=period, model=model,
+                               **kwargs)
 
 class PopulationSet(object):
     """
@@ -2066,12 +2077,12 @@ class PopulationSet(object):
             name = 'specific beb'
         elif name in ['sheb','shebs']:
             name = 'specific heb'
-        elif name in ['eb_Px2', 'ebs_Px2']:
-            name = 'ebs-px2'
-        elif name in ['heb_Px2', 'hebs_Px2']:
-            name = 'hebs-px2'
-        elif name in ['beb_Px2', 'bebs_Px2']:
-            name = 'bebs-px2'
+        elif name in ['eb_Px2', 'ebs_Px2', 'eb_px2', 'ebs_Px2']:
+            name = 'ebs (double period)'
+        elif name in ['heb_Px2', 'hebs_Px2', 'heb_px2', 'hebs_px2']:
+            name = 'hebs (double period)'
+        elif name in ['beb_Px2', 'bebs_Px2', 'beb_px2', 'bebs_px2']:
+            name = 'bebs (double period)'
         for pop in self.poplist:
             if name==pop.model.lower():
                 return pop
@@ -2186,7 +2197,7 @@ class PopulationSet(object):
         self.trend_limit = limit
         self.trend_dt = dt
 
-    def apply_secthresh(self,secthresh, **kwargs):
+    def apply_secthresh(self, secthresh, **kwargs):
         """Applies secondary depth constraint to each population
         
         See :func:`EclipsePopulation.apply_secthresh`; 
@@ -2197,8 +2208,21 @@ class PopulationSet(object):
         if 'secondary depth' not in self.constraints:
             self.constraints.append('secondary depth')
         for pop in self.poplist:
-            pop.apply_secthresh(secthresh, **kwargs)
+            if not isinstance(pop, EclipsePopulation_Px2):
+                pop.apply_secthresh(secthresh, **kwargs)
         self.secthresh = secthresh
+
+    def constrain_oddeven(self, diff, **kwargs):
+        """Constrains the difference b/w primary and secondary to be < diff
+        """
+        if 'odd-even' not in self.constraints:
+            self.constraints.append('odd-even')
+        for pop in self.poplist:
+            if isinstance(pop, EclipsePopulation_Px2):
+                pop.constrain_oddeven(diff, **kwargs)
+        self.oddeven_diff = diff
+
+        
 
     def constrain_property(self,prop,**kwargs):
         """

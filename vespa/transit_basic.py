@@ -429,6 +429,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
     maxiter = 10
     Mlo_pegged = False
     Mhi_pegged = False
+    n_at_endpoint = 0
     while not done and n < maxiter:
         n += 1
         #print(Mlo,Mhi)
@@ -453,9 +454,12 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         #print('zmin: {}, imin: {}, Mmin: {}'.format(zmin,imin,Mmin))
             
         if (imin==0 or imin==npts-1):
-            Mlo = Mmin - np.pi/2
-            Mhi = Mmin + np.pi/2
+            Mlo = Mmin - 0.8*np.pi/2 #so as to avoid exact flipping back & forth
+            Mhi = Mmin + 0.8*np.pi/2
             n = 1
+            n_at_endpoint += 1
+            if n_at_endpoint == 3: #hack to avoid wierdo infinite loop
+                done = True
             continue
         
         if Mlo_pegged:
@@ -788,6 +792,7 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
     """
 
     if sec:
+        logging.debug('P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(P,b/p0,aR/p0,ecc,w,sec,(1+1/p0)*width))
         ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
                            sec=sec,dt=dt,approx=approx,new=new)
         if zs.min() > (1 + 1/p0):
@@ -795,6 +800,7 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
                           '[P,b/p0,aR/p0,ecc,w] = {}'.format([P,b/p0,aR/p0,ecc,w]))                         
             raise NoEclipseError
     else:
+        logging.debug('P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(P,b,aR,ecc,w,sec,(1+p0)*width))
         ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
                            sec=sec,dt=dt,approx=approx,new=new)
         if zs.min() > (1+p0):
