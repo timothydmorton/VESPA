@@ -72,7 +72,7 @@ SHORT_MODELNAMES = {'Planets':'pl',
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 
 DEFAULT_MODELS = ['beb','heb','eb',
-                  'beb_Px2','heb_Px2','eb_Px2',
+#                  'beb_Px2','heb_Px2','eb_Px2',
                   'pl']
 
 try:
@@ -689,7 +689,7 @@ class EclipsePopulation(StarPopulation):
                          xycoords='figure fraction',fontsize=15)
     
     def eclipse(self, i, secondary=False, npoints=200, width=3,
-                texp=0.020434028, MAfn=None):
+                texp=0.020434028, MAfn=None, batman=True):
         s = self.stars.iloc[i]
         P = s['P']
 
@@ -709,7 +709,7 @@ class EclipsePopulation(StarPopulation):
 
         return eclipse(p0, b, aR, P=P, ecc=s['ecc'], w=s['w'], npts=npoints,
                        cadence=texp, frac=frac, conv=True,
-                       sec=secondary, MAfn=MAfn)
+                       sec=secondary, MAfn=MAfn, batman=batman)
         
     def eclipse_new(self, i, secondary=False, npoints=200, width=3,
                 texp=0.020434028):
