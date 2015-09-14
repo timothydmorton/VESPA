@@ -26,7 +26,7 @@ except ImportError:
     GridSearchCV = None
     
 from isochrones import StarModel
-from transit import Central, System, Body
+#from transit import Central, System, Body
         
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
