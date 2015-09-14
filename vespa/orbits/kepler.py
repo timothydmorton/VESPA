@@ -16,39 +16,39 @@ except ImportError:
     np, newton, interpnd = (None, None, None)
     on_rtd = True
     
-#if not on_rtd:
-    #DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
+if not on_rtd:
+    DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
-    #Es = np.load(os.path.join(DATAFOLDER,'Etable.npy'))
-    #eccs = np.load(os.path.join(DATAFOLDER,'Etable_eccs.npy'))
-    #Ms = np.load(os.path.join(DATAFOLDER,'Etable_Ms.npy'))
-    #ECCS,MS = np.meshgrid(eccs,Ms)
-    #points = np.array([MS.ravel(),ECCS.ravel()]).T
-    #EFN = interpnd(points,Es.ravel())
-#else:
-    #DATAFOLDER, Es, eccs, Ms, ECCS, MS = (None, None, None, None, None, None)
-    #points, EFN = (None, None) 
+    Es = np.load(os.path.join(DATAFOLDER,'Etable.npy'))
+    eccs = np.load(os.path.join(DATAFOLDER,'Etable_eccs.npy'))
+    Ms = np.load(os.path.join(DATAFOLDER,'Etable_Ms.npy'))
+    ECCS,MS = np.meshgrid(eccs,Ms)
+    points = np.array([MS.ravel(),ECCS.ravel()]).T
+    EFN = interpnd(points,Es.ravel())
+else:
+    DATAFOLDER, Es, eccs, Ms, ECCS, MS = (None, None, None, None, None, None)
+    points, EFN = (None, None) 
     
-#def Efn(Ms,eccs):
-#    """
-#    Returns Eccentric anomaly, interpolated from pre-computed grid of M, ecc
+def Efn(Ms,eccs):
+    """
+    Returns Eccentric anomaly, interpolated from pre-computed grid of M, ecc
 
-#    Instantaneous solution of Kepler's equation!
+    Instantaneous solution of Kepler's equation!
 
-#    Works for ``-2*np.pi < Ms < 2*np.pi`` and ``eccs <= 0.97``
+    Works for ``-2*np.pi < Ms < 2*np.pi`` and ``eccs <= 0.97``
     
-#    :param Ms: (``float`` or array-like)
-#        Mean anomaly
+    :param Ms: (``float`` or array-like)
+        Mean anomaly
 
-#    :param eccs: (``float`` or array-like)
+    :param eccs: (``float`` or array-like)
 
-#    """
-#    Ms = np.atleast_1d(Ms)
-#    eccs = np.atleast_1d(eccs)
-#    unit = np.floor(Ms / (2*np.pi))
-#    Es = EFN((Ms % (2*np.pi)),eccs)
-#    Es += unit*(2*np.pi)
-#    return Es
+    """
+    Ms = np.atleast_1d(Ms)
+    eccs = np.atleast_1d(eccs)
+    unit = np.floor(Ms / (2*np.pi))
+    Es = EFN((Ms % (2*np.pi)),eccs)
+    Es += unit*(2*np.pi)
+    return Es
 
 @jit(nopython=True)
 def calculate_eccentric_anomaly(mean_anomaly, eccentricity):
