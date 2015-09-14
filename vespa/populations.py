@@ -62,9 +62,9 @@ SHORT_MODELNAMES = {'Planets':'pl',
                     'EBs':'eb',
                     'HEBs':'heb',
                     'BEBs':'beb',
-                    'EBs (Double Period)':'eb-Px2',
-                    'HEBs (Double Period)':'heb-Px2',
-                    'BEBs (Double Period)':'beb-Px2',
+                    'EBs (Double Period)':'eb_Px2',
+                    'HEBs (Double Period)':'heb_Px2',
+                    'BEBs (Double Period)':'beb_Px2',
                     'Blended Planets':'bpl',
                     'Specific BEB':'sbeb',
                     'Specific HEB':'sheb'}
@@ -72,7 +72,7 @@ SHORT_MODELNAMES = {'Planets':'pl',
 INV_SHORT_MODELNAMES = {v:k for k,v in SHORT_MODELNAMES.iteritems()}
 
 DEFAULT_MODELS = ['beb','heb','eb',
-                  'beb-Px2','heb-Px2','eb-Px2',
+                  'beb_Px2','heb_Px2','eb_Px2',
                   'pl']
 
 try:
@@ -1854,7 +1854,7 @@ class PopulationSet(object):
                 if not hide_exceptions:
                     raise
 
-        if 'heb-Px2' in do_only:
+        if 'heb_Px2' in do_only:
             try:
                 hebpop_Px2 = HEBPopulation_Px2(mags=mags, 
                                        Teff=Teff, logg=logg, feh=feh, 
@@ -1866,11 +1866,11 @@ class PopulationSet(object):
                     hebpop_Px2.fit_trapezoids(MAfn=MAfn)
                 if savefile is not None:
                     if do_all:
-                        hebpop_Px2.save_hdf(savefile, 'heb-Px2', overwrite=True)
+                        hebpop_Px2.save_hdf(savefile, 'heb_Px2', overwrite=True)
                     else:
-                        hebpop_Px2.save_hdf(savefile, 'heb-Px2', append=True)
+                        hebpop_Px2.save_hdf(savefile, 'heb_Px2', append=True)
             except:
-                logging.error('Error generating HEB-Px2 population.')
+                logging.error('Error generating HEB_Px2 population.')
                 if not hide_exceptions:
                     raise
 
@@ -1891,7 +1891,7 @@ class PopulationSet(object):
                 if not hide_exceptions:
                     raise
 
-        if 'eb-Px2' in do_only:
+        if 'eb_Px2' in do_only:
             try:
                 ebpop_Px2 = EBPopulation_Px2(mags=mags, 
                                      Teff=Teff, logg=logg, feh=feh, 
@@ -1902,9 +1902,9 @@ class PopulationSet(object):
                 if fit_trap:
                     ebpop_Px2.fit_trapezoids(MAfn=MAfn)
                 if savefile is not None:
-                    ebpop_Px2.save_hdf(savefile, 'eb-Px2', append=True)
+                    ebpop_Px2.save_hdf(savefile, 'eb_Px2', append=True)
             except:
-                logging.error('Error generating EB-Px2 population.')
+                logging.error('Error generating EB_Px2 population.')
                 if not hide_exceptions:
                     raise
 
@@ -1922,7 +1922,7 @@ class PopulationSet(object):
                 if not hide_exceptions:
                     raise
                 
-        if 'beb-Px2' in do_only:
+        if 'beb_Px2' in do_only:
             try:
                 bebpop_Px2 = BEBPopulation_Px2(trilegal_filename=trilegal_filename,
                                        ra=ra, dec=dec, period=period, 
@@ -1930,9 +1930,9 @@ class PopulationSet(object):
                 if fit_trap:
                     bebpop_Px2.fit_trapezoids(MAfn=MAfn)
                 if savefile is not None:
-                    bebpop_Px2.save_hdf(savefile, 'beb-Px2', append=True)
+                    bebpop_Px2.save_hdf(savefile, 'beb_Px2', append=True)
             except:
-                logging.error('Error generating BEB-Px2 population.')
+                logging.error('Error generating BEB_Px2 population.')
                 if not hide_exceptions:
                     raise
                 
@@ -1953,11 +1953,11 @@ class PopulationSet(object):
 
         if not do_all and savefile is not None:
             hebpop = HEBPopulation.load_hdf(savefile, 'heb')
-            hebpop_Px2 = HEBPopulation.load_hdf(savefile, 'heb-Px2')
+            hebpop_Px2 = HEBPopulation.load_hdf(savefile, 'heb_Px2')
             ebpop = EBPopulation.load_hdf(savefile, 'eb')
-            ebpop_Px2 = EBPopulation.load_hdf(savefile, 'eb-Px2')
+            ebpop_Px2 = EBPopulation.load_hdf(savefile, 'eb_Px2')
             bebpop = BEBPopulation.load_hdf(savefile, 'beb')
-            bebpop_Px2 = BEBPopulation.load_hdf(savefile, 'beb-Px2')
+            bebpop_Px2 = BEBPopulation.load_hdf(savefile, 'beb_Px2')
             plpop = PlanetPopulation.load_hdf(savefile, 'pl')
             
 
@@ -2066,11 +2066,11 @@ class PopulationSet(object):
             name = 'specific beb'
         elif name in ['sheb','shebs']:
             name = 'specific heb'
-        elif name in ['eb-Px2', 'ebs-Px2']:
+        elif name in ['eb_Px2', 'ebs_Px2']:
             name = 'ebs-px2'
-        elif name in ['heb-Px2', 'hebs-Px2']:
+        elif name in ['heb_Px2', 'hebs_Px2']:
             name = 'hebs-px2'
-        elif name in ['beb-Px2', 'bebs-Px2']:
+        elif name in ['beb_Px2', 'bebs_Px2']:
             name = 'bebs-px2'
         for pop in self.poplist:
             if name==pop.model.lower():
