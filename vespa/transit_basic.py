@@ -36,7 +36,7 @@ else:
     find_eclipse, traptransit, traptransit_resid = (None, None, None)
     emcee = None
 
-from transit import Central, System, Body
+#from transit import Central, System, Body
     
 if not on_rtd:
     import astropy.constants as const
