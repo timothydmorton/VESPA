@@ -1080,6 +1080,7 @@ def occultquad(z,u1,u2,p0,return_components=False):
 
 # Computes Hasting's polynomial approximation for the complete
 # elliptic integral of the first (ek) and second (kk) kind
+@jit(nopython=True)
 def ellke(k):
     m1=1.-k**2
     logm1 = np.log(m1)
@@ -1114,6 +1115,7 @@ def ellke(k):
 
 # Computes the complete elliptical integral of the third kind using
 # the algorithm of Bulirsch (1965):
+@jit(nopython=True)
 def ellpic_bulirsch(n,k):
     kc=np.sqrt(1.-k**2); p=n+1.
     if(p.min() < 0.):
