@@ -727,7 +727,14 @@ def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width
     fs = s.light_curve(ts, texp=cadence)
     return ts, fs
 
-def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
+
+try:
+    from batman import _quadratic_ld
+except ImportError:
+    _quadratic_ld = None
+
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True,
+            batman=False):
     """Returns ts, fs of simulated eclipse.
 
 
@@ -795,8 +802,14 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
                           'than 1 + 1/p0: ' +
                           '[P,b,aR,ecc,w] = {}'.format([P,b,aR,ecc,w]))
             raise NoEclipseError
-        
-    if MAfn is None:
+
+    if batman and _quadratic_ld is not None:
+        if sec:
+            fs = _quadratic_ld._quadratic_ld(zs, 1/p0, u1, u2, 1)
+        else:
+            fs = _quadratic_ld._quadratic_ld(zs, p0, u1, u2, 1)
+    
+    elif MAfn is None:
         if sec:
             fs = occultquad(zs,u1,u2,1/p0)
         else:
@@ -845,8 +858,6 @@ def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,conv=F
     
     dur,dep,slope,epoch = fit_traptransit(ts,fs,pars0)
     return dur,dep,slope
-
-
 
 
 def occultquad(z,u1,u2,p0,return_components=False):
@@ -1080,7 +1091,6 @@ def occultquad(z,u1,u2,p0,return_components=False):
 
 # Computes Hasting's polynomial approximation for the complete
 # elliptic integral of the first (ek) and second (kk) kind
-@jit(nopython=True)
 def ellke(k):
     m1=1.-k**2
     logm1 = np.log(m1)
@@ -1115,7 +1125,6 @@ def ellke(k):
 
 # Computes the complete elliptical integral of the third kind using
 # the algorithm of Bulirsch (1965):
-@jit(nopython=True)
 def ellpic_bulirsch(n,k):
     kc=np.sqrt(1.-k**2); p=n+1.
     if(p.min() < 0.):
