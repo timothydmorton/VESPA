@@ -428,8 +428,8 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
         n += 1
         #print(Mlo,Mhi)
         Ms = np.linspace(Mlo, Mhi, npts)
-        zs = np.zeros(npts)
-        rightsides = np.zeros(npts)
+        zs = np.empty(npts, dtype=np.float64)
+        rightsides = np.empty(npts, dtype=np.float64)
         
         zmin = 1000
         Mmin = 0.
@@ -1141,7 +1141,7 @@ def fit_traptransit(ts,fs,p0):
 @jit(nopython=True)
 def traptransit(ts, pars):
     npts = len(ts)
-    fs = np.zeros(npts)
+    fs = np.empty(npts, dtype=np.float64)
 
     if pars[2] < 2 or pars[0] <= 0:
         for i in range(npts):
@@ -1164,7 +1164,7 @@ def traptransit(ts, pars):
 
 @jit(nopython=True)
 def traptransit_resid(pars, ts, fs):
-    resid = np.zeros(len(fs))
+    resid = np.empty(len(fs), dtype=np.float64)
 
     fmod = traptransit(ts, pars)
     
