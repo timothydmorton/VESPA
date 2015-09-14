@@ -740,7 +740,7 @@ class EclipsePopulation(StarPopulation):
                               mu1=mu1, mu2=mu2)
         central = Central(**central_kwargs)
         
-        body_kwargs = dict(r=radius_body, mass=mass_body, b=b,
+        body_kwargs = dict(radius=radius_body, mass=mass_body, b=b,
                            period=P, e=e, omega=w) 
         body = Body(**body_kwargs)
 
@@ -751,12 +751,7 @@ class EclipsePopulation(StarPopulation):
         s.add_body(body)
 
         # As of now, body.duration returns strictly circular duration
-        try:
-            dur = body.duration
-        except ValueError:
-            raise NoEclipseError
-
-        #dur *= math.sqrt(1 - e*e)/(1 + e*math.sin(w))
+        dur = body.duration
 
         logging.debug('duration: {}'.format(dur))
         

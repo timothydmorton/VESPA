@@ -29,8 +29,8 @@ from .orbits.kepler import calculate_eccentric_anomaly, calculate_eccentric_anom
 from .stars.utils import rochelobe, withinroche, semimajor
 
 if not on_rtd:
-    from vespa_transitutils import find_eclipse
-    from vespa_transitutils import traptransit, traptransit_resid
+    #from vespa_transitutils import find_eclipse
+    #from vespa_transitutils import traptransit, traptransit_resid
     
     import emcee
 else:
@@ -1138,6 +1138,42 @@ def fit_traptransit(ts,fs,p0):
         raise NoFitError
     #logging.debug('success = {}'.format(success))
     return pfit
+
+@jit(nopython=True)
+def traptransit(ts, pars):
+    npts = len(ts)
+    fs = np.zeros(npts)
+
+    if pars[2] < 2 or pars[0] <= 0:
+        for i in range(npts):
+            fs[i] = np.inf
+    else:
+        t1 = pars[3] - pars[0]/2.
+        t2 = pars[3] - pars[0]/2. + pars[0]/pars[2]
+        t3 = pars[3] + pars[0]/2. - pars[0]/pars[2]
+        t4 = pars[3] + pars[0]/2.
+        for i in range(npts):
+            if (ts[i]  > t1) and (ts[i] < t2):
+                fs[i] = 1-pars[1]*pars[2]/pars[0]*(ts[i] - t1)
+            elif (ts[i] > t2) and (ts[i] < t3):
+                fs[i] = 1-pars[1]
+            elif (ts[i] > t3) and (ts[i] < t4):
+                fs[i] = 1-pars[1] + pars[1]*pars[2]/pars[0]*(ts[i]-t3)
+            else:
+                fs[i] = 1
+    return fs
+
+@jit(nopython=True)
+def traptransit_resid(pars, ts, fs):
+    resid = np.zeros(len(fs))
+
+    fmod = traptransit(ts, pars)
+    
+    for i in range(len(resid)):
+        resid[i] = fmod[i] - fs[i]
+
+    return resid
+    
 
 class TraptransitModel(object):
     """
