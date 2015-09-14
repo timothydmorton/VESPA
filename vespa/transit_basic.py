@@ -24,14 +24,13 @@ except ImportError:
     np, rand, leastsq, convolve1d, interpnd = (None, None, None, None, None)
     
 
-from .orbits.kepler import Efn
+#from .orbits.kepler import Efn
 from .orbits.kepler import calculate_eccentric_anomaly, calculate_eccentric_anomalies
 from .stars.utils import rochelobe, withinroche, semimajor
 
 if not on_rtd:
     #from vespa_transitutils import find_eclipse
     #from vespa_transitutils import traptransit, traptransit_resid
-    
     import emcee
 else:
     find_eclipse, traptransit, traptransit_resid = (None, None, None)
@@ -1192,7 +1191,20 @@ class TraptransitModel(object):
         pars = np.array(pars)
         return traptransit_lhood(pars,self.ts,self.fs,self.sigs,maxslope=self.maxslope)
 
-def traptransit_lhood(pars,ts,fs,sigs,maxslope=30):
+
+@jit(nopython=True)
+def traptransit_lhood(pars, ts, fs, sigs, maxslope=30):
+    if pars[0] < 0 or pars[1] < 0 or pars[2] < 2 or pars[2] > maxslope:
+        return -np.inf
+
+    fmod = traptransit(ts, pars)
+    tot = 0
+    for i in range(len(ts)):
+        tot += -0.5*(fmod[i] - fs[i])*(fmod[i] - fs[i]) / (sigs[i]*sigs[i])
+
+    return tot
+    
+def traptransit_lhood_old(pars,ts,fs,sigs,maxslope=30):
     if pars[0] < 0 or pars[1] < 0 or pars[2] < 2 or pars[2] > maxslope:
         return -np.inf
     resid = traptransit_resid(pars,ts,fs)
