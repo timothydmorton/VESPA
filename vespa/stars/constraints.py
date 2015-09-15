@@ -62,21 +62,21 @@ class RangeConstraint(Constraint):
                             name=name,vals=vals,lo=lo,hi=hi,**kwargs)
 
     def __str__(self): #implement default string formatting better.....TODO
-        return '{} < {} < {}'.format(self.lo,self.name,self.hi)
+        return '{:.3g} < {} < {:.3g}'.format(self.lo,self.name,self.hi)
 
 class UpperLimit(RangeConstraint):
     def __init__(self,vals,hi,name='',**kwargs):
         RangeConstraint.__init__(self,vals,name=name,lo=-np.inf,hi=hi,**kwargs)
         
     def __str__(self):
-        return '{} < {}'.format(self.name,self.hi)    
+        return '{} < {:.3g}'.format(self.name,self.hi)    
 
 class LowerLimit(RangeConstraint):
     def __init__(self,vals,lo,name='',**kwargs):
         RangeConstraint.__init__(self,vals,name=name,lo=lo,hi=np.inf,**kwargs)
 
     def __str__(self):
-        return '{} > {}'.format(self.name,self.lo)
+        return '{} > {:.3g}'.format(self.name,self.lo)
 
 class MeasurementConstraint(RangeConstraint):
     def __init__(self,vals,val,dval,thresh=3,name='',**kwargs):

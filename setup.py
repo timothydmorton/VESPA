@@ -73,7 +73,7 @@ setup(name = "VESPA",
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Astronomy'
         ],
-      install_requires=['cython','pandas>=0.13','simpledist>=0.1.11', 'emcee', 
-                        'isochrones>=0.8.1', 'acor', 'numba>=0.20', 'batman'],
+      install_requires=['pandas>=0.13','simpledist>=0.1.11', 'emcee', 
+                        'isochrones>=0.8.1', 'acor', 'numba>=0.20', 'batman-package>=2.1'],
       zip_safe=False
 ) 

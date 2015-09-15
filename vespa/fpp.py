@@ -681,7 +681,10 @@ class FPPCalculation(object):
             try:
                 constraints += '\n  %s' % self['heb'].constraints[c]
             except KeyError:
-                constraints += '\n  %s' % self['beb'].constraints[c]                
+                try:
+                    constraints += '\n  %s' % self['beb'].constraints[c]
+                except KeyError:
+                    constraints += '\n  %s' % self['heb_px2'].constraints[c]
         if constraintinfo:
             plt.annotate(constraints,xy=(0.03,0.22),xycoords='figure fraction',
                          va='top',color='red')
