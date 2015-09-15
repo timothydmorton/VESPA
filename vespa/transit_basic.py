@@ -737,7 +737,8 @@ def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width
     return ts, fs
 
 
-def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True,
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
+            conv=True,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True,
             batman=True):
     """Returns ts, fs of simulated eclipse.
 
@@ -792,17 +793,31 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,c
     """
 
     if sec:
-        logging.debug('P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(P,b/p0,aR/p0,ecc,w,sec,(1+1/p0)*width))
-        ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
-                           sec=sec,dt=dt,approx=approx,new=new)
+        debug_str = 'P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(P,b/p0,aR/p0,ecc,w,sec,(1+1/p0)*width)
+        logging.debug(debug_str)
+        try:
+            ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
+                               sec=sec,dt=dt,approx=approx,new=new)
+        except NoEclipseError:
+            raise
+        except:
+            logging.error('Unknown error: {}'.format(debug_str))
+            raise NoEclipseError
         if zs.min() > (1 + 1/p0):
             logging.debug('no eclipse because min z is greater than 1 + 1/p0: ' +
                           '[P,b/p0,aR/p0,ecc,w] = {}'.format([P,b/p0,aR/p0,ecc,w]))                         
             raise NoEclipseError
     else:
-        logging.debug('P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(P,b,aR,ecc,w,sec,(1+p0)*width))
-        ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
-                           sec=sec,dt=dt,approx=approx,new=new)
+        debug_str = 'P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(P,b,aR,ecc,w,sec,(1+p0)*width)
+        logging.debug(debug_str)
+        try:
+            ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
+                               sec=sec,dt=dt,approx=approx,new=new)
+        except NoEclipseError:
+            raise
+        except:
+            logging.error('Unknown error: {}'.format(debug_str))
+            raise NoEclipseError
         if zs.min() > (1+p0):
             logging.debug('no eclipse (secondary) because min z is greater ' +
                           'than 1 + 1/p0: ' +

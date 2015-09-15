@@ -101,6 +101,8 @@ if __name__=='__main__':
     parser.add_argument('-s','--star_inifile', type=str, default='star.ini')
     parser.add_argument('-n','--n', type=int, default=20000)
     parser.add_argument('--recalc', action='store_true')
+    parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--newlog', action='store_true')
 
     args = parser.parse_args()
 
@@ -110,7 +112,11 @@ if __name__=='__main__':
         #initialize logger for this folder:
 
         logfile = os.path.join(folder, 'calcfpp.log')
+        if args.newlog:
+            os.remove(logfile)
         logger = initLogging(logfile, logger)
+        if args.debug:
+            logger.setLevel(logging.DEBUG)
 
         try:
 
