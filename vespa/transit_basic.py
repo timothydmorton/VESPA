@@ -793,31 +793,35 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
     """
 
     if sec:
-        debug_str = 'P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(P,b/p0,aR/p0,ecc,w,sec,(1+1/p0)*width)
+        debug_str = 'p0={}, P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(p0, P,b/p0,aR/p0,ecc,w,sec,(1+1/p0)*width)
         logging.debug(debug_str)
         try:
             ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
                                sec=sec,dt=dt,approx=approx,new=new)
         except NoEclipseError:
             raise
+        except OverflowError:
+            logging.error('OverflowError: {}'.format(debug_str))
         except:
             logging.error('Unknown error: {}'.format(debug_str))
-            raise NoEclipseError
+            raise
         if zs.min() > (1 + 1/p0):
             logging.debug('no eclipse because min z is greater than 1 + 1/p0: ' +
                           '[P,b/p0,aR/p0,ecc,w] = {}'.format([P,b/p0,aR/p0,ecc,w]))                         
             raise NoEclipseError
     else:
-        debug_str = 'P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(P,b,aR,ecc,w,sec,(1+p0)*width)
+        debug_str = 'p0={}, P={}, b={}, aR={}, ecc={}, w={}, sec={}, width={}'.format(p0, P,b,aR,ecc,w,sec,(1+p0)*width)
         logging.debug(debug_str)
         try:
             ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
                                sec=sec,dt=dt,approx=approx,new=new)
         except NoEclipseError:
             raise
+        except OverflowError:
+            logging.error('OverflowError: {}'.format(debug_str))
         except:
             logging.error('Unknown error: {}'.format(debug_str))
-            raise NoEclipseError
+            raise
         if zs.min() > (1+p0):
             logging.debug('no eclipse (secondary) because min z is greater ' +
                           'than 1 + 1/p0: ' +
@@ -840,7 +844,7 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
             fs = MAfn(1/p0,zs,u1,u2)
         else:
             fs = MAfn(p0,zs,u1,u2)
-        fs[np.isnan(fs)] = 1.
+        #fs[np.isnan(fs)] = 1.  #this shouldn't be necessary anymore?
 
     if conv:
         dt = ts[1]-ts[0]
