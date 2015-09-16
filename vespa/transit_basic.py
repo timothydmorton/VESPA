@@ -800,8 +800,6 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
                                sec=sec,dt=dt,approx=approx,new=new)
         except NoEclipseError:
             raise
-        except OverflowError:
-            logging.error('OverflowError: {}'.format(debug_str))
         except:
             logging.error('Unknown error: {}'.format(debug_str))
             raise
@@ -817,8 +815,6 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
                                sec=sec,dt=dt,approx=approx,new=new)
         except NoEclipseError:
             raise
-        except OverflowError:
-            logging.error('OverflowError: {}'.format(debug_str))
         except:
             logging.error('Unknown error: {}'.format(debug_str))
             raise
@@ -848,7 +844,11 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
 
     if conv:
         dt = ts[1]-ts[0]
-        npts = int(np.round(cadence/dt))
+        try:
+            npts = int(np.round(cadence/dt))
+        except OverflowError:
+            logging.error('Overflow Error problem:\nts={}\nfs={}\n{}'.format(ts,fs,debug_str))
+            raise NoEclipseError
         if npts % 2 == 0:
             npts += 1
         boxcar = np.ones(npts)/npts
