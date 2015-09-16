@@ -798,6 +798,12 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
         try:
             ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
                                sec=sec,dt=dt,approx=approx,new=new)
+            try:
+                int(np.round(cadence/(ts[1]-ts[0])))
+            except OverflowError: #don't know why this happens; doesn't seem to be reproducible
+                ts,zs = eclipse_tz(P,b/p0,aR/p0,ecc,w,npts=npts,width=(1+1/p0)*width,
+                                   sec=sec,dt=dt,approx=approx,new=new)
+
         except NoEclipseError:
             raise
         except:
@@ -813,6 +819,12 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
         try:
             ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
                                sec=sec,dt=dt,approx=approx,new=new)
+            try:
+                int(np.round(cadence/(ts[1]-ts[0])))
+            except OverflowError: #again, just b/c it doesn't seem to be reproducible..
+                ts,zs = eclipse_tz(P,b,aR,ecc,w,npts=npts,width=(1+p0)*width,
+                                   sec=sec,dt=dt,approx=approx,new=new)
+                
         except NoEclipseError:
             raise
         except:
