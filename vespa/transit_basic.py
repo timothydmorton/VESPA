@@ -417,7 +417,7 @@ def z_of_M(M, b, aR, ecc, w, sec=False):
         
     return r_sky, on_rightside
 
-@jit(nopython=True)
+@jit#(nopython=True)
 def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
     
     Mlo = -np.pi
@@ -432,7 +432,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
     n_at_endpoint = 0
     while not done and n < maxiter:
         n += 1
-        #print(Mlo,Mhi)
+        logging.debug('Mlo={}, Mhi={}'.format(Mlo,Mhi))
         Ms = np.linspace(Mlo, Mhi, npts)
         zs = np.empty(npts, dtype=np.float64)
         rightsides = np.empty(npts, dtype=np.float64)
@@ -451,7 +451,7 @@ def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,n
             zs[i] = z    
             rightsides[i] = rightside
             
-        #print('zmin: {}, imin: {}, Mmin: {}'.format(zmin,imin,Mmin))
+        logging.debug('zmin: {}, imin: {}, Mmin: {}'.format(zmin,imin,Mmin))
             
         if (imin==0 or imin==npts-1):
             Mlo = Mmin - 0.8*np.pi/2 #so as to avoid exact flipping back & forth

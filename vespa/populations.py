@@ -389,7 +389,10 @@ class EclipsePopulation(StarPopulation):
             return
         
         if ok.sum() < 4:
-            raise EmptyPopulationError('< 4 valid systems in population')
+            logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
+            self.is_ruled_out = True
+            return
+            #raise EmptyPopulationError('< 4 valid systems in population')
 
         deps = self.depth[ok]
         logdeps = np.log10(deps)
