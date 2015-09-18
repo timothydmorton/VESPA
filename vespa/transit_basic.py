@@ -417,7 +417,7 @@ def z_of_M(M, b, aR, ecc, w, sec=False):
         
     return r_sky, on_rightside
 
-@jit#(nopython=True)
+@jit(nopython=True)
 def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
     
     Mlo = -np.pi
