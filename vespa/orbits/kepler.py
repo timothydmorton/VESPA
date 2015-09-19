@@ -64,7 +64,7 @@ def calculate_eccentric_anomaly(mean_anomaly, eccentricity):
         if abs(newguess - guess) < tol:
             done = True
         i += 1
-        if i > maxiter:
+        if i == maxiter:
             done = True
         guess = newguess
 

@@ -38,11 +38,11 @@ if "tag" in sys.argv:
     os.system("git push --tags")
     sys.exit()
 
-#if not on_rtd:
-#    transit_utils = [Extension('vespa_transitutils',['vespa/vespa_transitutils.pyx'],
-#                                include_dirs=[numpy.get_include()])]
-#else:
-#    transit_utils = None
+if not on_rtd:
+    transit_utils = [Extension('vespa_transitutils',['vespa/vespa_transitutils.pyx'],
+                                include_dirs=[numpy.get_include()])]
+else:
+    transit_utils = None
         
 setup(name = "VESPA",
       version = version,
@@ -58,7 +58,7 @@ setup(name = "VESPA",
                                 'tests/*.h5', 'tests/*.pkl'],
                       'vespa.stars': ['data/*'],
                       'vespa.orbits':['data/*']},
-      #ext_modules = transit_utils,
+      ext_modules = transit_utils,
       scripts = ['scripts/get_trilegal',
                  'scripts/koifpp',
                  'scripts/batch_koifpp_condor',

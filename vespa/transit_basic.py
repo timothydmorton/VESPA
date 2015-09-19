@@ -14,6 +14,7 @@ on_rtd = False
 
 try:
     import numpy as np
+    from scipy.optimize import minimize
     from numba import jit
     import numpy.random as rand
     from scipy.optimize import leastsq
@@ -36,6 +37,8 @@ from .stars.utils import rochelobe, withinroche, semimajor
 if not on_rtd:
     #from vespa_transitutils import find_eclipse
     #from vespa_transitutils import traptransit, traptransit_resid
+    from vespa_transitutils import angle_from_transit, angle_from_occultation
+    from vespa_transitutils import z_of_M, zs_of_Ms, transit_duration
     import emcee
 else:
     find_eclipse, traptransit, traptransit_resid = (None, None, None)
@@ -373,9 +376,10 @@ def true_anomaly(M, ecc):
     """
     E = calculate_eccentric_anomaly(M, ecc)
     return 2 * math.atan2(math.sqrt(1 + ecc)*math.sin(E/2),
-                          math.sqrt(1-ecc)*math.cos(E/2))
+                          math.sqrt(1 - ecc)*math.cos(E/2))
+
 @jit(nopython=True)
-def z_of_M(M, b, aR, ecc, w, sec=False):
+def z_of_M_old(M, b, aR, ecc, w, sec=False):
     """
     Returns z (instantaneous impact parameter) given mean anomaly
 
@@ -417,8 +421,52 @@ def z_of_M(M, b, aR, ecc, w, sec=False):
         
     return r_sky, on_rightside
 
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=100,MAfn=None,u1=0.394,u2=0.261,width=3,
+            conv=True,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True,
+            batman=True):
+    
+    dur = transit_duration(p0, P, b, aR, ecc, w*np.pi/180, sec)
+    if np.isnan(dur):
+        raise NoEclipseError
+
+    if sec:
+        M0 = minimize(angle_from_occultation, -np.pi/2 - w*np.pi/180, args=(ecc, w*np.pi/180), 
+                  method='Nelder-Mead', tol=1e-3).x[0]
+    else:
+        M0 = minimize(angle_from_transit, np.pi/2 - w*np.pi/180, args=(ecc, w*np.pi/180), 
+                  method='Nelder-Mead', tol=1e-3).x[0]
+
+    Mlo = M0 - (dur/P)*2*np.pi * width/2.
+    Mhi = M0 + (dur/P)*2*np.pi * width/2.
+
+    logging.debug('M0={}, Mlo={}, Mhi={} (dur={})'.format(M0,Mlo,Mhi,dur))
+
+    Ms = np.linspace(Mlo, Mhi, npts)
+    ts = (Ms - M0) / (2*np.pi) * P
+    
+    zs = zs_of_Ms(Ms, b, aR, ecc, w*np.pi/180, sec)
+
+
+    #logging.debug('zs={}'.format(zs))
+
+    if sec:
+        fs = _quadratic_ld._quadratic_ld(zs, 1/p0, u1, u2, 1)
+    else:
+        fs = _quadratic_ld._quadratic_ld(zs, p0, u1, u2, 1)
+
+    if conv:
+        dt = ts[1]-ts[0]
+        npts = int(np.round(cadence/dt))
+        if npts % 2 == 0:
+            npts += 1
+        boxcar = np.ones(npts)/npts
+        fs = convolve1d(fs,boxcar)
+    fs = 1 - frac*(1-fs)
+    return ts,fs    
+
+
 @jit(nopython=True)
-def eclipse_tz(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
+def eclipse_tz_old2(P,b,aR,ecc=0,w=0,npts=200,width=1.5,sec=False,dt=1,approx=False,new=True):
     
     Mlo = -np.pi
     Mhi = np.pi
@@ -737,7 +785,7 @@ def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width
     return ts, fs
 
 
-def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
+def eclipse_old(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,
             conv=True,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True,
             batman=True):
     """Returns ts, fs of simulated eclipse.

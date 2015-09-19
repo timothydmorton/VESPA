@@ -16,11 +16,139 @@ cdef extern from "math.h":
     double sqrt(double)
     double atan2(double,double)
     double acos(double)
+    double asin(double)
     double abs(double)
+    double fabs(double)
     double log(double)
     double ceil(double)
     float INFINITY
     
+
+cdef int KEPLER_MAX_ITER = 100
+cdef DTYPE_t KEPLER_CONV_TOL = 1e-5
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def calculate_eccentric_anomaly(DTYPE_t mean_anomaly, DTYPE_t eccentricity):
+    
+    cdef DTYPE_t guess = mean_anomaly
+    cdef unsigned int i = 0
+    
+    cdef DTYPE_t f
+    cdef DTYPE_t f_prime
+    cdef DTYPE_t newguess
+    cdef DTYPE_t sguess
+
+    for i in xrange(KEPLER_MAX_ITER):
+        sguess = sin(guess)
+        f = guess - eccentricity * sguess - mean_anomaly
+        f_prime = 1 - eccentricity * cos(guess)
+        newguess = guess - f/f_prime
+        if fabs(newguess - guess) < KEPLER_CONV_TOL:
+            return newguess
+        guess = newguess
+
+    return guess
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def true_anomaly(DTYPE_t M, DTYPE_t ecc):
+
+    cdef DTYPE_t guess = M
+    cdef unsigned int i = 0
+    
+    cdef DTYPE_t f
+    cdef DTYPE_t f_prime
+    cdef DTYPE_t E
+    
+    for i in xrange(KEPLER_MAX_ITER):
+        f = guess - ecc * sin(guess) - M
+        f_prime = 1 - ecc * cos(guess)
+        E = guess - f/f_prime
+        if fabs(E - guess) < KEPLER_CONV_TOL:
+            break
+        guess = E
+
+    return 2 * atan2(sqrt(1 + ecc) * sin(E/2.),
+                     sqrt(1 - ecc) * cos(E/2.))
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def zs_of_Ms(np.ndarray[DTYPE_t] Ms, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc, 
+             DTYPE_t w, bool sec=False):
+    cdef long npts = len(Ms)
+
+    zs = np.empty(npts, dtype=float)
+
+    for i in xrange(npts):
+        zs[i] = z_of_M(Ms[i], b, aR, ecc, w, sec)
+
+    return zs
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def z_of_M(DTYPE_t M, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc, DTYPE_t w, bool sec=False):
+    
+    cdef DTYPE_t inc
+    if sec:
+        inc = acos(b/aR * (1 - ecc*sin(w))/(1 - ecc*ecc))
+    else:
+        inc = acos(b/aR * (1 + ecc*sin(w))/(1 - ecc*ecc))
+
+    cdef DTYPE_t nu = true_anomaly(M, ecc)
+
+    if sec:
+        if sin(nu + w) >= 0:
+            return INFINITY
+    else:
+        if sin(nu + w) < 0:
+            return INFINITY
+
+    cdef DTYPE_t sin_i = sin(inc)
+    cdef DTYPE_t sin_wf = sin(w + nu)
+
+    cdef DTYPE_t r_sky = (aR*(1-ecc*ecc) / (1 + ecc*cos(nu)) *
+                          sqrt(1 - sin_wf*sin_wf * sin_i*sin_i))
+
+    return r_sky
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def angle_from_transit(DTYPE_t M, DTYPE_t ecc, DTYPE_t w):
+    return fabs(true_anomaly(M, ecc) - (pi/2 - w))
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def angle_from_occultation(DTYPE_t M, DTYPE_t ecc, DTYPE_t w):
+    return fabs(true_anomaly(M, ecc) - (-pi/2 - w))
+
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def transit_duration(DTYPE_t k, DTYPE_t P, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc=0., 
+                     DTYPE_t w=0, bool sec=False):
+    """
+    Duration from z=1 to z=1 (halfway b/w full and partial)
+    """
+    cdef DTYPE_t inc
+    cdef DTYPE_t eccfactor
+
+    cdef DTYPE_t eccsq = ecc*ecc
+    cdef DTYPE_t esinw = ecc*sin(w)
+
+    if sec:
+        inc = acos(b/aR * (1 - esinw)/(1 - eccsq))
+        eccfactor = sqrt(1 - eccsq) / (1 - esinw)
+    else:
+        inc = acos(b/aR * (1 + esinw)/(1 - eccsq))
+        eccfactor = sqrt(1 - eccsq) / (1 + esinw)
+
+    return P/pi * asin(1./aR * sqrt((1+k*k) - b*b) / sin(inc)) * eccfactor
+
 @cython.boundscheck(False)
 def bindata(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] fs, DTYPE_t dt):
     """Requires ts to be ordered
