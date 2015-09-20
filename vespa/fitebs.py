@@ -92,22 +92,10 @@ def fitebs(data, MAfn=None, conv=True, cadence=0.020434028,
             u1 = data['u1_1'][i]
             u2 = data['u2_1'][i]
         try:
-            if MAfn is not None:
-                if p0 > MAfn.pmax or p0 < MAfn.pmin:
-                    trap_pars = eclipse_tt(p0,b,aR,data['P'][i],conv=conv,MAfn=None,
-                                              cadence=cadence, frac=frac,
-                                              ecc=data['ecc'][i],w=data['w'][i],
-                                              sec=sec,u1=u1,u2=u2)
-                else:
-                    trap_pars = eclipse_tt(p0,b,aR,data['P'][i],conv=conv,MAfn=MAfn,
-                                              cadence=cadence, frac=frac,
-                                              ecc=data['ecc'][i],w=data['w'][i],
-                                              sec=sec,u1=u1,u2=u2)
-            else:
-                trap_pars = eclipse_tt(p0,b,aR,data['P'][i],conv=conv,MAfn=MAfn,
-                                          cadence=cadence, frac=frac,
-                                          ecc=data['ecc'][i],w=data['w'][i],
-                                          sec=sec,u1=u1,u2=u2)
+            trap_pars = eclipse_tt(p0,b,aR,data['P'][i],conv=conv,MAfn=MAfn,
+                                   cadence=cadence, frac=frac,
+                                   ecc=data['ecc'][i],w=data['w'][i],
+                                   sec=sec,u1=u1,u2=u2)
             #logging.debug('{}'.format(trap_pars))
             
             durs[i], deps[i], slopes[i] = trap_pars
