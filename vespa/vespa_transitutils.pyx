@@ -146,7 +146,7 @@ def transit_duration(DTYPE_t k, DTYPE_t P, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc=0.
         inc = acos(b/aR * (1 + esinw)/(1 - eccsq))
         eccfactor = sqrt(1 - eccsq) / (1 + esinw)
 
-    return P/pi * asin(1./aR * sqrt((1+k*k) - b*b) / sin(inc)) * eccfactor
+    return P/pi * asin(1./aR * sqrt((1+k)*(1+k) - b*b) / sin(inc)) * eccfactor
 
 @cython.boundscheck(False)
 def bindata(np.ndarray[DTYPE_t] ts, np.ndarray[DTYPE_t] fs, DTYPE_t dt):
