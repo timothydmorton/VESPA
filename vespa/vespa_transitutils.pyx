@@ -126,7 +126,6 @@ def angle_from_occultation(DTYPE_t M, DTYPE_t ecc, DTYPE_t w):
     return fabs(true_anomaly(M, ecc) - (-pi/2 - w))
 
 
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def transit_duration(DTYPE_t k, DTYPE_t P, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc=0., 
