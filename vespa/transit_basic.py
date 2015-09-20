@@ -328,21 +328,23 @@ def a_over_Rs(P,R2,M2,M1=1,R1=1,planet=True):
         R2 *= MEARTH/MSUN
     return semimajor(P,M1+M2)*AU/(R1*RSUN)
 
-def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=100,MAfn=None,u1=0.394,u2=0.261,width=3,
-            conv=True,cadence=0.020434028,frac=1,sec=False,dt=2,
-            approx=False,new=True,
-            batman=True):
+def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,width=3,
+            conv=True,cadence=0.020434028,frac=1,sec=False):
     
     dur = transit_duration(p0, P, b, aR, ecc, w*np.pi/180, sec)
     if np.isnan(dur):
         raise NoEclipseError
 
     if sec:
-        M0 = minimize(angle_from_occultation, -np.pi/2 - w*np.pi/180, args=(ecc, w*np.pi/180), 
-                  method='Nelder-Mead', tol=1e-3).x[0]
+        M0 = minimize(angle_from_occultation, 
+                      -np.pi/2 - w*np.pi/180, 
+                      args=(ecc, w*np.pi/180), 
+                      method='Nelder-Mead', tol=1e-3).x[0]
     else:
-        M0 = minimize(angle_from_transit, np.pi/2 - w*np.pi/180, args=(ecc, w*np.pi/180), 
-                  method='Nelder-Mead', tol=1e-3).x[0]
+        M0 = minimize(angle_from_transit, 
+                      np.pi/2 - w*np.pi/180, 
+                      args=(ecc, w*np.pi/180), 
+                      method='Nelder-Mead', tol=1e-3).x[0]
 
     Mlo = M0 - (dur/P)*2*np.pi * width/2.
     Mhi = M0 + (dur/P)*2*np.pi * width/2.
