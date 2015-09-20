@@ -92,6 +92,7 @@ def fitebs(data, MAfn=None, conv=True, cadence=0.020434028,
             u1 = data['u1_1'][i]
             u2 = data['u2_1'][i]
         try:
+            logging.debug('p0={}, b={}, aR={}, P={}, frac={}, ecc={}, w={}, sec={}, u1={}, u2={}'.format(p0,b,aR,P,frac,ecc,w,sec,u1,u2)
             trap_pars = eclipse_tt(p0,b,aR,data['P'][i],conv=conv,
                                    cadence=cadence, frac=frac,
                                    ecc=data['ecc'][i],w=data['w'][i],
