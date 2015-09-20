@@ -289,7 +289,8 @@ class FPPCalculation(object):
         #create PopulationSet
         try:
             if recalc:
-                os.remove(popset_file)
+                if os.path.exists(popset_file):
+                    os.remove(popset_file)
                 raise RuntimeError #just to get to except block
             try:
                 popset = PopulationSet.load_hdf(popset_file)
