@@ -31,7 +31,7 @@ from isochrones import StarModel
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .transit_basic import eclipse_pars
-from .transit_basic import eclipse, NoEclipseError
+from .transit_basic import eclipse, eclipse_tt, NoEclipseError
 from .fitebs import fitebs
 
 from .plotutils import setfig, plot2dhist
@@ -691,8 +691,7 @@ class EclipsePopulation(StarPopulation):
                          bbox=dict(boxstyle='round',fc='w'),
                          xycoords='figure fraction',fontsize=15)
     
-    def eclipse(self, i, secondary=False, npoints=200, width=3,
-                texp=0.020434028, MAfn=None, batman=True):
+    def eclipse_pars(self, i, secondary=False):
         s = self.stars.iloc[i]
         P = s['P']
 
@@ -710,10 +709,25 @@ class EclipsePopulation(StarPopulation):
             b = s['b_pri'] 
             frac = s['fluxfrac_1']
 
-        return eclipse(p0, b, aR, P=P, ecc=s['ecc'], w=s['w'], npts=npoints,
-                       cadence=texp, frac=frac, conv=True,
-                       sec=secondary, MAfn=MAfn, batman=batman)
+        return dict(P=P, p0=p0, b=b, aR=aR, frac=frac, u1=mu1, u2=mu2,
+                    ecc=s['ecc'], w=s['w'])
+
+    def eclipse(self, i, secondary=False, **kwargs):
+        pars = self.eclipse_pars(i, secondary=secondary)
+
+        for k,v in pars.items():
+            kwargs[k] = v
+
+        return eclipse(sec=secondary, **kwargs)
         
+    def eclipse_trapfit(self, i, secondary=False, **kwargs):
+        pars = self.eclipse_pars(i, secondary=secondary)
+
+        for k,v in pars.items():
+            kwargs[k] = v
+            
+        return eclipse_tt(**kwargs)
+
     def eclipse_new(self, i, secondary=False, npoints=200, width=3,
                 texp=0.020434028):
         """
