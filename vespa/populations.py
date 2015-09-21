@@ -56,6 +56,13 @@ except ImportError:
     logging.warning('simpledist not available')
     dists = None
     
+try:
+    from progressbar import Percentage,Bar,RotatingMarker,ETA,ProgressBar
+    pbar_ok = True
+except ImportError:
+    pbar_ok = False
+
+
 from .orbits.populations import OrbitPopulation, TripleOrbitPopulation
 
 SHORT_MODELNAMES = {'Planets':'pl',
@@ -183,7 +190,7 @@ class EclipsePopulation(StarPopulation):
         if 'slope' in self.stars:
             self._make_kde()
 
-    def fit_trapezoids(self, MAfn=None, msg=None, **kwargs):
+    def fit_trapezoids(self, MAfn=None, msg=None, use_pbar=True, **kwargs):
         """
         Fit trapezoid shape to each eclipse in population
 
@@ -204,16 +211,64 @@ class EclipsePopulation(StarPopulation):
 
         """
         logging.info('Fitting trapezoid models for {}...'.format(self.model))
-        if MAfn is None:
-            MAfn = MAInterpolationFunction(nzs=200,nps=400,pmin=0.007,pmax=1/0.007)
+
         if msg is None:
             msg = '{}: '.format(self.model)
-        trapfit_df = fitebs(self.stars, MAfn=MAfn, msg=msg, cadence=self.cadence,
-                            **kwargs)
-        for col in trapfit_df.columns:
-            self.stars[col] = trapfit_df[col]
+            
+        #trapfit_df = fitebs(self.stars, MAfn=MAfn, msg=msg, cadence=self.cadence,
+        #                    **kwargs)
+        #for col in trapfit_df.columns:
+        #    self.stars[col] = trapfit_df[col]
+
+        n = len(self.stars)
+        deps, durs, slopes = (np.zeros(n), np.zeros(n), np.zeros(n))
+        secs = np.zeros(n, dtype=bool)
+        dsec = np.zeros(n)
+
+        if use_pbar and pbar_ok:
+            widgets = [msg+'fitting shape parameters for %i systems: ' % n,Percentage(),
+                       ' ',Bar(marker=RotatingMarker()),' ',ETA()]
+            pbar = ProgressBar(widgets=widgets,maxval=n)
+            pbar.start()
+
+        for i in range(n):
+            logging.debug('Fitting star {}'.format(i))
+            pri = (self.stars['dpri'][i] > self.stars['dsec'][i] or
+                   np.isnan(self.stars['dsec'][i]))
+            sec = not pri
+            secs[i] = sec
+            if sec:
+                dsec[i] = self.stars['dpri'][i]
+            else:
+                dsec[i] = self.stars['dsec'][i]
+
+            try:
+                trap_pars = self.eclipse_trapfit(i, secondary=sec, **kwargs)
+            
+            except NoEclipseError:
+                logging.error('No eclipse registered for star {}'.format(i))
+                trap_pars = (np.nan, np.nan, np.nan)
+            except NoFitError:
+                logging.error('Fit did not converge for star {}'.format(i))
+                trap_pars = (np.nan, np.nan, np.nan)
+            except KeyboardInterrupt:
+                raise
+            except:
+                logging.error('Unknown error for star {}'.format(i))
+                trap_pars = (np.nan, np.nan, np.nan)
+
+            if use_pbar and pbar_ok:
+                pbar.update(i)
+            durs[i], deps[i], slopes[i] = trap_pars
 
         logging.info('Done.')
+
+        self.stars['depth'] = deps
+        self.stars['duration'] = durs
+        self.stars['slope'] = slopes
+        self.stars['secdepth'] = dsec
+        self.stars['secondary'] = secs
+
         self._make_kde()
 
 
