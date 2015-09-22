@@ -395,17 +395,16 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         num = np.round(koiname(koi,koinum=True) % 1 * 100)
 
         self.lcfile = '%s/tremove.%i.dat' % (self.folder,num)
-        if not os.path.exists(self.lcfile):
+        if (not os.path.exists(self.lcfile)) or (os.stat(self.lcfile)[6]==0):
             kepid = ku.kepid(koi)
             self.lcfile = '{}/klc{08.0f}.dct.dat'.format(self.folder,kepid)
             if not os.path.exists(self.lcfile):
                 raise MissingKOIError('{} does not exist.'.format(self.lcfile))
-        logging.debug('Reading photometry from {}'.format(self.lcfile))
-
-        #break if photometry file is empty
-        if os.stat(self.lcfile)[6]==0:
-            raise EmptyPhotometryError('{} photometry file ({}) is empty'.format(koiname(koi),
+            if os.stat(self.lcfile)[6]==0:
+                raise EmptyPhotometryError('{} photometry file ({}) is empty'.format(koiname(koi),
                                                                                   self.lcfile))
+
+        logging.debug('Reading photometry from {}'.format(self.lcfile))
 
         lc = pd.read_table(self.lcfile,names=['t','f','df'],
                                                   delimiter='\s+')

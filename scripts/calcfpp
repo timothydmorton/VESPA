@@ -103,6 +103,7 @@ if __name__=='__main__':
     parser.add_argument('--recalc', action='store_true')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--newlog', action='store_true')
+    parser.add_argument('--recalc_lhood', action='store_true')
 
     args = parser.parse_args()
 
@@ -124,7 +125,8 @@ if __name__=='__main__':
                                         recalc=args.recalc,
                                         star_ini_file=args.star_inifile,
                                         n=args.n)
-            f.FPPplots()
+
+            f.FPPplots(recalc_lhood=args.recalc_lhood)
 
             for mult,Model in zip(['single','binary','triple'],
                                   [StarModel, BinaryStarModel, TripleStarModel]):

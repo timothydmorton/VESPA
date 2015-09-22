@@ -716,7 +716,8 @@ class FPPCalculation(object):
             plt.close()
 
 
-    def lhoodplots(self,folder='.',tag=None,figformat='png',**kwargs):
+    def lhoodplots(self,folder='.',tag=None,figformat='png',
+                   recalc_lhood=False, **kwargs):
         """
         Make a plot of the likelihood for each model in PopulationSet
 
@@ -724,7 +725,7 @@ class FPPCalculation(object):
         Ltot = 0
 
         for model in self.popset.modelnames:
-            Ltot += self.prior(model)*self.lhood(model)
+            Ltot += self.prior(model)*self.lhood(model, recalc=recalc_lhood)
         
         for model in self.popset.shortmodelnames:
             self.lhoodplot(model,Ltot=Ltot,**kwargs)

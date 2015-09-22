@@ -280,7 +280,10 @@ class StarPopulation(object):
         """
         Will be ``True`` if contraints rule out all (or all but one) instances
         """
-        return self.distok.sum() < 2
+        if hasattr(self,'is_empty'):
+            return self.is_empty
+        else:
+            return self.distok.sum() < 2
 
     @property
     def bands(self):

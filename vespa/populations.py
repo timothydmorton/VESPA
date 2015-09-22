@@ -31,7 +31,7 @@ from isochrones import StarModel
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .transit_basic import eclipse_pars
-from .transit_basic import eclipse, eclipse_tt, NoEclipseError
+from .transit_basic import eclipse, eclipse_tt, NoEclipseError, NoFitError
 from .fitebs import fitebs
 
 from .plotutils import setfig, plot2dhist
@@ -411,6 +411,7 @@ class EclipsePopulation(StarPopulation):
                                                                        self.model))
 
     def _make_kde(self, use_sklearn=False, bandwidth=None, rtol=1e-6,
+                  sig_clip=50,
                   **kwargs):
         """Creates KDE objects for 3-d shape parameter distribution
 
@@ -445,7 +446,7 @@ class EclipsePopulation(StarPopulation):
         
         if ok.sum() < 4:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
-            self.is_ruled_out = True
+            self.is_empty = True #will cause is_ruled_out to be true as well.
             return
             #raise EmptyPopulationError('< 4 valid systems in population')
 
@@ -453,6 +454,24 @@ class EclipsePopulation(StarPopulation):
         logdeps = np.log10(deps)
         durs = self.stars['duration'][ok]
         slopes = self.stars['slope'][ok]
+
+        #Now sigma-clip those points that passed first cuts
+        ok = np.ones(len(deps), dtype=bool)
+        for x in [logdeps, durs, slopes]:
+            med = np.median(x)
+            mad = np.median(np.absolute(x - med))
+            ok &= np.absolute(x - med) / mad < 50
+
+        logdeps = logdeps[ok]
+        durs = durs[ok]
+        slopes = slopes[ok]
+
+        if ok.sum() < 4:
+            logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
+            self.is_ruled_out = True
+            return
+            #raise EmptyPopulationError('< 4 valid systems in population')
+
 
         if use_sklearn:
             self.sklearn_kde = True
@@ -551,7 +570,7 @@ class EclipsePopulation(StarPopulation):
                   maxdur=None, maxslope=None, inverse=False, 
                   colordict=None, cachefile=None, nbins=20,
                   dur_range=None, slope_range=None, depth_range=None,
-                  **kwargs):
+                  recalc=False,**kwargs):
         """
         Makes plot of likelihood density function, optionally with transit signal
 
@@ -739,7 +758,7 @@ class EclipsePopulation(StarPopulation):
         plt.suptitle(suptitle,fontsize=20)        
 
         if Ltot is not None:
-            lhood = self.lhood(trsig)
+            lhood = self.lhood(trsig, recalc=recalc)
             plt.annotate('%s:\nProbability\nof scenario: %.3f' % (trsig.name,
                                                                   self.prior*lhood/Ltot),
                          xy=(0.5,0.5),ha='center',va='center',
