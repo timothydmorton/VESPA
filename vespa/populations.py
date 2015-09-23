@@ -444,6 +444,7 @@ class EclipsePopulation(StarPopulation):
             logging.warning('Must do trapezoid fits before making KDE.')
             return
         
+        self.empty = False
         if ok.sum() < 4:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
             self.is_empty = True #will cause is_ruled_out to be true as well.
@@ -466,9 +467,9 @@ class EclipsePopulation(StarPopulation):
         durs = durs[ok]
         slopes = slopes[ok]
 
-        if ok.sum() < 4:
+        if ok.sum() < 4 and not self.empty:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
-            self.is_ruled_out = True
+            self.is_empty = True
             return
             #raise EmptyPopulationError('< 4 valid systems in population')
 
