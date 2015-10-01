@@ -501,7 +501,7 @@ class EclipsePopulation(StarPopulation):
         else:
             self.sklearn_kde = False
             points = np.array([durs, logdeps, slopes])
-            self.kde = gaussian_kde(points, **kwargs)
+            self.kde = gaussian_kde(np.vstack(points), **kwargs)
                 
     def _density(self, logd, dur, slope):
         """
