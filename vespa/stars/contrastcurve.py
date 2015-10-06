@@ -142,6 +142,34 @@ class ContrastCurveFromFile(ContrastCurve):
         self.filename = filename
 
 
+class VelocityContrastCurve(object):
+    def __init__(self,vs,dmags,band='g'):
+        self.vs = vs
+        self.dmags = dmags
+        self.band = band
+        if np.size(vs) > 1:
+            self.contrastfn = interpolate(vs,dmags,s=0)
+            self.vmax = vs.max()
+            self.vmin = vs.min()
+        else: #simple case; one v, one dmag
+            def cfn(v):
+                v = np.atleast_1d(abs(v))
+                dmags = np.zeros(v.shape)
+                dmags[v>=self.vs] = self.dmags
+                dmags[v<self.vs] = 0
+                return dmags
+            self.contrastfn = cfn
+            self.vmax = self.vs
+            self.vmin = self.vs
+
+    def __call__(self,v):
+        v = np.atleast_1d(np.absolute(v))
+        dmags = np.atleast_1d(self.contrastfn(v))
+        dmags[v >= self.vmax] = self.contrastfn(self.vmax)
+        dmags[v < self.vmin] = 0
+        #put something in here to "extend" beyond vmax?
+        return dmags
+
 class VelocityContrastCurveConstraint(FunctionLowerLimit):
     def __init__(self,vels,dmags,vcc,name='VCC',**kwargs):
         self.vels = vels
