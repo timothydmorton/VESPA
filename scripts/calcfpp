@@ -104,6 +104,7 @@ if __name__=='__main__':
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--newlog', action='store_true')
     parser.add_argument('--recalc_lhood', action='store_true')
+    parser.add_argument('--refit_trap', action='store_true')
 
     args = parser.parse_args()
 

@@ -83,7 +83,7 @@ class FPPCalculation(object):
 
     @classmethod
     def from_ini(cls, folder='.',
-                 ini_file='fpp.ini', recalc=False,
+                 ini_file='fpp.ini', recalc=False, refit_trap=False,
                  star_ini_file='star.ini', ichrone=DARTMOUTH,
                  **kwargs):
         """
@@ -300,6 +300,10 @@ class FPPCalculation(object):
                 raise RuntimeError #to get to except block
             for m in DEFAULT_MODELS:
                 popset[m] #should there be a better way to check this? (yes)
+            if refit_trap:
+                logging.info('Re-fitting trapezoids...')
+                for pop in popset.poplist:
+                    pop.fit_trapezoids()
             logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
             if recalc:
