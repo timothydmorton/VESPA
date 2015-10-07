@@ -816,7 +816,7 @@ class StarPopulation(object):
                                   selectfrac_skip=selectfrac_skip,
                                   distribution_skip=distribution_skip)
 
-    def apply_trend_constraint(self, limit, dt, distribution_skip=True, 
+    def apply_trend_constraint(self, limit, dt, distribution_skip=False, 
                                **kwargs):
         """
         Constrains change in RV to be less than limit over time dt.
@@ -826,11 +826,13 @@ class StarPopulation(object):
         
         :param limit:
             Radial velocity limit on trend.  Must be 
-            :class:`astropy.units.Quantity` object.
+            :class:`astropy.units.Quantity` object, or
+            else interpreted as m/s.
 
         :param dt:
             Time baseline of RV observations.  Must be 
-            :class:`astropy.units.Quantity` object.
+            :class:`astropy.units.Quantity` object; else
+            interpreted as days.
 
         :param distribution_skip:
             This is by default ``True``.  *To be honest, I'm not
@@ -842,6 +844,11 @@ class StarPopulation(object):
             :func:`StarPopulation.apply_constraint`.
             
         """
+        if type(limit) != Quantity:
+            limit = limit * u.m/u.s
+        if type(dt) != Quantity:
+            dt = dt * u.day
+
         dRVs = np.absolute(self.dRV(dt))
         c1 = UpperLimit(dRVs, limit)
         c2 = LowerLimit(self.Plong, dt*4)
@@ -850,7 +857,7 @@ class StarPopulation(object):
                                                 Ps=self.Plong,dRVs=dRVs),
                               distribution_skip=distribution_skip, **kwargs)
 
-    def apply_cc(self, cc, distribution_skip=True,
+    def apply_cc(self, cc, distribution_skip=False,
                  **kwargs):
         """
         Apply contrast-curve constraint to population.
@@ -877,7 +884,7 @@ class StarPopulation(object):
         self.apply_constraint(ContrastCurveConstraint(rs,dmags,cc,name=cc.name),
                               distribution_skip=distribution_skip, **kwargs)
 
-    def apply_vcc(self, vcc, distribution_skip=True,
+    def apply_vcc(self, vcc, distribution_skip=False,
                   **kwargs):
         """
         Applies "velocity contrast curve" to population.
@@ -1545,6 +1552,13 @@ class TriplePopulation(StarPopulation):
         return (self.orbpop.dRV_1(dt)*self.A_brighter(band) + 
                 self.orbpop.dRV_2(dt)*self.BC_brighter(band))
         
+    @property
+    def Plong(self):
+        """
+        Longer of two orbital periods in Triple system
+        """
+        return self.orbpop.orbpop_long.P
+
     @property
     def singles(self):
         return self.stars.query('mass_B==0 and mass_C==0')

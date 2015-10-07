@@ -411,7 +411,7 @@ class EclipsePopulation(StarPopulation):
                                                                        self.model))
 
     def _make_kde(self, use_sklearn=False, bandwidth=None, rtol=1e-6,
-                  sig_clip=50,
+                  sig_clip=50, no_sig_clip=False,
                   **kwargs):
         """Creates KDE objects for 3-d shape parameter distribution
 
@@ -461,11 +461,12 @@ class EclipsePopulation(StarPopulation):
         for x in [logdeps, durs, slopes]:
             med = np.median(x)
             mad = np.median(np.absolute(x - med))
-            ok &= np.absolute(x - med) / mad < 50
+            ok &= np.absolute(x - med) / mad < sig_clip
 
-        logdeps = logdeps[ok]
-        durs = durs[ok]
-        slopes = slopes[ok]
+        if not no_sig_clip:
+            logdeps = logdeps[ok]
+            durs = durs[ok]
+            slopes = slopes[ok]
 
         if ok.sum() < 4 and not self.empty:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
@@ -801,7 +802,7 @@ class EclipsePopulation(StarPopulation):
         for k,v in pars.items():
             kwargs[k] = v
             
-        return eclipse_tt(**kwargs)
+        return eclipse_tt(sec=secondary, **kwargs)
 
     def eclipse_new(self, i, secondary=False, npoints=200, width=3,
                 texp=0.020434028):

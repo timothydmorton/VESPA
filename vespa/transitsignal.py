@@ -19,6 +19,11 @@ try:
 except ImportError:
     logging.warning('acor not available')
     
+try:
+    import triangle
+except ImportError:
+    pass
+
 from .plotutils import setfig
 from .hashutils import hashcombine, hasharray
 
@@ -108,6 +113,12 @@ class TransitSignal(object):
         """
         raise NotImplementedError
         
+
+    def triangle(self, **kwargs):
+        pts = np.array([self.logdeps, self.durs, self.slopes]).T
+        fig = triangle.corner(pts, labels=['log (Depth)',
+                                           'Duration', 'T/tau'], **kwargs)
+        return fig
     
     def save_pkl(self, filename):
         """
