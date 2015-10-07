@@ -124,6 +124,7 @@ if __name__=='__main__':
 
             f = FPPCalculation.from_ini(folder, ini_file=args.inifile, 
                                         recalc=args.recalc,
+                                        refit_trap=args.refit_trap,
                                         star_ini_file=args.star_inifile,
                                         n=args.n)
 

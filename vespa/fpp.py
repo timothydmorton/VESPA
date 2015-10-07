@@ -301,9 +301,11 @@ class FPPCalculation(object):
             for m in DEFAULT_MODELS:
                 popset[m] #should there be a better way to check this? (yes)
             if refit_trap:
-                logging.info('Re-fitting trapezoids...')
                 for pop in popset.poplist:
+                    logging.info('Re-fitting trapezoids for {}...'.format(pop.model))
                     pop.fit_trapezoids()
+                popset.save_hdf(popset_file, overwrite=True)
+
             logging.info('PopulationSet loaded from {}'.format(popset_file))
         except:
             if recalc:
