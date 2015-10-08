@@ -446,7 +446,7 @@ class EclipsePopulation(StarPopulation):
             return
 
         self.empty = False
-        if ok.sum() < 4:
+        if first_ok.sum() < 4:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
             self.is_empty = True #will cause is_ruled_out to be true as well.
             return
