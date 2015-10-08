@@ -457,7 +457,7 @@ class EclipsePopulation(StarPopulation):
         slopes = self.stars['slope']
 
         #Now sigma-clip those points that passed first cuts
-        ok = np.ones(len(deps), dtype=bool)
+        ok = np.ones(len(logdeps), dtype=bool)
         for x in [logdeps, durs, slopes]:
             med = np.median(x[first_ok])
             mad = np.median(np.absolute(x[first_ok] - med))
