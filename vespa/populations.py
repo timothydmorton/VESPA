@@ -461,7 +461,7 @@ class EclipsePopulation(StarPopulation):
         for x in [logdeps, durs, slopes]:
             med = np.median(x[first_ok])
             mad = np.median(np.absolute(x[first_ok] - med))
-            ok &= np.absolute(x[first_ok] - med) / mad < sig_clip
+            ok &= np.absolute(x - med) / mad < sig_clip
 
         second_ok = first_ok & ok
 
