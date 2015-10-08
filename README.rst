@@ -6,7 +6,9 @@ VESPA
 
 Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating false positive probabilities for transit signals
 
-For usage and more info, `check out the documentation <http://vespa.rtfd.org>`_.  [note: the documentation is out of date and I have not yet updated it; please email me or raise an issue if you have problems.]
+For usage and more info, `check out the documentation <http://vespa.rtfd.org>`_.
+
+.. note::  Be aware that the documentation is out of date (though not totally useless) and I have not yet updated it; please email me or raise an issue if you have problems.]
 
 Installation
 ------------
