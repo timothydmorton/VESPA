@@ -411,7 +411,7 @@ class EclipsePopulation(StarPopulation):
                                                                        self.model))
 
     def _make_kde(self, use_sklearn=False, bandwidth=None, rtol=1e-6,
-                  sig_clip=50, no_sig_clip=False,
+                  sig_clip=50, no_sig_clip=False, cov_all=True,
                   **kwargs):
         """Creates KDE objects for 3-d shape parameter distribution
 
@@ -438,12 +438,11 @@ class EclipsePopulation(StarPopulation):
         try:
             #define points that are ok to use
             ok = ((self.stars['slope'] > 0) & (self.stars['duration'] > 0) & 
-                  (self.stars['duration'] < self.period) & (self.depth > 0) &
-                  self.distok)
+                  (self.stars['duration'] < self.period) & (self.depth > 0))
         except KeyError:
             logging.warning('Must do trapezoid fits before making KDE.')
             return
-        
+
         self.empty = False
         if ok.sum() < 4:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
@@ -463,11 +462,24 @@ class EclipsePopulation(StarPopulation):
             mad = np.median(np.absolute(x - med))
             ok &= np.absolute(x - med) / mad < sig_clip
 
-        if not no_sig_clip:
-            logdeps = logdeps[ok]
-            durs = durs[ok]
-            slopes = slopes[ok]
+        
+        # Before making KDE for real, first calculate
+        #  covariance and inv_cov of uncut data, to use
+        #  when it's cut, too.
+            
+        points = np.array([durs[ok], logdeps[ok], slopes[ok]])
+        kde = gaussian_kde(points)
+        cov_all = kde._data_covariance
+        icov_all = kde._data_inv_cov
 
+        # OK, now cut the data for constraints & proceed
+
+        ok &= self.distok
+
+        logdeps = logdeps[ok]
+        durs = durs[ok]
+        slopes = slopes[ok]
+        
         if ok.sum() < 4 and not self.empty:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
             self.is_empty = True
@@ -504,6 +516,11 @@ class EclipsePopulation(StarPopulation):
             self.sklearn_kde = False
             points = np.array([durs, logdeps, slopes])
             self.kde = gaussian_kde(points, **kwargs)
+            
+            # Reset covariance based on uncut data
+            self.kde._data_covariance = cov_all
+            self.kde_data_inv_cov = icov_all
+            self._compute_covariance()
                 
     def _density(self, logd, dur, slope):
         """
