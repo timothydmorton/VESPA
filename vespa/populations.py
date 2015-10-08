@@ -475,6 +475,7 @@ class EclipsePopulation(StarPopulation):
         kde = gaussian_kde(points)
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
+        factor = kde.factor
 
         # OK, now cut the data for constraints & proceed
 
@@ -523,8 +524,9 @@ class EclipsePopulation(StarPopulation):
             
             # Reset covariance based on uncut data
             self.kde._data_covariance = cov_all
-            self.kde_data_inv_cov = icov_all
+            self.kde.data_inv_cov = icov_all
             self.kde._compute_covariance()
+            
                 
     def _density(self, logd, dur, slope):
         """
