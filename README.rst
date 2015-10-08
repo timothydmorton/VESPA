@@ -8,6 +8,8 @@ Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating f
 
 For usage and more info, `check out the documentation <http://vespa.rtfd.org>`_.
 
+[Note: be aware that the documentation is out of date (though not totally useless) and I have not yet updated it; please email me or raise an issue if you have problems.]
+
 Installation
 ------------
 
@@ -75,7 +77,6 @@ It should take 20-30 minutes.  If you want to do a shorter
 version to test, you can try ``calcfpp -n 1000`` (the default is 20000).  The first
 time you run it though, about half the time is doing the stellar modeling, so it will still
 take a few minutes.
-
 
 
 Attribution
