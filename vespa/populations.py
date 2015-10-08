@@ -437,8 +437,10 @@ class EclipsePopulation(StarPopulation):
 
         try:
             #define points that are ok to use
-            ok = ((self.stars['slope'] > 0) & (self.stars['duration'] > 0) & 
-                  (self.stars['duration'] < self.period) & (self.depth > 0))
+            first_ok = ((self.stars['slope'] > 0) & 
+                        (self.stars['duration'] > 0) & 
+                        (self.stars['duration'] < self.period) & 
+                        (self.depth > 0))
         except KeyError:
             logging.warning('Must do trapezoid fits before making KDE.')
             return
@@ -450,31 +452,33 @@ class EclipsePopulation(StarPopulation):
             return
             #raise EmptyPopulationError('< 4 valid systems in population')
 
-        deps = self.depth[ok]
         logdeps = np.log10(deps)
-        durs = self.stars['duration'][ok]
-        slopes = self.stars['slope'][ok]
+        durs = self.stars['duration']
+        slopes = self.stars['slope']
 
         #Now sigma-clip those points that passed first cuts
         ok = np.ones(len(deps), dtype=bool)
         for x in [logdeps, durs, slopes]:
-            med = np.median(x)
-            mad = np.median(np.absolute(x - med))
-            ok &= np.absolute(x - med) / mad < sig_clip
+            med = np.median(x[first_ok])
+            mad = np.median(np.absolute(x[first_ok] - med))
+            ok &= np.absolute(x[first_ok] - med) / mad < sig_clip
 
-        
+        second_ok = first_ok & ok
+
         # Before making KDE for real, first calculate
         #  covariance and inv_cov of uncut data, to use
         #  when it's cut, too.
             
-        points = np.array([durs[ok], logdeps[ok], slopes[ok]])
+        points = np.array([durs[second_ok], 
+                           logdeps[second_ok], 
+                           slopes[second_ok]])
         kde = gaussian_kde(points)
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
 
         # OK, now cut the data for constraints & proceed
 
-        ok &= self.distok
+        ok = second_ok & self.distok
 
         logdeps = logdeps[ok]
         durs = durs[ok]
