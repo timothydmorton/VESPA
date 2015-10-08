@@ -452,7 +452,7 @@ class EclipsePopulation(StarPopulation):
             return
             #raise EmptyPopulationError('< 4 valid systems in population')
 
-        logdeps = np.log10(deps)
+        logdeps = np.log10(self.depth)
         durs = self.stars['duration']
         slopes = self.stars['slope']
 
