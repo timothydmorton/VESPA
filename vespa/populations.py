@@ -472,7 +472,7 @@ class EclipsePopulation(StarPopulation):
         points = np.array([durs[second_ok], 
                            logdeps[second_ok], 
                            slopes[second_ok]])
-        kde = gaussian_kde(points)
+        kde = gaussian_kde(np.vstack(points)) #backward compatibility?
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
         factor = kde.factor
@@ -520,7 +520,7 @@ class EclipsePopulation(StarPopulation):
         else:
             self.sklearn_kde = False
             points = np.array([durs, logdeps, slopes])
-            self.kde = gaussian_kde(points, **kwargs)
+            self.kde = gaussian_kde(np.vstack(points), **kwargs) #backward compatibility?
             
             # Reset covariance based on uncut data
             self.kde._data_covariance = cov_all
