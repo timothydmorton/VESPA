@@ -18,6 +18,7 @@ from .populations import PopulationSet, DEFAULT_MODELS
 from .transitsignal import TransitSignal, MCMCError
 
 from .stars.contrastcurve import ContrastCurveFromFile
+from .stars.contrastcurve import VelocityContrastCurve
 
 from .plotutils import setfig
 from .hashutils import hashcombine
@@ -375,6 +376,13 @@ class FPPCalculation(object):
                     cc = ContrastCurveFromFile(ccfile, band, name=name)
                     fpp.apply_cc(cc)
         
+        #apply "velocity contrast curve" if present
+        if 'vcc' in config['constraints']:
+            dv = float(config['constraints']['vcc'][0])
+            dmag = float(config['constraints']['vcc'][1])
+            vcc = VelocityContrastCurve(dv, dmag)
+            fpp.apply_vcc(vcc)
+
         return fpp
 
                    
