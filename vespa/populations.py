@@ -524,7 +524,7 @@ class EclipsePopulation(StarPopulation):
             
             # Reset covariance based on uncut data
             self.kde._data_covariance = cov_all
-            self.kde.data_inv_cov = icov_all
+            self.kde._data_inv_cov = icov_all
             self.kde._compute_covariance()
             
                 
