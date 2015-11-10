@@ -883,7 +883,7 @@ class EclipsePopulation(StarPopulation):
             super(EclipsePopulation,self)._properties
 
     @classmethod
-    def load_hdf(self, filename, path=''): #perhaps this doesn't need to be written?
+    def load_hdf(cls, filename, path=''): #perhaps this doesn't need to be written?
         """
         Loads EclipsePopulation from HDF file
 
@@ -897,7 +897,7 @@ class EclipsePopulation(StarPopulation):
 
         """
 
-        new = StarPopulation.load_hdf(filename, path=path)
+        new = cls.load_hdf(filename, path=path)
         try:
             new._make_kde()
         except NoTrapfitError:
