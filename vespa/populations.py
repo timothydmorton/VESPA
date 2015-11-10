@@ -898,6 +898,14 @@ class EclipsePopulation(StarPopulation):
         """
 
         new = cls.load_hdf(filename, path=path)
+
+        #load starmodel if present
+        try:
+            new.starmodel = StarModel.load_hdf(filename, 
+                                               path='{}/starmodel'.format(path))
+        except:
+            pass
+        
         try:
             new._make_kde()
         except NoTrapfitError:
@@ -1146,12 +1154,12 @@ class PlanetPopulation(EclipsePopulation):
         super(PlanetPopulation, self).save_hdf(filename, path=path, **kwargs)
         self.starmodel.save_hdf(filename, path='{}/starmodel'.format(path), append=True)
 
-    @classmethod
-    def load_hdf(cls, filename, path=''):
-        pop = super(PlanetPopulation, cls).load_hdf(filename, path=path)
-        pop.starmodel = StarModel.load_hdf(filename, 
-                                           path='{}/starmodel'.format(path))
-        return pop
+    #@classmethod
+    #def load_hdf(cls, filename, path=''):
+    #    pop = super(PlanetPopulation, cls).load_hdf(filename, path=path)
+    #    pop.starmodel = StarModel.load_hdf(filename, 
+    #                                       path='{}/starmodel'.format(path))
+    #    return pop
 
 class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
     """Population of Eclipsing Binaries (undiluted)
