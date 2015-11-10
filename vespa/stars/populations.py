@@ -192,6 +192,11 @@ class StarPopulation(object):
             if 'distmod' not in self.stars:
                 self.stars['distmod'] = distancemodulus(self.stars['distance'])
 
+        self._starmodel = None
+
+    @property
+    def starmodel(self):
+        return self._starmodel
 
     @property
     def Rsky(self):
@@ -1628,7 +1633,7 @@ class Observed_BinaryPopulation(BinaryPopulation):
         self.Teff = Teff
         self.logg = logg
         self.feh = feh
-        self.starmodel = starmodel
+        self._starmodel = starmodel
 
         if stars is None and mags is not None \
            or starmodel is not None:
@@ -1688,7 +1693,7 @@ class Observed_BinaryPopulation(BinaryPopulation):
         if type(starmodel) != BinaryStarModel:
             raise TypeError('starmodel must be BinaryStarModel.')
         
-        self.starmodel = starmodel
+        self._starmodel = starmodel
 
         samples = starmodel.random_samples(n)
         age, feh = (samples['age'], samples['feh'])
@@ -1712,7 +1717,7 @@ class Observed_BinaryPopulation(BinaryPopulation):
     @classmethod
     def load_hdf(cls, filename, path=''):
         pop = super(Observed_BinaryPopulation, cls).load_hdf(filename, path=path)
-        pop.starmodel = BinaryStarModel.load_hdf(filename, 
+        pop._starmodel = BinaryStarModel.load_hdf(filename, 
                                                   path='{}/starmodel'.format(path))
         return pop
 
@@ -1753,7 +1758,7 @@ class Observed_TriplePopulation(TriplePopulation):
         self.Teff = Teff
         self.logg = logg
         self.feh = feh
-        self.starmodel = starmodel
+        self._starmodel = starmodel
 
         if stars is None and mags is not None \
            or starmodel is not None:
@@ -1812,7 +1817,7 @@ class Observed_TriplePopulation(TriplePopulation):
         if type(starmodel) != TripleStarModel:
             raise TypeError('starmodel must be TripleStarModel.')
         
-        self.starmodel = starmodel
+        self._starmodel = starmodel
 
         samples = starmodel.random_samples(n)
         age, feh = (samples['age'], samples['feh'])
@@ -1840,7 +1845,7 @@ class Observed_TriplePopulation(TriplePopulation):
     @classmethod
     def load_hdf(cls, filename, path=''):
         pop = super(Observed_TriplePopulation, cls).load_hdf(filename, path=path)
-        pop.starmodel = TripleStarModel.load_hdf(filename, 
+        pop._starmodel = TripleStarModel.load_hdf(filename, 
                                                   path='{}/starmodel'.format(path))
         return pop
     
@@ -2277,7 +2282,7 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
         self.Teff = Teff
         self.logg = logg
         self.feh = feh
-        self.starmodel = starmodel
+        self._starmodel = starmodel
 
 
         if filename is not None:
@@ -2290,7 +2295,7 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
                              '(Teff={}, logg={}, ' +
                              'feh={})...'.format(Teff,logg,feh))
 
-                self.starmodel = StarModel(ichrone, Teff=Teff, 
+                self._starmodel = StarModel(ichrone, Teff=Teff, 
                                            logg=logg, feh=feh)
                 if mcmc_kws is None:
                     mcmc_kws = {}
@@ -2324,7 +2329,7 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
     def load_hdf(cls, filename, path=''):
         #is there a better way to do this?
         pop = MultipleStarPopulation.load_hdf(filename, path=path)
-        pop.starmodel = StarModel.load_hdf(filename, path=path)
+        pop._starmodel = StarModel.load_hdf(filename, path=path)
         return pop
 
 class BGStarPopulation(StarPopulation):

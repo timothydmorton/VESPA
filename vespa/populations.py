@@ -899,10 +899,12 @@ class EclipsePopulation(StarPopulation):
 
         new = StarPopulation.load_hdf(filename, path=path)
 
-        #load starmodel if present
+        #setup lazy loading of starmodel if present
         try:
-            new.starmodel = StarModel.load_hdf(filename, 
-                                               path='{}/starmodel'.format(path))
+            new._starmodel_file = filename
+            new._starmodel_path = '{}/starmodel'.format(path)
+            #new.starmodel = StarModel.load_hdf(filename, 
+            #                                   path='{}/starmodel'.format(path))
         except:
             pass
         
@@ -911,6 +913,17 @@ class EclipsePopulation(StarPopulation):
         except NoTrapfitError:
             logging.warning('Trapezoid fit not done.')
         return new
+
+    @property
+    def starmodel(self):
+        if self._starmodel is None:
+            try:
+                self._starmodel = StarModel.load_hdf(self._starmodel_file,
+                                                     self._starmodel_path)
+            except:
+                pass
+        return self._starmodel
+
 
 class EclipsePopulation_Px2(EclipsePopulation):
     def apply_secthresh(self, *args, **kwargs):
