@@ -1722,7 +1722,8 @@ class Observed_BinaryPopulation(BinaryPopulation):
         return pop
 
     def __getattr__(self, attr):
-        if attr != 'starmodel':
+        # Don't remember why I've done this.  Must be a reason.
+        if attr not in ['starmodel','_starmodel']:
             return getattr(self.starmodel, attr)
 
 class Observed_TriplePopulation(TriplePopulation):
@@ -1850,7 +1851,8 @@ class Observed_TriplePopulation(TriplePopulation):
         return pop
     
     def __getattr__(self, attr):
-        if attr != 'starmodel':
+        # Why did I do this again?  Probably a reason...
+        if attr not in ['starmodel', '_starmodel']:
             return getattr(self.starmodel, attr)
 
 

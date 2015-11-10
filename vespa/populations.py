@@ -903,8 +903,6 @@ class EclipsePopulation(StarPopulation):
         try:
             new._starmodel_file = filename
             new._starmodel_path = '{}/starmodel'.format(path)
-            #new.starmodel = StarModel.load_hdf(filename, 
-            #                                   path='{}/starmodel'.format(path))
         except:
             pass
         
@@ -919,7 +917,7 @@ class EclipsePopulation(StarPopulation):
         if self._starmodel is None:
             try:
                 self._starmodel = StarModel.load_hdf(self._starmodel_file,
-                                                     self._starmodel_path)
+                                                     path=self._starmodel_path)
             except:
                 pass
         return self._starmodel
@@ -1018,7 +1016,7 @@ class PlanetPopulation(EclipsePopulation):
         self.rprs = rprs
         self.Teff = Teff
         self.logg = logg
-        self.starmodel = starmodel
+        self._starmodel = starmodel
         
         if radius is not None and mass is not None or starmodel is not None:
             # calculates eclipses 
@@ -1152,7 +1150,7 @@ class PlanetPopulation(EclipsePopulation):
             
         priorfactors = {'fp_specific':fp_specific}
 
-        self.starmodel = starmodel
+        self._starmodel = starmodel
 
         EclipsePopulation.__init__(self, stars=stars,
                                    period=self.period, model=self.model,
@@ -1355,7 +1353,7 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
         self.Teff = Teff
         self.logg = logg
         self.feh = feh
-        self.starmodel = pop.starmodel
+        self._starmodel = pop.starmodel
 
         priorfactors = {'f_binary':f_binary}
 
@@ -1567,7 +1565,7 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
         self.Teff = Teff
         self.logg = logg
         self.feh = feh
-        self.starmodel = pop.starmodel
+        self._starmodel = pop.starmodel
 
         priorfactors = {'f_triple':f_triple}
 
