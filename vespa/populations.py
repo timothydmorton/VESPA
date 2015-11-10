@@ -897,7 +897,7 @@ class EclipsePopulation(StarPopulation):
 
         """
 
-        new = cls.load_hdf(filename, path=path)
+        new = StarPopulation.load_hdf(filename, path=path)
 
         #load starmodel if present
         try:
