@@ -73,6 +73,8 @@ DAY = 86400
 RSUN = const.R_sun.cgs.value
 REARTH = const.R_earth.cgs.value
 
+KOIDATA = ku.DR24 #change to ku.DATA for cumulative table
+
 def _get_starfields(**kwargs):
     from starutils.trilegal import get_trilegal
     if not os.path.exists(STARFIELD_DIR):
@@ -100,10 +102,10 @@ def modelshift_weaksec(koi):
 
     secondary metric: D_sec_dv * (1 + 3*F_red_dv / sig_sec_dv)
     """
-    num = ku.DATA.ix[ku.koiname(koi), 'koi_tce_plnt_num']
+    num = KOIDATA.ix[ku.koiname(koi), 'koi_tce_plnt_num']
     if np.isnan(num):
         num = 1
-    kid = ku.DATA.ix[ku.koiname(koi), 'kepid']
+    kid = KOIDATA.ix[ku.koiname(koi), 'kepid']
     tce = '{:09.0f}-{:02.0f}'.format(kid,num)
 
     #return largest depth between DV detrending and alternate detrending
@@ -148,9 +150,9 @@ def weaksec_vv2(koi):
 
     except KeyError:
         koi = ku.koiname(koi)
-        secthresh = 10*ku.DATA.ix[koi,'koi_depth_err1'] * 1e-6
+        secthresh = 10*KOIDATA.ix[koi,'koi_depth_err1'] * 1e-6
         if np.isnan(secthresh):
-            secthresh = ku.DATA.ix[koi,'koi_depth'] / 2 * 1e-6
+            secthresh = KOIDATA.ix[koi,'koi_depth'] / 2 * 1e-6
             logging.warning('No (or bad) weak secondary info for {}, and no reported depth error. Defaulting to 1/2 reported depth = {}'.format(koi, secthresh))
         else:
             logging.warning('No (or bad) weak secondary info for {}. Defaulting to 10x reported depth error = {}'.format(koi, secthresh))
@@ -163,7 +165,7 @@ def weaksec_vv2(koi):
 
 def default_r_exclusion(koi,rmin=0.5):
     try:
-        r_excl = ku.DATA.ix[koi,'koi_dicco_msky_err'] * 3
+        r_excl = KOIDATA.ix[koi,'koi_dicco_msky_err'] * 3
         r_excl = max(r_excl, rmin) 
         if np.isnan(r_excl):
             raise ValueError
@@ -185,12 +187,12 @@ def koi_propdist(koi, prop):
     """
     """
     koi = ku.koiname(koi)
-    kepid = ku.DATA.ix[koi, 'kepid']
+    kepid = KOIDATA.ix[koi, 'kepid']
     try:
         #first try cumulative table
-        val = ku.DATA.ix[koi, prop]
-        u1 = ku.DATA.ix[koi, prop+'_err1']
-        u2 = ku.DATA.ix[koi, prop+'_err2']
+        val = KOIDATA.ix[koi, prop]
+        u1 = KOIDATA.ix[koi, prop+'_err1']
+        u2 = KOIDATA.ix[koi, prop+'_err2']
     except KeyError:
         try:
             #try Huber table
@@ -245,7 +247,7 @@ class KOI_FPPCalculation(FPPCalculation):
 
         else:
             koinum = koiname(koi, koinum=True)
-            kepid = ku.DATA.ix[koi,'kepid']
+            kepid = KOIDATA.ix[koi,'kepid']
 
             if 'mass' not in kwargs:
                 kwargs['mass'] = koi_propdist(koi, 'mass')
@@ -266,7 +268,7 @@ class KOI_FPPCalculation(FPPCalculation):
                 if use_JRowe:
                     kwargs['rprs'] = trsig.rowefit.ix['RD1','val']
                 else:
-                    kwargs['rprs'] = ku.DATA.ix[koi,'koi_ror']
+                    kwargs['rprs'] = KOIDATA.ix[koi,'koi_ror']
                     
             #if stellar properties are determined spectroscopically,
             # fit stellar model
@@ -301,7 +303,7 @@ class KOI_FPPCalculation(FPPCalculation):
             if 'ra' not in kwargs:
                 kwargs['ra'], kwargs['dec'] = ku.radec(koi)
             if 'period' not in kwargs:
-                kwargs['period'] = ku.DATA.ix[koi,'koi_period']
+                kwargs['period'] = KOIDATA.ix[koi,'koi_period']
 
             if 'pl_kws' not in kwargs:
                 kwargs['pl_kws'] = {}
@@ -408,6 +410,9 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
 
         lc = pd.read_table(self.lcfile,names=['t','f','df'],
                                                   delimiter='\s+')
+
+        logging.debug('{} points read from file.'.format(len(lc)))
+
         self.ttfile = '%s/koi%07.2f.tt' % (self.folder,koiname(koi,koinum=True))
         self.has_ttvs = os.path.exists(self.ttfile)
         if self.has_ttvs:            
@@ -542,7 +547,7 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
             config[band] = (mags[band], unc[band])
     config['Kepler'] = mags['Kepler']
 
-    kepid = ku.DATA.ix[koi,'kepid']
+    kepid = KOIDATA.ix[koi,'kepid']
     try:
         m = re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov'])
     except KeyError:
