@@ -399,7 +399,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         self.lcfile = '%s/tremove.%i.dat' % (self.folder,num)
         if (not os.path.exists(self.lcfile)) or (os.stat(self.lcfile)[6]==0):
             kepid = ku.kepid(koi)
-            self.lcfile = '{}/klc{08.0f}.dct.dat'.format(self.folder,kepid)
+            self.lcfile = '{}/klc{:08.0f}.dct.dat'.format(self.folder,kepid)
             if not os.path.exists(self.lcfile):
                 raise MissingKOIError('{} does not exist.'.format(self.lcfile))
             if os.stat(self.lcfile)[6]==0:
