@@ -912,14 +912,16 @@ class EclipsePopulation(StarPopulation):
             logging.warning('Trapezoid fit not done.')
         return new
 
+
     @property
     def starmodel(self):
         if self._starmodel is None:
-            try:
+            if hasattr(self, '_starmodel_file') and hasattr(self, '_starmodel_path'):
                 self._starmodel = StarModel.load_hdf(self._starmodel_file,
                                                      path=self._starmodel_path)
-            except:
-                pass
+            else:
+                raise AttributeError('{} does not have starmodel.'.format(self))
+                
         return self._starmodel
 
 

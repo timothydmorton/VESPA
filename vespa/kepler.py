@@ -385,6 +385,9 @@ def jrowe_fit(koi):
     pars = ['RHO', 'EP1','PE1', 'BB1', 'RD1']
     vals = list(JROWE_DATA.ix[koi,['rhostar','T0','P','b','rdr']])
 
+    old = jrowe_fit_old(koi)
+    vals[1] = old.ix['EP1','val'] # hack to make sure epoch matches old photometry.
+
     return pd.DataFrame({'val':vals}, index=pars)
 
 class JRowe_KeplerTransitSignal(KeplerTransitSignal):
@@ -458,7 +461,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         self.Tdur = Tdur
         self.epoch = self.rowefit.ix['EP1','val'] + 2504900
 
-        logging.debug('Tdur = {:.2f}'.format(self.Tdur))
+        logging.debug('Tdur = {:.2f}, P={:.4f}, ep={:.4f}'.format(self.Tdur,self.P,self.epoch))
         logging.debug('aR={0}, cosi={1}, RR={2}'.format(aR,cosi,RR))
         logging.debug('arcsin arg={}'.format(1/aR * (((1+RR)**2 - (aR*cosi)**2)/(1 - cosi**2))**(0.5)))
         logging.debug('inside sqrt in arcsin arg={}'.format((((1+RR)**2 - (aR*cosi)**2)/(1 - cosi**2))))
@@ -477,14 +480,14 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         if self.has_ttvs:
             for t0 in tts['tc']:
                 t = lc['t'] - t0
-                ok = np.absolute(t) < 2*self.Tdur
+                ok = np.absolute(t) < (2*self.Tdur)
                 ts = ts.append(t[ok])
                 fs = fs.append(lc['f'][ok])
                 dfs = dfs.append(lc['df'][ok])
         else:
             center = self.epoch % self.P
             t = np.mod(lc['t'] - center + self.P/2,self.P) - self.P/2
-            ok = np.absolute(t) < 2*self.Tdur
+            ok = np.absolute(t) < (2*self.Tdur)
             ts = t[ok]
             fs = lc['f'][ok]
             dfs = lc['df'][ok]
@@ -492,6 +495,10 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         logging.debug('{0}: has_ttvs is {1}'.format(koi,self.has_ttvs))
         logging.debug('{} light curve points used'.format(ok.sum()))
 
+        if ok.sum()==0:
+            logging.debug(t)
+            logging.debug('no t points (above) with abs < {}'.format(2*self.Tdur))
+            raise BadPhotometryError('No valid light curve points?')
 
         if maxslope is None:
             #set maxslope using duration

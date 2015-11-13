@@ -192,11 +192,13 @@ class StarPopulation(object):
             if 'distmod' not in self.stars:
                 self.stars['distmod'] = distancemodulus(self.stars['distance'])
 
-        self._starmodel = None
 
     @property
     def starmodel(self):
-        return self._starmodel
+        if hasattr(self, '_starmodel'):
+            return self._starmodel
+        else:
+            return AttributeError('No starmodel for this object.')
 
     @property
     def Rsky(self):
