@@ -349,7 +349,7 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,width=3,
     Mlo = M0 - (dur/P)*2*np.pi * width/2.
     Mhi = M0 + (dur/P)*2*np.pi * width/2.
 
-    logging.debug('M0={}, Mlo={}, Mhi={} (dur={})'.format(M0,Mlo,Mhi,dur))
+    logging.debug('M0={}; Mlo={}; Mhi={} (dur={})'.format(M0,Mlo,Mhi,dur))
 
     Ms = np.linspace(Mlo, Mhi, npts)
     ts = (Ms - M0) / (2*np.pi) * P
@@ -420,7 +420,7 @@ def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width
     return ts, fs
 
 
-def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,conv=True,cadence=0.020434028,frac=1,sec=False,pars0=None,tol=1e-4):
+def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,conv=True,cadence=0.020434028,frac=1,sec=False,pars0=None,tol=1e-4,width=3):
     """
     Trapezoidal parameters for simulated orbit.
     
@@ -434,7 +434,7 @@ def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,conv=True,cadenc
     
     """
     ts,fs = eclipse(p0=p0,b=b,aR=aR,P=P,ecc=ecc,w=w,npts=npts,u1=u1,u2=u2,
-                    conv=conv,cadence=cadence,frac=frac,sec=sec,tol=tol)
+                    conv=conv,cadence=cadence,frac=frac,sec=sec,tol=tol,width=width)
     
     #logging.debug('{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}'.format(p0,b,aR,P,ecc,w,xmax,npts,u1,u2,leastsq,conv,cadence,frac,sec,new))
     #logging.debug('ts: {} fs: {}'.format(ts,fs))
