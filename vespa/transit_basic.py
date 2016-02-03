@@ -38,7 +38,7 @@ if not on_rtd:
     #from vespa_transitutils import find_eclipse
     #from vespa_transitutils import traptransit, traptransit_resid
     from vespa_transitutils import angle_from_transit, angle_from_occultation
-    from vespa_transitutils import z_of_M, zs_of_Ms, transit_duration
+    from vespa_transitutils import zs_of_Ms, transit_duration
     import emcee
 else:
     find_eclipse, traptransit, traptransit_resid = (None, None, None)

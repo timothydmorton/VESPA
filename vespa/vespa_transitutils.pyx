@@ -8,6 +8,7 @@ FOO = "Hi" #for weird __init__ bug purposes
 DTYPE = np.float
 ctypedef np.float_t DTYPE_t
 cdef DTYPE_t pi = 3.1415926535897932384626433832795
+cdef DTYPE_t TAU = 2*pi
 
 cdef extern from "math.h":
     double sin(double)
@@ -52,7 +53,7 @@ def calculate_eccentric_anomaly(DTYPE_t mean_anomaly, DTYPE_t eccentricity):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def true_anomaly(DTYPE_t M, DTYPE_t ecc):
+cdef DTYPE_t true_anomaly(DTYPE_t M, DTYPE_t ecc):
 
     cdef DTYPE_t guess = M
     cdef unsigned int i = 0
@@ -88,7 +89,7 @@ def zs_of_Ms(np.ndarray[DTYPE_t] Ms, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def z_of_M(DTYPE_t M, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc, DTYPE_t w, bool sec=False):
+cdef DTYPE_t z_of_M(DTYPE_t M, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc, DTYPE_t w, bool sec=False):
     
     cdef DTYPE_t inc
     if sec:
@@ -116,14 +117,30 @@ def z_of_M(DTYPE_t M, DTYPE_t b, DTYPE_t aR, DTYPE_t ecc, DTYPE_t w, bool sec=Fa
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def angle_from_transit(DTYPE_t M, DTYPE_t ecc, DTYPE_t w):
-    return fabs(true_anomaly(M, ecc) - (pi/2 - w))
+cpdef DTYPE_t angle_from_transit(DTYPE_t M, DTYPE_t ecc, DTYPE_t w):
+    cdef DTYPE_t f = true_anomaly(M, ecc)
+    cdef DTYPE_t f0 = pi/2 - w
+    cdef DTYPE_t a = (f - f0) % TAU
+    cdef DTYPE_t b = (f0 - f) % TAU
+    if a < b:
+        return a
+    else:
+        return b
+    #return fabs(true_anomaly(M, ecc) - (pi/2 - w))
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def angle_from_occultation(DTYPE_t M, DTYPE_t ecc, DTYPE_t w):
-    return fabs(true_anomaly(M, ecc) - (-pi/2 - w))
+cpdef DTYPE_t angle_from_occultation(DTYPE_t M, DTYPE_t ecc, DTYPE_t w):
+    cdef DTYPE_t f = true_anomaly(M, ecc)
+    cdef DTYPE_t f0 = -pi/2 - w
+    cdef DTYPE_t a = (f - f0) % TAU
+    cdef DTYPE_t b = (f0 - f) % TAU
+    if a < b:
+        return a
+    else:
+        return b
+    #return fabs(true_anomaly(M, ecc) - (-pi/2 - w))
 
 
 @cython.boundscheck(False)
