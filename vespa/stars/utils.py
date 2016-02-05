@@ -157,7 +157,7 @@ def withinroche(semimajors,M1,R1,M2,R2):
     return ((R1+R2)*RSUN) > (rochelobe(q)*semimajors*AU)
     
 def semimajor(P,mstar=1):
-    """Returns semimajor axis given P in days, mstar in solar masses.
+    """Returns semimajor axis in AU given P in days, mstar in solar masses.
     """
     return ((P*DAY/2/np.pi)**2*G*mstar*MSUN)**(1./3)/AU
 

@@ -380,12 +380,14 @@ def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
     a = semimajor(P,M1+M2)
     if sec:
         b = a*AU*np.cos(inc*np.pi/180)/(R1*RSUN) * (1-ecc**2)/(1 - ecc*np.sin(w*np.pi/180))
-        aR = a*AU/(R2*RSUN)
-        p0 = R1/R2
+        #aR = a*AU/(R2*RSUN) #I feel like this was to correct a bug, but this should not be.
+        #p0 = R1/R2 #why this also?
     else:
         b = a*AU*np.cos(inc*np.pi/180)/(R1*RSUN) * (1-ecc**2)/(1 + ecc*np.sin(w*np.pi/180))
-        aR = a*AU/(R1*RSUN)
-        p0 = R2/R1
+        #aR = a*AU/(R1*RSUN)
+        #p0 = R2/R1
+    p0 = R2/R1
+    aR = a*AU/(R1*RSUN)
     return p0,b,aR
 
 

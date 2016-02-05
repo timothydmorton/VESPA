@@ -794,11 +794,13 @@ class EclipsePopulation(StarPopulation):
         s = self.stars.iloc[i]
         P = s['P']
 
-        p0, b, aR = eclipse_pars(P, s['mass_1'], s['mass_2'],
-                                 s['radius_1'], s['radius_2'],
-                                 ecc=s['ecc'], inc=s['inc'],
-                                 w=s['w'])
+        #p0, b, aR = eclipse_pars(P, s['mass_1'], s['mass_2'],
+        #                         s['radius_1'], s['radius_2'],
+        #                         ecc=s['ecc'], inc=s['inc'],
+        #                         w=s['w'])
         
+        p0 = s['radius_2']/s['radius_1']
+        aR = semimajor(P, s['mass_1']+s['mass_2'])*AU/(s['radius_1']*RSUN)
         if secondary:
             mu1, mu2 = s[['u1_2', 'u2_2']]
             b = s['b_sec']
