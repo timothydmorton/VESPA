@@ -359,7 +359,11 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,width=3,
 
     #logging.debug('zs={}'.format(zs))
 
-    fs = _quadratic_ld._quadratic_ld(zs, p0, u1, u2, 1)
+    if sec:
+        zs *= 1./p0
+        fs = _quadratic_ld._quadratic_ld(zs, 1./p0, u1, u2, 1)
+    else:
+        fs = _quadratic_ld._quadratic_ld(zs, p0, u1, u2, 1)
 
     if conv:
         dt = ts[1]-ts[0]
