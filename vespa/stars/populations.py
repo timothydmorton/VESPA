@@ -1374,8 +1374,12 @@ class Simulated_BinaryPopulation(BinaryPopulation):
         P = self.P_fn(n)
         ecc = self.ecc_fn(n,P)
 
-        pri = ichrone(np.ones(n)*M, age, feh, return_df=True, bands=bands)
-        sec = ichrone(M2, age, feh, return_df=True, bands=bands)
+        mass = np.ascontiguousarray(np.ones(n)*M)
+        mass2 = np.ascontiguousarray(M2)
+        age = np.ascontiguousarray(age)
+        feh = np.ascontiguousarray(feh)
+        pri = ichrone(mass, age, feh, return_df=True, bands=bands)
+        sec = ichrone(mass2, age, feh, return_df=True, bands=bands)
         
         BinaryPopulation.__init__(self, primary=pri, secondary=sec,
                                   period=P, ecc=ecc, **kwargs)
@@ -1698,9 +1702,11 @@ class Observed_BinaryPopulation(BinaryPopulation):
         self._starmodel = starmodel
 
         samples = starmodel.random_samples(n)
-        age, feh = (samples['age'], samples['feh'])
+        age, feh = (np.ascontiguousarray(samples['age']), 
+                    np.ascontiguousarray(samples['feh']))
         dist, AV = (samples['distance'], samples['AV'])
-        mass_A, mass_B = (samples['mass_A'], samples['mass_B'])
+        mass_A, mass_B = (np.ascontiguousarray(samples['mass_A']), 
+                          np.ascontiguousarray(samples['mass_B']))
         primary = ichrone(mass_A, age, feh, 
                           distance=dist, AV=AV, bands=BANDS)
         secondary = ichrone(mass_B, age, feh, 
@@ -1823,11 +1829,12 @@ class Observed_TriplePopulation(TriplePopulation):
         self._starmodel = starmodel
 
         samples = starmodel.random_samples(n)
-        age, feh = (samples['age'], samples['feh'])
+        age, feh = (np.ascontiguousarray(samples['age']), 
+                    np.ascontiguousarray(samples['feh']))
         dist, AV = (samples['distance'], samples['AV'])
-        mass_A, mass_B, mass_C = (samples['mass_A'], 
-                                  samples['mass_B'],
-                                  samples['mass_C'])
+        mass_A, mass_B, mass_C = (np.ascontiguousarray(samples['mass_A']), 
+                                  np.ascontiguousarray(samples['mass_B']),
+                                  np.ascontiguousarray(samples['mass_C']))
         primary = ichrone(mass_A, age, feh, 
                           distance=dist, AV=AV, bands=BANDS)
         secondary = ichrone(mass_B, age, feh, 
@@ -1965,12 +1972,16 @@ class MultipleStarPopulation(TriplePopulation):
         #reset n if need be
         n = len(m1)
 
-        feh = np.atleast_1d(feh)
+        feh = np.ascontiguousarray(np.atleast_1d(feh))
+        age = np.ascontiguousarray(age)
 
         #generate stellar properties
-        primary = ichrone(m1,age,feh, bands=bands)
-        secondary = ichrone(m2,age,feh, bands=bands)
-        tertiary = ichrone(m3,age,feh, bands=bands)
+        primary = ichrone(np.ascontiguousarray(m1), age, feh,
+                          bands=bands)
+        secondary = ichrone(np.ascontiguousarray(m2),age,feh, 
+                            bands=bands)
+        tertiary = ichrone(np.ascontiguousarray(m3),age,feh, 
+                           bands=bands)
 
         #clean up columns that become nan when called with mass=0
         # Remember, we want mass=0 and mags=inf when something doesn't exist
