@@ -334,6 +334,8 @@ def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,width=3,
     dur = transit_duration(p0, P, b, aR, ecc, w*np.pi/180, sec)
     if np.isnan(dur):
         raise NoEclipseError
+    if dur < 2*cadence:
+        dur = 2*cadence
 
     if sec:
         M0 = minimize(angle_from_occultation, 
