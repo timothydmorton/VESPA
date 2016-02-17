@@ -1116,7 +1116,7 @@ class PlanetPopulation(EclipsePopulation):
             df['u2'] = u2 * np.ones_like(df['mass_A'])
             df['P'] = self.period * np.ones_like(df['mass_A'])
             
-            ok = df['dpri']>0
+            ok = (df['dpri']>0) & (df['T14_pri'] > 0)
             
             stars = pd.concat((stars, df[ok]))
 
