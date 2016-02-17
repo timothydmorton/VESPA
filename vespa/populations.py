@@ -288,7 +288,7 @@ class EclipsePopulation(StarPopulation):
         u1 = sec*stars.u1_2 + pri*stars.u1_1
         u2 = sec*stars.u2_2 + pri*stars.u2_1
         #fluxfrac = sec*stars.fluxfrac_2 + pri*stars.fluxfrac_1
-        dilution = pop.dilution_factor[ok]
+        dilution = self.dilution_factor[ok]
 
         X = np.array([P,T14,tau,k,b,logd,u1,u2,dilution,sec]).T
         return X
