@@ -270,17 +270,17 @@ class EclipsePopulation(StarPopulation):
         stars = self.stars
         ok = (stars.depth > 0).values
         stars = stars[ok]
-        texp = 1626/86400.
+        texp = self.cadence
 
         # Define features
         sec = stars.secondary
         pri = ~sec
+        P = stars.P
         T14 = sec*stars.T14_sec + pri*stars.T14_pri
         T23 = sec*stars.T23_sec + pri*stars.T23_pri
         T14 += texp
-        
+        T23 = np.clip(T23 - texp, 0, T14)
         tau = (T14 - T23)/2.
-        tau[tau < texp] = texp
         k = (sec*(stars.radius_A/stars.radius_B) + 
              ~sec*(stars.radius_B/stars.radius_A))
         b = sec*(stars.b_sec/k) + pri*stars.b_pri
@@ -290,7 +290,7 @@ class EclipsePopulation(StarPopulation):
         #fluxfrac = sec*stars.fluxfrac_2 + pri*stars.fluxfrac_1
         dilution = pop.dilution_factor[ok]
 
-        X = np.array([T14,tau,k,b,logd,u1,u2,dilution,sec]).T
+        X = np.array([P,T14,tau,k,b,logd,u1,u2,dilution,sec]).T
         return X
 
     @property
