@@ -162,11 +162,10 @@ class EclipsePopulation(StarPopulation):
         :class:`vespa.stars.StarPopulation`.
 
     """
-                
     def __init__(self, stars=None, period=None, model='',
                  priorfactors=None, lhoodcachefile=None,
                  orbpop=None, prob=None,
-                 cadence=0.020434028, #Kepler observing cadence, in days
+                 cadence=1626./86400, #Kepler observing cadence, in days
                  **kwargs):
 
         
@@ -215,11 +214,6 @@ class EclipsePopulation(StarPopulation):
         if msg is None:
             msg = '{}: '.format(self.model)
             
-        #trapfit_df = fitebs(self.stars, MAfn=MAfn, msg=msg, cadence=self.cadence,
-        #                    **kwargs)
-        #for col in trapfit_df.columns:
-        #    self.stars[col] = trapfit_df[col]
-
         n = len(self.stars)
         deps, durs, slopes = (np.zeros(n), np.zeros(n), np.zeros(n))
         secs = np.zeros(n, dtype=bool)
@@ -271,6 +265,42 @@ class EclipsePopulation(StarPopulation):
 
         self._make_kde()
 
+    @property
+    def eclipse_features(self):
+        stars = self.stars
+        ok = (stars.depth > 0).values
+        stars = stars[ok]
+        texp = 1626/86400.
+
+        # Define features
+        sec = stars.secondary
+        pri = ~sec
+        T14 = sec*stars.T14_sec + pri*stars.T14_pri
+        T23 = sec*stars.T23_sec + pri*stars.T23_pri
+        T14 += texp
+        
+        tau = (T14 - T23)/2.
+        tau[tau < texp] = texp
+        k = (sec*(stars.radius_A/stars.radius_B) + 
+             ~sec*(stars.radius_B/stars.radius_A))
+        b = sec*(stars.b_sec/k) + pri*stars.b_pri
+        logd = np.log10(sec*stars.dsec + pri*stars.dpri)
+        u1 = sec*stars.u1_2 + pri*stars.u1_1
+        u2 = sec*stars.u2_2 + pri*stars.u2_1
+        #fluxfrac = sec*stars.fluxfrac_2 + pri*stars.fluxfrac_1
+        dilution = pop.dilution_factor[ok]
+
+        X = np.array([T14,tau,k,b,logd,u1,u2,dilution,sec]).T
+        return X
+
+    @property
+    def eclipse_targets(self):
+        ok = (self.stars.depth > 0).values
+        stars = self.stars[ok]
+        duration = np.array(stars.duration)
+        logdepth = np.array(np.log10(stars.depth))
+        slope = np.array(stars.slope)
+        return duration, logdepth, slope
 
     def apply_multicolor_transit(self, band, depth):
         raise NotImplementedError('multicolor transit not yet implemented')
@@ -826,14 +856,16 @@ class EclipsePopulation(StarPopulation):
 
         for k,v in pars.items():
             kwargs[k] = v
-            
+        kwargs['cadence'] = self.cadence
+
         return eclipse_tt(sec=secondary, **kwargs)
 
     def eclipse_new(self, i, secondary=False, npoints=200, width=3,
-                texp=0.020434028):
+                texp=None):
         """
         Returns times and fluxes of eclipse i (centered at t=0)
         """
+        texp = self.cadence
         s = self.stars.iloc[i]
         
         e = s['ecc']

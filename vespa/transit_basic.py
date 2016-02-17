@@ -329,7 +329,7 @@ def a_over_Rs(P,R2,M2,M1=1,R1=1,planet=True):
     return semimajor(P,M1+M2)*AU/(R1*RSUN)
 
 def eclipse(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,width=3,
-            conv=True,cadence=0.020434028,frac=1,sec=False,tol=1e-4):
+            conv=True,cadence=1626./86400,frac=1,sec=False,tol=1e-4):
     
     dur = transit_duration(p0, P, b, aR, ecc, w*np.pi/180, sec)
     if np.isnan(dur):
@@ -394,7 +394,7 @@ def eclipse_pars(P,M1,M2,R1,R2,ecc=0,inc=90,w=0,sec=False):
     return p0,b,aR
 
 
-def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=0.020434028,frac=1,sec=False,dt=2,approx=False,new=True):
+def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width=3,conv=False,cadence=1626./86400,frac=1,sec=False,dt=2,approx=False,new=True):
     """
 
     """
@@ -425,7 +425,8 @@ def eclipse_new(p0,b,aR,P=1,ecc=0,w=0,npts=200,MAfn=None,u1=0.394,u2=0.261,width
     return ts, fs
 
 
-def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,conv=True,cadence=0.020434028,frac=1,sec=False,pars0=None,tol=1e-4,width=3):
+def eclipse_tt(p0,b,aR,P=1,ecc=0,w=0,npts=100,u1=0.394,u2=0.261,conv=True,
+               cadence=1626./86400,frac=1,sec=False,pars0=None,tol=1e-4,width=3):
     """
     Trapezoidal parameters for simulated orbit.
     
