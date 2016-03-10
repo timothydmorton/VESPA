@@ -495,19 +495,19 @@ class FPPCalculation(object):
             folder = self.folder
         fout = open(folder+'/'+'results.txt','w')
         for m in self.popset.shortmodelnames:
-            fout.write('Z_{0} L_{0} pr_{0} '.format(m))
+            fout.write('lhood_{0} L_{0} pr_{0} '.format(m))
         fout.write('fpV fp FPP\n')
         Ls = {}
         Ltot = 0
-        Zs = {}
+        lhoods = {}
         for model in self.popset.modelnames:
-            Zs[model] = self.lhood(model)
+            lhoods[model] = self.lhood(model)
             Ls[model] = self.prior(model)*Zs[model]
             Ltot += Ls[model]
 
         line = ''
         for model in self.popset.modelnames:
-            line += '%.2e %.2e %.2e ' % (Zs[model], Ls[model], Ls[model]/Ltot)
+            line += '%.2e %.2e %.2e ' % (lhoods[model], Ls[model], Ls[model]/Ltot)
         line += '%.3g %.3f %.2e\n' % (self.fpV(),self.priorfactors['fp_specific'],self.FPP())
 
         fout.write(line)
