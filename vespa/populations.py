@@ -4,6 +4,7 @@ import logging
 import os, os.path
 import re
 import math
+import copy
 
 try:
     import numpy as np
@@ -610,7 +611,8 @@ class EclipsePopulation(StarPopulation):
         if self.is_ruled_out:
             return 0
 
-        lh = self.kde(trsig.kde.dataset).sum()
+        N = trsig.kde.dataset.shape[1]
+        lh = self.kde(trsig.kde.dataset).sum() / N
 
         fout = open(cachefile, 'a')
         fout.write('%i %g\n' % (key,lh))
@@ -957,6 +959,18 @@ class EclipsePopulation(StarPopulation):
                 raise AttributeError('{} does not have starmodel.'.format(self))
                 
         return self._starmodel
+
+    def resample(self):
+        """
+        Returns a copy of population with stars resampled (with replacement).
+
+        Used in bootstrap estimate of FPP uncertainty.
+        """
+        new = copy.deepcopy(self)
+        N = len(new.stars)
+        new.stars = new.stars.sample(N, replace=True).reset_index()
+        new._make_kde()
+        return new
 
 
 class EclipsePopulation_Px2(EclipsePopulation):
@@ -2476,6 +2490,11 @@ class PopulationSet(object):
                 except:
                     logging.info('VCC constraint not applied to %s model' % (pop.model))
 
+    def resample(self):
+        new = copy.deepcopy(self)
+        new_poplist = [pop.resample() for pop in new.poplist]
+        new.poplist = new_poplist
+        return new
 
 
 

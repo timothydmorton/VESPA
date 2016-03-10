@@ -482,21 +482,32 @@ class FPPCalculation(object):
             plt.savefig('%s/signal.%s' % (folder,figformat))
             plt.close()
 
-    def write_results(self,folder=None):
+    def write_results(self,folder=None, filename='results.txt', to_file=True):
         """
         Writes text file of calculation summary.
 
         :param folder: (optional)
             Folder to which to write ``results.txt``.
 
-            
+        :param filename:
+            Filename to write.  Default=``results.txt``.
+
+        :param to_file:
+            If True, then writes file.  Otherwise just return header, line.
+
+        :returns: 
+            Header string, line
         """
         if folder is None:
             folder = self.folder
-        fout = open(folder+'/'+'results.txt','w')
+        if to_file:
+            fout = open(os.path.join(folder,filename), 'w')
+        header = ''
         for m in self.popset.shortmodelnames:
-            fout.write('lhood_{0} L_{0} pr_{0} '.format(m))
-        fout.write('fpV fp FPP\n')
+            header += 'lhood_{0} L_{0} pr_{0} '.format(m)
+        header += 'fpV fp FPP'
+        if to_file:
+            fout.write('{} \n'.format(header))
         Ls = {}
         Ltot = 0
         lhoods = {}
@@ -508,10 +519,13 @@ class FPPCalculation(object):
         line = ''
         for model in self.popset.modelnames:
             line += '%.2e %.2e %.2e ' % (lhoods[model], Ls[model], Ls[model]/Ltot)
-        line += '%.3g %.3f %.2e\n' % (self.fpV(),self.priorfactors['fp_specific'],self.FPP())
+        line += '%.3g %.3f %.2e' % (self.fpV(),self.priorfactors['fp_specific'],self.FPP())
 
-        fout.write(line)
-        fout.close()
+        if to_file:
+            fout.write(line+'\n')
+            fout.close()
+
+        return header, line
 
     def save_popset(self,filename='popset.h5',**kwargs):
         """Saves the PopulationSet
@@ -834,3 +848,15 @@ class FPPCalculation(object):
         logging.debug('planet: %.2e = %.2e (prior) x %.2e (lhood)' % (prior*lhood,prior,lhood))
         return 1 - Lpl/(Lpl + Lfpp)
 
+    def bootstrap_FPP(self, N=10, filename='results_bootstrap.txt'):
+        lines = []
+        for i in range(N):
+            new = FPPCalculation(self.trsig, self.popset.resample(), folder=self.folder)
+            h,l = new.write_results(to_file=False)
+            lines.append(l)
+        fout = open(os.path.join(self.folder, filename),'w')
+        fout.write(h + '\n')
+        for l in lines:
+            fout.write(l + '\n')
+        fout.close()
+        return h, lines
