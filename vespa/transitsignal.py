@@ -56,7 +56,7 @@ class TransitSignal(object):
 
     :param maxslope: (optional)
         Upper limit to use for "slope" parameter (T/tau)
-        in the MCMC fitting of signal.  Default is 30.
+        in the MCMC fitting of signal.  Default is 15.
 
 
     .. note:: The implementation of this object can use some refactoring;
@@ -65,7 +65,7 @@ class TransitSignal(object):
 
          
     """
-    def __init__(self,ts,fs,dfs=None,P=None,p0=None,name='',maxslope=30):
+    def __init__(self,ts,fs,dfs=None,P=None,p0=None,name='',maxslope=15):
 
         ts = np.atleast_1d(ts)
         fs = np.atleast_1d(fs)
@@ -211,7 +211,7 @@ class TransitSignal(object):
 
     def MCMC(self, niter=500, nburn=200, nwalkers=200, threads=1,
              fit_partial=False, width=3, savedir=None, refit=False,
-             thin=10, conf=0.95, maxslope=30, debug=False, p0=None):
+             thin=10, conf=0.95, maxslope=15, debug=False, p0=None):
         """
         Fit transit signal to trapezoid model using MCMC
 

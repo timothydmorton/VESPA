@@ -785,7 +785,7 @@ class TraptransitModel(object):
     """
     Model to enable MCMC fitting of trapezoidal shape.
     """
-    def __init__(self,ts,fs,sigs=1e-4,maxslope=30):
+    def __init__(self,ts,fs,sigs=1e-4,maxslope=15):
         self.n = np.size(ts)
         if np.size(sigs)==1:
             sigs = np.ones(self.n)*sigs
@@ -800,7 +800,10 @@ class TraptransitModel(object):
 
 
 @jit(nopython=True)
-def traptransit_lhood(pars, ts, fs, sigs, maxslope=30):
+def traptransit_lhood(pars, ts, fs, sigs, maxslope=15):
+    """
+    Params: depth, duration, slope, t0
+    """
     if pars[0] < 0 or pars[1] < 0 or pars[2] < 2 or pars[2] > maxslope:
         return -np.inf
 
@@ -808,10 +811,11 @@ def traptransit_lhood(pars, ts, fs, sigs, maxslope=30):
     tot = 0
     for i in range(len(ts)):
         tot += -0.5*(fmod[i] - fs[i])*(fmod[i] - fs[i]) / (sigs[i]*sigs[i])
+        #tot += np.log(1./pars[2]) #logflat prior on slope
 
     return tot
     
-def traptransit_lhood_old(pars,ts,fs,sigs,maxslope=30):
+def traptransit_lhood_old(pars,ts,fs,sigs,maxslope=15):
     if pars[0] < 0 or pars[1] < 0 or pars[2] < 2 or pars[2] > maxslope:
         return -np.inf
     resid = traptransit_resid(pars,ts,fs)
@@ -819,7 +823,7 @@ def traptransit_lhood_old(pars,ts,fs,sigs,maxslope=30):
 
 def traptransit_MCMC(ts,fs,dfs=1e-5,nwalkers=200,nburn=300,niter=1000,
                      threads=1,p0=[0.1,0.1,3,0],return_sampler=False,
-                     maxslope=30):
+                     maxslope=15):
     """
     Fit trapezoidal model to provided ts, fs, [dfs] using MCMC.
 
