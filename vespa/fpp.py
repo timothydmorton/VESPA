@@ -502,7 +502,7 @@ class FPPCalculation(object):
         lhoods = {}
         for model in self.popset.modelnames:
             lhoods[model] = self.lhood(model)
-            Ls[model] = self.prior(model)*Zs[model]
+            Ls[model] = self.prior(model)*lhoods[model]
             Ltot += Ls[model]
 
         line = ''
