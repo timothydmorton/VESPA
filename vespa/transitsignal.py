@@ -10,6 +10,7 @@ try:
     import matplotlib.pyplot as plt
     import numpy.random as rand
     from scipy.stats import gaussian_kde
+    import corner
 except ImportError:
     np, pd, plt, rand = (None, None, None, None)
     gaussian_kde = None
@@ -327,6 +328,15 @@ class TransitSignal(object):
         self._make_kde(conf=conf)
 
         self.hasMCMC = True
+
+    def corner(self, outfile=None, plot_contours=False, **kwargs):
+        fig = corner.corner(self.kde.dataset.T, labels=['Duration', 'log(depth)', 'T/tau'], 
+                            plot_contours=False, **kwargs)
+        
+        if outfile is not None:
+            fig.savefig(outfile)
+
+        return fig
 
     def _make_kde(self, conf=0.95):
 
