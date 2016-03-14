@@ -142,7 +142,7 @@ if __name__=='__main__':
                 f.trsig.corner(outfile=trap_corner_file)
 
             if args.include_artificial:
-                boxmodel = BoxyModel(100./2e5, f['pl'].stars.slope.quantile(0.99))
+                boxmodel = BoxyModel(100./2e5, f['pl'].stars.slope.max())
                 longmodel = LongModel(100./2e5, f['pl'].stars.duration.quantile(0.99))
                 f.add_population(boxmodel)
                 f.add_population(longmodel)
