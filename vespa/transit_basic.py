@@ -70,6 +70,8 @@ else:
     LDDATA, LDOK, LDPOINTS, U1FN, U2FN = (None, None, None, None, None)
     
 
+MAXSLOPE = 30
+
 def ldcoeffs(teff,logg=4.5,feh=0):
     """
     Returns limb-darkening coefficients in Kepler band.
@@ -785,7 +787,7 @@ class TraptransitModel(object):
     """
     Model to enable MCMC fitting of trapezoidal shape.
     """
-    def __init__(self,ts,fs,sigs=1e-4,maxslope=15):
+    def __init__(self,ts,fs,sigs=1e-4,maxslope=MAXSLOPE):
         self.n = np.size(ts)
         if np.size(sigs)==1:
             sigs = np.ones(self.n)*sigs
@@ -800,7 +802,7 @@ class TraptransitModel(object):
 
 
 @jit(nopython=True)
-def traptransit_lhood(pars, ts, fs, sigs, maxslope=15):
+def traptransit_lhood(pars, ts, fs, sigs, maxslope=MAXSLOPE):
     """
     Params: depth, duration, slope, t0
     """
@@ -815,7 +817,7 @@ def traptransit_lhood(pars, ts, fs, sigs, maxslope=15):
 
     return tot
     
-def traptransit_lhood_old(pars,ts,fs,sigs,maxslope=15):
+def traptransit_lhood_old(pars,ts,fs,sigs,maxslope=MAXSLOPE):
     if pars[0] < 0 or pars[1] < 0 or pars[2] < 2 or pars[2] > maxslope:
         return -np.inf
     resid = traptransit_resid(pars,ts,fs)
@@ -823,7 +825,7 @@ def traptransit_lhood_old(pars,ts,fs,sigs,maxslope=15):
 
 def traptransit_MCMC(ts,fs,dfs=1e-5,nwalkers=200,nburn=300,niter=1000,
                      threads=1,p0=[0.1,0.1,3,0],return_sampler=False,
-                     maxslope=15):
+                     maxslope=MAXSLOPE):
     """
     Fit trapezoidal model to provided ts, fs, [dfs] using MCMC.
 

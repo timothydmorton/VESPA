@@ -28,7 +28,7 @@ except ImportError:
 from .plotutils import setfig
 from .hashutils import hashcombine, hasharray
 
-from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC
+from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC, MAXSLOPE
 from .statutils import kdeconf, qstd, conf_interval
 
 def load_pkl(filename):
@@ -66,7 +66,7 @@ class TransitSignal(object):
 
          
     """
-    def __init__(self,ts,fs,dfs=None,P=None,p0=None,name='',maxslope=15):
+    def __init__(self,ts,fs,dfs=None,P=None,p0=None,name='',maxslope=MAXSLOPE):
 
         ts = np.atleast_1d(ts)
         fs = np.atleast_1d(fs)
@@ -212,7 +212,7 @@ class TransitSignal(object):
 
     def MCMC(self, niter=500, nburn=200, nwalkers=200, threads=1,
              fit_partial=False, width=3, savedir=None, refit=False,
-             thin=10, conf=0.95, maxslope=15, debug=False, p0=None):
+             thin=10, conf=0.95, maxslope=MAXSLOPE, debug=False, p0=None):
         """
         Fit transit signal to trapezoid model using MCMC
 
@@ -332,7 +332,7 @@ class TransitSignal(object):
     def corner(self, outfile=None, plot_contours=False, **kwargs):
         fig = corner.corner(self.kde.dataset.T, labels=['Duration', 'log(depth)', 'T/tau'], 
                             plot_contours=False, **kwargs)
-        
+
         if outfile is not None:
             fig.savefig(outfile)
 
