@@ -14,7 +14,7 @@ except ImportError:
     ConfigObj, np, plt, cm = (None, None, None, None)
 
     
-from .populations import PopulationSet, DEFAULT_MODELS
+from .populations import PopulationSet, DEFAULT_MODELS, ArtificialPopulation
 from .transitsignal import TransitSignal, MCMCError
 
 from .stars.contrastcurve import ContrastCurveFromFile
@@ -596,7 +596,7 @@ class FPPCalculation(object):
         #colors = ['b','g','r','m','c']
         nmodels = len(self.popset.modelnames)
         colors = [cm.jet(1.*i/nmodels) for i in range(nmodels)]
-        legendprop = {'size':11}
+        legendprop = {'size':8}
 
         ax1 = plt.axes([0.15,0.45,0.35,0.43])
         try:
@@ -634,7 +634,7 @@ class FPPCalculation(object):
             #for i,model in enumerate(['eb','heb','bgeb','bgpl','pl']):
             for i,model in enumerate(self.popset.modelnames):
                 labels.append('%s: %.3f' % (model,Ls[i]/Ls.sum()))
-            plt.legend(labels,bbox_to_anchor=(1.6,0.44),loc='right',prop={'size':14},shadow=True)
+            plt.legend(labels,bbox_to_anchor=(1.6,0.44),loc='right',prop={'size':10},shadow=True)
             plt.annotate('Final Probability',xy=(0.5,-0.01),ha='center',xycoords='axes fraction',fontsize=18)
         except:
             msg = 'Error calculating final probabilities.\n'
@@ -761,6 +761,8 @@ class FPPCalculation(object):
             Ltot += self.prior(model)*self.lhood(model, recalc=recalc_lhood)
         
         for model in self.popset.shortmodelnames:
+            if isinstance(self[model], ArtificialPopulation):
+                continue
             self.lhoodplot(model,Ltot=Ltot,**kwargs)
             if tag is None:
                 plt.savefig('%s/%s.%s' % (folder,model,figformat))

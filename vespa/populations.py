@@ -2226,7 +2226,7 @@ class PopulationSet(object):
         self.modelnames.append(pop.model)
         self.shortmodelnames.append(pop.modelshort)
         self.poplist.append(pop)
-        self.apply_dmaglim()
+        #self.apply_dmaglim()
 
     def remove_population(self,pop):
         """Removes population from PopulationSet
@@ -2823,8 +2823,68 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
         return df, (prob, prob*np.sqrt(nany)/n)
 
 
+class ArtificialPopulation(EclipsePopulation):
+    """ A population with contrived likelihood function
 
-#########################
+    prior : The model prior for this population
+    lhoodfn : a normalized PDF of (duration, log(depth), slope)
+
+    must define prior, _lhoodfn
+
+    """
+    #def __init__(self, prior, lhoodfn):
+    #    self._prior = prior
+    #    self._lhoodfn = lhoodfn
+
+    @property
+    def prior(self):
+        return self._prior
+
+    def lhood(self, trsig, **kwargs):
+        N = trsig.kde.dataset.shape[1]
+        lh = self._lhoodfn(trsig.kde.dataset).sum() / N
+        return lh
+        
+    @property
+    def priorfactors(self):
+        return {}
+
+class BoxyModel(ArtificialPopulation):
+    max_slope = 15
+    logd_range = (-5,0)
+    dur_range = (0,2)
+    model='boxy'
+    modelshort='boxy'
+
+    def __init__(self, prior, min_slope):
+        self._prior = prior
+        self.min_slope = min_slope
+        
+    def _lhoodfn(self, x):
+        level = 1./((self.logd_range[1]-self.logd_range[0])*
+                    (self.dur_range[1]-self.dur_range[0])*
+                    (self.max_slope-self.min_slope))
+        return level*(x[2,:] > self.min_slope)
+        
+        
+class LongModel(ArtificialPopulation):
+    slope_range = (2,15)
+    logd_range = (0,5)
+    max_dur = 2.
+    model='long'
+    modelshort='long'
+    
+    def __init__(self, prior, min_dur):
+        self._prior = prior
+        self.min_dur = min_dur
+        
+    def _lhoodfn(self, x):
+        level = 1./((self.logd_range[1]-self.logd_range[0])*
+                    (self.slope_range[1]-self.slope_range[0])*
+                    (self.max_dur-self.min_dur))
+        return level*(x[0,:] > self.min_dur)
+
+#####################
 ###### Utility functions
 
 def fp_fressin(rp,dr=None):

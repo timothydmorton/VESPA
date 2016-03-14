@@ -64,6 +64,7 @@ import argparse
 import logging
 
 from vespa import FPPCalculation
+from vespa.populations import BoxyModel, LongModel
 from isochrones import StarModel, BinaryStarModel, TripleStarModel
 
 import warnings
@@ -107,6 +108,8 @@ if __name__=='__main__':
     parser.add_argument('--refit_trap', action='store_true')
     parser.add_argument('--refit_trsig', action='store_true')
     parser.add_argument('--bootstrap', type=int, default=0)
+    parser.add_argument('--include_artificial', action='store_true')
+
 
     args = parser.parse_args()
 
@@ -138,6 +141,12 @@ if __name__=='__main__':
             if not os.path.exists(trap_corner_file) or args.refit_trsig:
                 f.trsig.corner(outfile=trap_corner_file)
 
+            if args.include_artificial:
+                boxmodel = BoxyModel(100./2e5, f['pl'].stars.slope.quantile(0.99))
+                longmodel = LongModel(100./2e5, f['pl'].stars.duration.quantile(0.99))
+                f.add_population(boxmodel)
+                f.add_population(longmodel)
+                
             f.FPPplots(recalc_lhood=args.recalc_lhood)
             if args.bootstrap > 0:
                 logger.info('Re-fitting trapezoid MCMC model...')
