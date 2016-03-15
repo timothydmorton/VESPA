@@ -109,6 +109,7 @@ if __name__=='__main__':
     parser.add_argument('--refit_trsig', action='store_true')
     parser.add_argument('--bootstrap', type=int, default=0)
     parser.add_argument('--include_artificial', action='store_true')
+    parser.add_argument('--artificial_prior', type=float, default=10./200000)
 
 
     args = parser.parse_args()
@@ -142,8 +143,8 @@ if __name__=='__main__':
                 f.trsig.corner(outfile=trap_corner_file)
 
             if args.include_artificial:
-                boxmodel = BoxyModel(100./2e5, f['pl'].stars.slope.max())
-                longmodel = LongModel(100./2e5, f['pl'].stars.duration.quantile(0.99))
+                boxmodel = BoxyModel(args.artificial_prior, f['pl'].stars.slope.max())
+                longmodel = LongModel(args.artificial_prior, f['pl'].stars.duration.quantile(0.99))
                 f.add_population(boxmodel)
                 f.add_population(longmodel)
                 
