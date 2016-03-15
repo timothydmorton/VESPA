@@ -33,6 +33,7 @@ from .transit_basic import occultquad, ldcoeffs, minimum_inclination
 from .transit_basic import MAInterpolationFunction
 from .transit_basic import eclipse_pars
 from .transit_basic import eclipse, eclipse_tt, NoEclipseError, NoFitError
+from .transit_basic import MAXSLOPE
 from .fitebs import fitebs
 
 from .plotutils import setfig, plot2dhist
@@ -2850,7 +2851,7 @@ class ArtificialPopulation(EclipsePopulation):
         return {}
 
 class BoxyModel(ArtificialPopulation):
-    max_slope = 15
+    max_slope = MAXSLOPE
     logd_range = (-5,0)
     dur_range = (0,2)
     model='boxy'
