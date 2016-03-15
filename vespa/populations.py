@@ -966,10 +966,20 @@ class EclipsePopulation(StarPopulation):
         Returns a copy of population with stars resampled (with replacement).
 
         Used in bootstrap estimate of FPP uncertainty.
+
+        TODO: check to make sure constraints properly copied!
         """
         new = copy.deepcopy(self)
         N = len(new.stars)
-        new.stars = new.stars.sample(N, replace=True).reset_index()
+        inds = np.random.randint(N, size=N)
+
+        # Resample stars 
+        new.stars = new.stars.iloc[inds].reset_index()
+
+        # Resample constraints
+        for c in new._constraints:
+            new._constraints[c] = new._constraints[c].resample(inds)
+
         new._make_kde()
         return new
 
@@ -2849,6 +2859,9 @@ class ArtificialPopulation(EclipsePopulation):
     @property
     def priorfactors(self):
         return {}
+
+    def resample(self):
+        return copy.deepcopy(self)
 
 class BoxyModel(ArtificialPopulation):
     max_slope = MAXSLOPE

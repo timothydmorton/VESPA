@@ -1,5 +1,6 @@
 from __future__ import print_function,division
 import logging
+import copy
 
 try:
     import numpy as np
@@ -12,11 +13,12 @@ class Constraint(object):
     """
     Base class for all constraints to be applied to StarPopulations.
     """
+    arrays = ('ok',)
+
     def __init__(self,mask,name='',**kwargs):
         self.name = name
         self.ok = mask
-        self.wok = np.where(self.ok)[0]
-        self.frac = float(self.ok.sum())/np.size(mask)
+        #self.frac = float(self.ok.sum())/np.size(mask)
         for kw in kwargs:
             setattr(self,kw,kwargs[kw])
 
@@ -34,6 +36,28 @@ class Constraint(object):
 
     def __repr__(self):
         return '<%s: %s>' % (type(self),str(self))
+
+    @property
+    def N(self):
+        return np.size(self.ok)
+
+    @property
+    def wok(self):
+        return np.where(self.ok)[0]
+    
+    @property
+    def frac(self):
+        return float(self.ok.sum())/self.N
+    
+    def resample(self, inds):
+        """Returns copy of constraint, with mask rearranged according to indices
+        """
+        new = copy.deepcopy(self)
+        for arr in self.arrays:
+            x = getattr(new, arr)
+            setattr(new, arr, x[inds])
+        return new
+
 
 class ConstraintDict(dict):
     """
@@ -55,6 +79,8 @@ class JointConstraintOr(Constraint):
         Constraint.__init__(self,mask,name=name,**kwargs)
 
 class RangeConstraint(Constraint):
+    arrays = Constraint.arrays + ('vals',)
+
     def __init__(self,vals,lo,hi,name='',**kwargs):
         self.lo = lo
         self.hi = hi
@@ -86,10 +112,14 @@ class MeasurementConstraint(RangeConstraint):
                                  dval=dval,thresh=thresh,**kwargs)
 
 class FunctionLowerLimit(Constraint):
+    arrays = Constraint.arrays + ('xs','ys')
+
     def __init__(self,xs,ys,fn,name='',**kwargs):
         Constraint.__init__(self,ys > fn(xs),name=name,xs=xs,ys=ys,fn=fn,**kwargs)
     
 class FunctionUpperLimit(Constraint):
+    arrays = Constraint.arrays + ('xs','ys')
+
     def __init__(self,xs,ys,fn,name='',**kwargs):
         Constraint.__init__(self,ys < fn(xs),name=name,
                             xs=xs,ys=ys,fn=fn,**kwargs)
