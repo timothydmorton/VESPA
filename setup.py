@@ -3,6 +3,7 @@ from setuptools import setup, Extension, find_packages
 on_rtd = False
 try:
     from Cython.Distutils import build_ext
+    from Cython.Build import cythonize
     import numpy
 except ImportError:
     on_rtd = True
@@ -39,7 +40,7 @@ if "tag" in sys.argv:
     sys.exit()
 
 if not on_rtd:
-    transit_utils = [Extension('vespa_transitutils',['vespa/vespa_transitutils.pyx'],
+    transit_utils = [Extension('vespa._transitutils',['vespa/_transitutils.pyx'],
                                 include_dirs=[numpy.get_include()])]
 else:
     transit_utils = None
@@ -58,7 +59,7 @@ setup(name = "VESPA",
                                 'tests/*.h5', 'tests/*.pkl'],
                       'vespa.stars': ['data/*'],
                       'vespa.orbits':['data/*']},
-      ext_modules = transit_utils,
+      ext_modules = cythonize(transit_utils),
       scripts = ['scripts/get_trilegal',
                  'scripts/koifpp',
                  'scripts/batch_koifpp_condor',
