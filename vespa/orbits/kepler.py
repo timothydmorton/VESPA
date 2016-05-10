@@ -5,16 +5,16 @@ import pkg_resources
 import math
 
 #test whether we're building documentation on readthedocs.org...
-on_rtd = False 
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
-try:
+if not on_rtd:
     from numba import jit, vectorize
     import numpy as np
     from scipy.optimize import newton
     from scipy.interpolate import LinearNDInterpolator as interpnd
-except ImportError:
+else:
     np, newton, interpnd = (None, None, None)
-    on_rtd = True
+    jit = None
     
 if not on_rtd:
     DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
