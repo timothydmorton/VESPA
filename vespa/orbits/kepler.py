@@ -14,7 +14,8 @@ if not on_rtd:
     from scipy.interpolate import LinearNDInterpolator as interpnd
 else:
     np, newton, interpnd = (None, None, None)
-    jit = None
+    def jit(*args, **kwargs):
+        pass
     
 if not on_rtd:
     DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
