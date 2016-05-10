@@ -94,7 +94,7 @@ def kepler_starfield_file(koi):
     chips,ras,decs = np.loadtxt(CHIPLOC_FILE,unpack=True)
     ds = ((c.ra.deg-ras)**2 + (c.dec.deg-decs)**2)
     chip = chips[np.argmin(ds)]
-    return '{}/kepler_starfield_{}.h5'.format(STARFIELD_DIR,chip)
+    return os.path.abspath('{}/kepler_starfield_{}.h5'.format(STARFIELD_DIR,chip))
 
 def modelshift_weaksec(koi):
     """
