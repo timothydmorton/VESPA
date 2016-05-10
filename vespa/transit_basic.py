@@ -22,6 +22,15 @@ if not on_rtd:
     from scipy.interpolate import LinearNDInterpolator as interpnd
 else:
     np, rand, leastsq, convolve1d, interpnd = (None, None, None, None, None)
+    # make fake decorators to allow RTD docs to build without numba
+    def jit(*args, **kwargs):
+        def foo(*args, **kwargs):
+            pass
+        return foo
+    def vectorize(*args, **kwargs):
+        def foo(*args, **kwargs):
+            pass
+        return foo
 
 if not on_rtd:    
     from batman import _quadratic_ld
