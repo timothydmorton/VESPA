@@ -32,6 +32,8 @@ if not on_rtd:
     from .hashutils import hashcombine, hasharray
     from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC, MAXSLOPE
     from .statutils import kdeconf, qstd, conf_interval
+else:
+    MAXSLOPE = None
 
 def load_pkl(filename):
     fin = open(filename, 'rb')
