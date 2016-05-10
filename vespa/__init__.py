@@ -7,6 +7,8 @@ except NameError:
 
 if not __VESPA_SETUP__:
 
+    import os
+    
     on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
     if not on_rtd:
