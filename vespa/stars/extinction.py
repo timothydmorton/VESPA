@@ -13,12 +13,12 @@ def get_AV_infinity(ra,dec,frame='icrs'):
     """
     Gets the A_V exctinction at infinity for a given line of sight.
 
-    Queries the NED database using ``wget``.
+    Queries the NED database using ``curl``.
 
     .. note::
 
         It would be desirable to rewrite this to avoid dependence
-        on ``wget``.
+        on ``curl``.
 
     :param ra,dec:
         Desired coordinates, in degrees.
@@ -39,7 +39,7 @@ def get_AV_infinity(ra,dec,frame='icrs'):
         '&pa=0.0&out_csys=Equatorial&out_equinox=J2000.0'
 
     tmpfile = '/tmp/nedsearch%s%s.html' % (ra,dec)
-    cmd = 'wget \'%s\' -O %s -q' % (url,tmpfile)
+    cmd = 'curl \'%s\' -o %s' % (url,tmpfile)
     sp.Popen(cmd,shell=True).wait()
     AV = None
     for line in open(tmpfile,'r'):
