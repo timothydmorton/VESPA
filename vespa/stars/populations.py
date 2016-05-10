@@ -3,7 +3,9 @@ from __future__ import print_function, division
 import logging
 import re, os, os.path
 
-try:
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+if not on_rtd:
     import numpy as np
     import matplotlib.pyplot as plt
     import pandas as pd
@@ -14,7 +16,7 @@ try:
     from astropy.units import Quantity
     from astropy.coordinates import SkyCoord
     
-except ImportError:
+else:
     #hacking...
     class np(object):
         inf = 1

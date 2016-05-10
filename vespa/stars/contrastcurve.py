@@ -1,13 +1,16 @@
 from __future__ import print_function, division
 
-try:
+import os
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+if not on_rtd:
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
 
     from scipy.interpolate import UnivariateSpline as interpolate
     from scipy.integrate import quad
-except ImportError:
+else:
     np, pd, plt = (None, None, None)
     interpolate, quad = (None, None)
     

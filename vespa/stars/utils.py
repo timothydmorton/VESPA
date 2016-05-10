@@ -4,12 +4,12 @@ import os,os.path
 import pkg_resources
 import logging
 
-on_rtd = False
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
-try:
+if not on_rtd:
     import numpy as np
     import numpy.random as rand
-except ImportError:
+else:
     on_rtd = True
     np, rand = (None, None)
 
