@@ -17,8 +17,11 @@ except ImportError:
     u, SkyCoord, Angle, Quantity, Const = (None, None, None, None, None)
     MSUN, AU, DAY, G = (None, None, None, None)
 
-    
-from .kepler import Efn #
+import os
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+if not on_rtd:
+    from .kepler import Efn #
 
 def semimajor(P,M):
     """
