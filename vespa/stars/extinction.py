@@ -39,7 +39,7 @@ def get_AV_infinity(ra,dec,frame='icrs'):
         '&pa=0.0&out_csys=Equatorial&out_equinox=J2000.0'
 
     tmpfile = '/tmp/nedsearch%s%s.html' % (ra,dec)
-    cmd = 'curl \'%s\' -o %s' % (url,tmpfile)
+    cmd = 'curl -s \'%s\' -o %s' % (url,tmpfile)
     sp.Popen(cmd,shell=True).wait()
     AV = None
     for line in open(tmpfile,'r'):
