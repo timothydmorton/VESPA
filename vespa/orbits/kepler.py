@@ -16,6 +16,8 @@ else:
     np, newton, interpnd = (None, None, None)
     def jit(*args, **kwargs):
         pass
+    def vectorize(*args, **kwargs):
+        pass
     
 if not on_rtd:
     DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
