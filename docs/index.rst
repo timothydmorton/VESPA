@@ -11,15 +11,6 @@ actively developed on `GitHub
 `isochrones <http://isochrones.rtfd.org>`_ package.  Please `raise an
 issue <http://github.com/timothydmorton/vespa/issues>`_ with
 any questions or comments you may have about this code.
-
-.. note::
-
-    I am still a bit new to making Sphinx documentation;
-    as such, I have not yet fully figured out how to make all the
-    inter-module API links work correctly...sorry for any
-    inconvenience!  Also, feel free to give me tips to make this
-    documentation work better.
-    
   
 
 .. toctree::

@@ -6,7 +6,9 @@ import re
 import math
 import copy
 
-try:
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+if not on_rtd:
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
@@ -14,7 +16,7 @@ try:
 
     from scipy.stats import gaussian_kde
     from scipy.integrate import quad
-except ImportError:
+else:
     np, pd, plt, cm = (None, None, None, None)
     gaussian_kde, quad = (None, None)
     
@@ -26,7 +28,8 @@ except ImportError:
     KernelDensity = None
     GridSearchCV = None
     
-from isochrones import StarModel
+if not on_rtd:
+    from isochrones import StarModel
 #from transit import Central, System, Body
         
 from .transit_basic import occultquad, ldcoeffs, minimum_inclination
@@ -84,7 +87,8 @@ DEFAULT_MODELS = ['beb','heb','eb',
                   'beb_Px2', 'heb_Px2','eb_Px2',
                   'pl']
 
-try:
+
+if not on_rtd:
     from astropy.units import Quantity
     import astropy.units as u
     import astropy.constants as const
@@ -94,7 +98,7 @@ try:
     G = const.G.cgs.value
     REARTH = const.R_earth.cgs.value
     MEARTH = const.M_earth.cgs.value
-except ImportError:
+else:
     Quantity = None
     u = None
     const = None

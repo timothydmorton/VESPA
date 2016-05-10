@@ -4,14 +4,16 @@ import os,os.path
 import logging
 import pickle
 
-try:
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+if not on_rtd:
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
     import numpy.random as rand
     from scipy.stats import gaussian_kde
     import corner
-except ImportError:
+else:
     np, pd, plt, rand = (None, None, None, None)
     gaussian_kde = None
     
@@ -25,11 +27,11 @@ try:
 except ImportError:
     pass
 
-from .plotutils import setfig
-from .hashutils import hashcombine, hasharray
-
-from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC, MAXSLOPE
-from .statutils import kdeconf, qstd, conf_interval
+if not on_rtd:
+    from .plotutils import setfig
+    from .hashutils import hashcombine, hasharray
+    from .transit_basic import traptransit, fit_traptransit, traptransit_MCMC, MAXSLOPE
+    from .statutils import kdeconf, qstd, conf_interval
 
 def load_pkl(filename):
     fin = open(filename, 'rb')

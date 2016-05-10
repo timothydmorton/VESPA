@@ -10,9 +10,9 @@ import math
 warnings.filterwarnings('ignore', '.*duration.*')
 
 #test if building documentation on readthedocs.org
-on_rtd = False
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
 
-try:
+if not on_rtd:
     import numpy as np
     from scipy.optimize import minimize
     from numba import jit
@@ -20,13 +20,12 @@ try:
     from scipy.optimize import leastsq
     from scipy.ndimage import convolve1d
     from scipy.interpolate import LinearNDInterpolator as interpnd
-except ImportError:
-    on_rtd = True
+else:
     np, rand, leastsq, convolve1d, interpnd = (None, None, None, None, None)
-    
-try:
+
+if not on_rtd:    
     from batman import _quadratic_ld
-except ImportError:
+else:
     _quadratic_ld = None
 
     
