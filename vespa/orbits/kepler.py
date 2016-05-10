@@ -14,10 +14,15 @@ if not on_rtd:
     from scipy.interpolate import LinearNDInterpolator as interpnd
 else:
     np, newton, interpnd = (None, None, None)
+    # make fake decorators to allow RTD docs to build without numba
     def jit(*args, **kwargs):
-        pass
+        def foo(*args, **kwargs):
+            pass
+        return foo
     def vectorize(*args, **kwargs):
-        pass
+        def foo(*args, **kwargs):
+            pass
+        return foo
     
 if not on_rtd:
     DATAFOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
