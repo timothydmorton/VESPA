@@ -30,30 +30,30 @@ except ImportError:
     
 if not on_rtd:
     from isochrones import StarModel
-#from transit import Central, System, Body
-        
-from .transit_basic import occultquad, ldcoeffs, minimum_inclination
-from .transit_basic import MAInterpolationFunction
-from .transit_basic import eclipse_pars
-from .transit_basic import eclipse, eclipse_tt, NoEclipseError, NoFitError
-from .transit_basic import MAXSLOPE
-from .fitebs import fitebs
+    #from transit import Central, System, Body
+            
+    from .transit_basic import occultquad, ldcoeffs, minimum_inclination
+    from .transit_basic import MAInterpolationFunction
+    from .transit_basic import eclipse_pars
+    from .transit_basic import eclipse, eclipse_tt, NoEclipseError, NoFitError
+    from .transit_basic import MAXSLOPE
+    from .fitebs import fitebs
 
-from .plotutils import setfig, plot2dhist
-from .hashutils import hashcombine
+    from .plotutils import setfig, plot2dhist
+    from .hashutils import hashcombine
 
-from .stars.populations import StarPopulation, MultipleStarPopulation
-from .stars.populations import ColormatchMultipleStarPopulation
-from .stars.populations import Spectroscopic_MultipleStarPopulation
-from .stars.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
-from .stars.populations import Observed_BinaryPopulation, Observed_TriplePopulation
-from .stars.populations import DARTMOUTH
-from .stars.utils import draw_eccs, semimajor, withinroche
-from .stars.utils import mult_masses, randpos_in_circle
-from .stars.utils import fluxfrac, addmags
-from .stars.utils import RAGHAVAN_LOGPERKDE
+    from .stars.populations import StarPopulation, MultipleStarPopulation
+    from .stars.populations import ColormatchMultipleStarPopulation
+    from .stars.populations import Spectroscopic_MultipleStarPopulation
+    from .stars.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
+    from .stars.populations import Observed_BinaryPopulation, Observed_TriplePopulation
+    from .stars.populations import DARTMOUTH
+    from .stars.utils import draw_eccs, semimajor, withinroche
+    from .stars.utils import mult_masses, randpos_in_circle
+    from .stars.utils import fluxfrac, addmags
+    from .stars.utils import RAGHAVAN_LOGPERKDE
 
-from .stars.constraints import UpperLimit
+    from .stars.constraints import UpperLimit
 
 try:
     import simpledist.distributions as dists
