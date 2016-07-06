@@ -8,7 +8,7 @@ try:
 except ImportError:
     np, hashlib, sha1 = (None, None, None)
     all, array, uint8 = (None, None, None)
-    
+
 class hashable(object):
     r'''Hashable wrapper for ndarray objects.
 
@@ -83,6 +83,6 @@ def hashdict(d):
     """Hash a dictionary
     """
     k = 0
-    for key,val in d.iteritems():
+    for key,val in d.items():
         k ^= hash(key) ^ hash(val)
     return k

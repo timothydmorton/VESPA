@@ -4,7 +4,10 @@ import pandas as pd
 import os, os.path, shutil
 import re
 import logging
-import cPickle as pickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 from pkg_resources import resource_filename
 
@@ -116,7 +119,7 @@ def modelshift_weaksec(koi):
 
     depth_dv = r['D_sec_dv'] * (1 + 3*r['F_red_dv'] / r['sig_sec_dv'])
     depth_alt = r['D_sec_alt'] * (1 + 3*r['F_red_alt'] / r['sig_sec_alt'])
-    
+
     logging.debug(r[['D_sec_dv','F_red_dv','sig_sec_dv']])
     logging.debug(r[['D_sec_alt','F_red_alt','sig_sec_alt']])
 
@@ -135,7 +138,7 @@ def pipeline_weaksec(koi):
         val = modelshift_weaksec(koi)
     except NoWeakSecondaryError:
         val = weaksec_vv2(koi)
-        
+
     #if val < 30e-6:
     #    val = 30e-6
 
@@ -166,13 +169,13 @@ def weaksec_vv2(koi):
 def default_r_exclusion(koi,rmin=0.5):
     try:
         r_excl = KOIDATA.ix[koi,'koi_dicco_msky_err'] * 3
-        r_excl = max(r_excl, rmin) 
+        r_excl = max(r_excl, rmin)
         if np.isnan(r_excl):
             raise ValueError
     except:
         r_excl = 4
         logging.warning('No koi_dicco_msky_err info for {}. Defaulting to 4 arcsec.'.format(koi))
-        
+
     return r_excl
 
 def koi_maxAV(koi):
@@ -269,7 +272,7 @@ class KOI_FPPCalculation(FPPCalculation):
                     kwargs['rprs'] = trsig.rowefit.ix['RD1','val']
                 else:
                     kwargs['rprs'] = KOIDATA.ix[koi,'koi_ror']
-                    
+
             #if stellar properties are determined spectroscopically,
             # fit stellar model
             if 'starmodel' not in kwargs:
@@ -295,7 +298,7 @@ class KOI_FPPCalculation(FPPCalculation):
                     starmodel.fit(**starmodel_mcmc_kws)
                     logging.info('Done.')
                     kwargs['starmodel'] = starmodel
-                
+
 
 
             if 'mags' not in kwargs:
@@ -339,11 +342,11 @@ class KOI_FPPCalculation(FPPCalculation):
 class KeplerTransitSignal(TransitSignal):
     def __init__(self, koi, data_root=KPLR_ROOT):
         self.koi = koiname(koi)
-        
+
         client = kplr.API(data_root=data_root)
         koinum = koiname(koi, koinum=True)
         k = client.koi(koinum)
-        
+
         #get all data
         df = k.all_LCdata
 
@@ -362,10 +365,10 @@ class KeplerTransitSignal(TransitSignal):
         epoch = k.koi_time0bk
         duration = k.koi_duration
 
-        #create phase-folded, detrended time, flux, err, within 
+        #create phase-folded, detrended time, flux, err, within
         # 2x duration of transit center, masking out any other
         # kois, etc., etc.
-        
+
 def jrowe_fit_old(koi):
     koinum = koiname(koi, star=True, koinum=True)
     folder = os.path.join(JROWE_DIR, 'koi{}.n'.format(koinum))
@@ -373,7 +376,7 @@ def jrowe_fit_old(koi):
     num = np.round(koiname(koi,koinum=True) % 1 * 100)
     fitfile = os.path.join(folder, 'n{:.0f}.dat'.format(num))
 
-    logging.debug('JRowe fitfile: {}'.format(fitfile))    
+    logging.debug('JRowe fitfile: {}'.format(fitfile))
 
     return pd.read_table(fitfile,index_col=0,usecols=(0,1,3),
                          names=['par','val','a','err','c'],
@@ -418,7 +421,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
 
         self.ttfile = '%s/koi%07.2f.tt' % (self.folder,koiname(koi,koinum=True))
         self.has_ttvs = os.path.exists(self.ttfile)
-        if self.has_ttvs:            
+        if self.has_ttvs:
             if os.stat(self.ttfile)[6]==0:
                 self.has_ttvs = False
                 logging.warning('TTV file exists for {}, but is empty.  No TTVs applied.'.format(koiname(koi)))
@@ -451,7 +454,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         if RR < 0:
             raise BadRoweFitError('{0} has negative RoR ({1}) from JRowe MCMC fit'.format(koiname(koi),RR))
         if RR > 1:
-            raise BadRoweFitError('{0} has RoR > 1 ({1}) from JRowe MCMC fit'.format(koiname(koi),RR))            
+            raise BadRoweFitError('{0} has RoR > 1 ({1}) from JRowe MCMC fit'.format(koiname(koi),RR))
         if aR < 1:
             raise BadRoweFitError('{} has a/Rstar < 1 ({}) from JRowe MCMC fit'.format(koiname(koi),aR))
 
@@ -511,7 +514,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
                                np.array(dfs),p0=p0,
                                name=koiname(koi),
                                P=P,maxslope=maxslope)
-        
+
         if mcmc:
             self.MCMC(refit=refit_mcmc)
 
@@ -528,10 +531,10 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         except IOError:
             shutil.rmtree(folder)
             os.makedirs(folder)
-            super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)            
+            super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
 
 
-def star_config(koi, bands=['g','r','i','z','J','H','K'], 
+def star_config(koi, bands=['g','r','i','z','J','H','K'],
                 unc=dict(g=0.05, r=0.05, i=0.05, z=0.05,
                          J=0.02, H=0.02, K=0.02), **kwargs):
 
@@ -601,7 +604,7 @@ def fpp_config(koi, **kwargs):
     config['dec'] = dec
     config['rprs'] = rowefit.ix['RD1','val']
     config['period'] = rowefit.ix['PE1', 'val']
-    
+
     config['starfield'] = kepler_starfield_file(koi)
 
     for kw,val in kwargs.items():
@@ -616,11 +619,11 @@ def fpp_config(koi, **kwargs):
 
     return config
 
-def setup_fpp(koi, bands=['g','r','i','z','J','H','K'], 
+def setup_fpp(koi, bands=['g','r','i','z','J','H','K'],
               unc=dict(g=0.05, r=0.05, i=0.05, z=0.05,
-                       J=0.02, H=0.02, K=0.02), 
+                       J=0.02, H=0.02, K=0.02),
               star_kws=None, fpp_kws=None, trsig_kws=None,
-              trsig_overwrite=False, 
+              trsig_overwrite=False,
               star_only=False, fpp_only=False):
     if star_kws is None:
         star_kws = {}
@@ -628,7 +631,7 @@ def setup_fpp(koi, bands=['g','r','i','z','J','H','K'],
         fpp_kws = {}
     if trsig_kws is None:
         trsig_kws = {}
-        
+
     if not star_only:
         #save transit signal
         folder = os.path.join(KOI_FPPDIR, ku.koiname(koi))

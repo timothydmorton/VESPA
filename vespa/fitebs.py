@@ -9,7 +9,7 @@ try:
     import pandas as pd
 except ImportError:
     np, pd = (None, None)
-    
+
 from .transit_basic import eclipse_pars, eclipse_tt
 from .transit_basic import NoEclipseError, NoFitError
 try:
@@ -18,16 +18,16 @@ try:
 except ImportError:
     logging.warning('progressbar not imported')
     pbar_ok = False
-    
+
 def fitebs(data, MAfn=None, conv=True, cadence=0.020434028,
-           use_pbar=True, msg=''): 
+           use_pbar=True, msg=''):
     """Fits trapezoidal shape to eclipses described by parameters in data
 
-    Takes a few minutes for 20,000 simulations. 
-           
+    Takes a few minutes for 20,000 simulations.
+
     :param data:
         Input ``DataFrame`` holding data.  Must have following columns:
-        ``'P', 'mass_1', 'mass_2', 'radius_1', 'radius_2'``, 
+        ``'P', 'mass_1', 'mass_2', 'radius_1', 'radius_2'``,
         ``'inc', 'ecc', 'w', 'dpri', 'dsec', 'b_sec', 'b_pri'``,
         ``'fluxfrac_1', 'fluxfrac_2', 'u1_1', 'u1_2', 'u2_1', 'u2_2'``.
 
@@ -59,7 +59,7 @@ def fitebs(data, MAfn=None, conv=True, cadence=0.020434028,
 
 
     p0s, bs, aRs = eclipse_pars(data['P'], data['mass_1'], data['mass_2'],
-                                data['radius_1'], data['radius_2'], 
+                                data['radius_1'], data['radius_2'],
                                 inc=data['inc'],
                                 ecc=data['ecc'], w=data['w'])
 
@@ -73,7 +73,7 @@ def fitebs(data, MAfn=None, conv=True, cadence=0.020434028,
         pbar = ProgressBar(widgets=widgets,maxval=n)
         pbar.start()
 
-    for i in xrange(n):
+    for i in range(n):
         logging.debug('Fitting star {}'.format(i))
         pri = (data['dpri'][i] > data['dsec'][i]) or np.isnan(data['dsec'][i])
         sec = not pri
@@ -99,7 +99,7 @@ def fitebs(data, MAfn=None, conv=True, cadence=0.020434028,
                                    ecc=data['ecc'][i],w=data['w'][i],
                                    sec=sec,u1=u1,u2=u2)
             #logging.debug('{}'.format(trap_pars))
-            
+
             durs[i], deps[i], slopes[i] = trap_pars
             if use_pbar and pbar_ok:
                 pbar.update(i)
