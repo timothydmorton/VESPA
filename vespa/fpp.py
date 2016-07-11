@@ -2,7 +2,10 @@ from __future__ import print_function, division
 
 import os, os.path, re
 import logging
-import cPickle as pickle
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 
 try:
@@ -13,7 +16,7 @@ try:
 except ImportError:
     ConfigObj, np, plt, cm = (None, None, None, None)
 
-    
+
 from .populations import PopulationSet, DEFAULT_MODELS, ArtificialPopulation
 from .transitsignal import TransitSignal, MCMCError
 
@@ -46,11 +49,11 @@ class FPPCalculation(object):
     * Loading from a folder in which the correct data
       files have been saved, using :func:`FPPCalculation.load`, or
     * Reading from a config file, using :func:`FPPCalculation.from_ini`
-    
+
 
     :param trsig:
         :class:`TransitSignal` object representing the signal
-        being modeled.        
+        being modeled.
 
     :param popset:
         :class:`PopulationSet` object representing the set
@@ -59,8 +62,8 @@ class FPPCalculation(object):
 
     :param folder: (optional)
         Folder where likelihood cache, results file, plots, etc.
-        are written by default.  
-        
+        are written by default.
+
     """
     def __init__(self, trsig, popset, folder='.'):
         self.trsig = trsig
@@ -90,8 +93,8 @@ class FPPCalculation(object):
         """
         To enable simple usage, initializes a FPPCalculation from a .ini file
 
-        By default, a file called ``fpp.ini`` will be looked for in the 
-        current folder.  Also present must be a ``star.ini`` file that 
+        By default, a file called ``fpp.ini`` will be looked for in the
+        current folder.  Also present must be a ``star.ini`` file that
         contains the observed properties of the target star.
 
         ``fpp.ini`` must be of the following form::
@@ -116,7 +119,7 @@ class FPPCalculation(object):
         will be tried, using ``np.loadtxt``.  Photfile need not be there
         if there is a pickled :class:`TransitSignal` saved in the same
         directory as ``ini_file``, named ``trsig.pkl`` (or another name
-        as defined by ``trsig`` keyword in ``.ini`` file). 
+        as defined by ``trsig`` keyword in ``.ini`` file).
 
         ``star.ini`` should look something like the following::
 
@@ -135,10 +138,10 @@ class FPPCalculation(object):
 
             #Teff = 3503, 80
             #feh = 0.09, 0.09
-            #logg = 4.89, 0.1            
+            #logg = 4.89, 0.1
 
         Any star properties can be defined; if errors are included
-        then they will be used in the :class:`isochrones.StarModel` 
+        then they will be used in the :class:`isochrones.StarModel`
         MCMC fit.
         Spectroscopic parameters (``Teff, feh, logg``) are optional.
         If included, then they will also be included in
@@ -147,7 +150,7 @@ class FPPCalculation(object):
         is required, though need not have associated uncertainty.
 
 
-        :param folder: 
+        :param folder:
             Folder to find configuration files.
 
         :param ini_file:
@@ -164,15 +167,15 @@ class FPPCalculation(object):
             Keyword arguments passed to :class:`PopulationSet`.
 
         Creates:
-        
+
             * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
             * ``starfield.h5``: the TRILEGAL field star simulation
             * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
             * ``popset.h5``: the :class:`vespa.PopulationSet` object
               representing the model population simulations.
-                    
-        """        
-        
+
+        """
+
         if not os.path.isabs(ini_file):
             config = ConfigObj(os.path.join(folder,ini_file))
         else:
@@ -185,8 +188,8 @@ class FPPCalculation(object):
         ra, dec = config['ra'], config['dec']
         period = float(config['period'])
         rprs = float(config['rprs'])
-        
-        #load starmodels if there; 
+
+        #load starmodels if there;
         # if not, create them.
         if 'starmodel_basename' not in config:
             starmodel_basename = 'dartmouth_starmodel'
@@ -201,7 +204,7 @@ class FPPCalculation(object):
             single_starmodel = StarModel.load_hdf(single_starmodel_file)
             logging.info('Single StarModel loaded from {}'.format(single_starmodel_file))
         except:
-            single_starmodel = StarModel.from_ini(ichrone, folder, 
+            single_starmodel = StarModel.from_ini(ichrone, folder,
                                            ini_file=star_ini_file)
             logging.info('Fitting single StarModel to {}...'.format(single_starmodel.properties))
             single_starmodel.fit()
@@ -238,7 +241,7 @@ class FPPCalculation(object):
             triple_starmodel.triangle_plots(triangle_base)
             logging.info('TripleStarModel fit done.')
 
-                
+
         if 'popset' in config:
             popset_file = config['popset']
             if not os.path.isabs(popset_file):
@@ -259,8 +262,8 @@ class FPPCalculation(object):
                 trsig_file = os.path.join(folder, trsig_file)
         else:
             trsig_file = os.path.join(folder,'trsig.pkl')
-        
-            
+
+
         #create TransitSignal
         if os.path.exists(trsig_file):
             logging.info('Loading transit signal from {}...'.format(trsig_file))
@@ -281,12 +284,12 @@ class FPPCalculation(object):
                 ts, fs, dfs = np.loadtxt(photfile, unpack=True)
             except:
                 ts, fs, dfs = np.loadtxt(photfile, delimiter=',', unpack=True)
-            
+
             trsig = TransitSignal(ts, fs, dfs, P=period, name=name)
             logging.info('Fitting transitsignal with MCMC...')
             trsig.MCMC()
             trsig.save(trsig_file)
-                        
+
         #create PopulationSet
         try:
             if recalc:
@@ -306,7 +309,7 @@ class FPPCalculation(object):
                 for pop in popset.poplist:
                     logging.info('Re-fitting trapezoids for {}...'.format(pop.model))
                     pop.fit_trapezoids()
-                    pop.save_hdf(popset_file, pop.modelshort, 
+                    pop.save_hdf(popset_file, pop.modelshort,
                                  append=True)
                 popset = PopulationSet.load_hdf(popset_file)
 
@@ -316,7 +319,7 @@ class FPPCalculation(object):
                 do_only = DEFAULT_MODELS
             else:
                 try:
-                    popset = PopulationSet.load_hdf(popset_file)                
+                    popset = PopulationSet.load_hdf(popset_file)
                     do_only = []
                     for m in DEFAULT_MODELS:
                         try:
@@ -339,8 +342,8 @@ class FPPCalculation(object):
                                    triple_starmodel=triple_starmodel,
                                    rprs=rprs, do_only=do_only,
                                    savefile=popset_file, **kwargs)
-            
-        
+
+
         fpp = cls(trsig, popset, folder=folder)
 
         #############
@@ -375,7 +378,7 @@ class FPPCalculation(object):
                     name = '{} {}-band'.format(inst, band)
                     cc = ContrastCurveFromFile(ccfile, band, name=name)
                     fpp.apply_cc(cc)
-        
+
         #apply "velocity contrast curve" if present
         if 'vcc' in config['constraints']:
             dv = float(config['constraints']['vcc'][0])
@@ -385,7 +388,7 @@ class FPPCalculation(object):
 
         return fpp
 
-                   
+
     def __getattr__(self, attr):
         if attr != 'popset':
             return getattr(self.popset,attr)
@@ -396,13 +399,13 @@ class FPPCalculation(object):
 
         Shouldn't need to use this if you're using
         :func:`FPPCalculation.from_ini`.
-        
+
         Saves :class`PopulationSet` to ``[folder]/popset.h5]``
         and :class:`TransitSignal` to ``[folder]/trsig.pkl``.
 
         :param overwrite: (optional)
             Whether to overwrite existing files.
-        
+
         """
         self.save_popset(overwrite=overwrite)
         self.save_signal()
@@ -443,7 +446,7 @@ class FPPCalculation(object):
 
         :param **kwargs:
             Additional keyword arguments passed to :func:`PopulationSet.lhoodplots`.
-            
+
         """
         if folder is None:
             folder = self.folder
@@ -495,7 +498,7 @@ class FPPCalculation(object):
         :param to_file:
             If True, then writes file.  Otherwise just return header, line.
 
-        :returns: 
+        :returns:
             Header string, line
         """
         if folder is None:
@@ -555,19 +558,19 @@ class FPPCalculation(object):
         .. note::
 
             This is due for updates/improvements.
-        
+
         :param fig, figsize: (optional)
             Arguments for :func:`plotutils.setfig`.
 
         :param saveplot: (optional)
             Whether to save figure.  Default is ``False``.
-        
+
         :param folder: (optional)
             Folder to which to save plot; default is current working dir.
 
         :param figformat: (optional)
             Desired format of saved figure.
-            
+
         """
         if simple:
             starinfo = False
@@ -611,11 +614,11 @@ class FPPCalculation(object):
             for i,mod in enumerate(self.popset.shortmodelnames):
                 msg += '%s: %.1e' % (model,priors[i])
             plt.annotate(msg, xy=(0.5,0.5), xycoords='axes fraction')
-            
+
 
         ax2 = plt.axes([0.5,0.45,0.35,0.43])
         try:
-            plt.pie(lhoods/lhoods.sum(),colors=colors)            
+            plt.pie(lhoods/lhoods.sum(),colors=colors)
             labels = []
             for i,model in enumerate(self.popset.modelnames):
                 labels.append('%s: %.1e' % (model,lhoods[i]))
@@ -639,7 +642,7 @@ class FPPCalculation(object):
         except:
             msg = 'Error calculating final probabilities.\n'
             plt.annotate(msg, xy=(0.5,0.5), xycoords='axes fraction')
-            
+
 
         """
         #starpars = 'Star parameters used\nin simulations'
@@ -665,7 +668,7 @@ class FPPCalculation(object):
                     starpars += '\n$%s = %.2f (%.2f)$ ' % (kw,self[kw],self['COLORTOL'])
                 except TypeError:
                     starpars += '\n$%s = %s (%.2f)$ ' % (kw,self[kw],self['COLORTOL'])
-                    
+
         #if 'J-K' in self.keywords:
         #    starpars += '\n$J-K = %.2f (%.2f)$ ' % (self['J-K'],self['COLORTOL'])
         #if 'G-R' in self.keywords:
@@ -684,7 +687,7 @@ class FPPCalculation(object):
                          (self.priorfactors['fp'],self['bgpl'].stars.keywords['ALPHA1'],
                           self['bgpl'].stars.keywords['ALPHA2'],
                           self['bgpl'].stars.keywords['RBREAK'])
-            
+
         rbin1,rbin2 = self['RBINCEN']-self['RBINWID'],self['RBINCEN']+self['RBINWID']
         priorpars += '\n$f_{pl,specific} = %.2f, \in [%.2f,%.2f] R_\oplus$' % (self.priorfactors['fp_specific'],rbin1,rbin2)
         priorpars += '\n$r_{confusion} = %.1f$"' % sqrt(self.priorfactors['area']/pi)
@@ -692,7 +695,7 @@ class FPPCalculation(object):
             priorpars += '\nmultiplicity boost = %ix' % self.priorfactors['multboost']
         if priorinfo:
             plt.annotate(priorpars,xy=(0.03,0.4),xycoords='figure fraction',va='top')
-        
+
 
         sigpars = ''
         sigpars += '\n$P = %s$ d' % self['P']
@@ -705,7 +708,7 @@ class FPPCalculation(object):
         sigpars += '\n'+r'$(T/\tau)_{max} = %.1f$' % (self.trsig.maxslope)
         if siginfo:
             plt.annotate(sigpars,xy=(0.81,0.91),xycoords='figure fraction',va='top')
-        
+
             #p.annotate('${}^a$Not used for FP population simulations',xy=(0.02,0.02),
             #           xycoords='figure fraction',fontsize=9)
         """
@@ -722,11 +725,11 @@ class FPPCalculation(object):
         if constraintinfo:
             plt.annotate(constraints,xy=(0.03,0.22),xycoords='figure fraction',
                          va='top',color='red')
-            
+
         odds = 1./self.FPP()
 
         if odds > 1e6:
-            fppstr = 'FPP: < 1 in 1e6' 
+            fppstr = 'FPP: < 1 in 1e6'
         elif np.isfinite(odds):
             fppstr = 'FPP: 1 in %i' % odds
         else:
@@ -759,7 +762,7 @@ class FPPCalculation(object):
 
         for model in self.popset.modelnames:
             Ltot += self.prior(model)*self.lhood(model, recalc=recalc_lhood)
-        
+
         for model in self.popset.shortmodelnames:
             if isinstance(self[model], ArtificialPopulation):
                 continue
@@ -809,7 +812,7 @@ class FPPCalculation(object):
         if skipmodels is None:
             skipmodels = []
         logging.debug('evaluating likelihoods for %s' % self.trsig.name)
-        
+
         for model in self.popset.modelnames:
             if model=='Planets':
                 continue
