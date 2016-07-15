@@ -19,7 +19,7 @@ from .extinction import get_AV_infinity
 NONMAG_COLS = ['Gc','logAge', '[M/H]', 'm_ini', 'logL', 'logTe', 'logg',
                'm-M0', 'Av', 'm2/m1', 'mbol', 'Mact'] #all the rest are mags
 
-def get_trilegal(filename,ra,dec,folder='.',
+def get_trilegal(filename,ra,dec,folder='.', galactic=False,
                  filterset='kepler_2mass',area=1,maglim=27,binaries=False,
                  trilegal_version='1.6',sigma_AV=0.1,convert_h5=True):
     """Runs get_trilegal perl script; optionally saves output into .h5 file
@@ -72,11 +72,14 @@ def get_trilegal(filename,ra,dec,folder='.',
         path.
                  
     """
-    try:
-        c = SkyCoord(ra,dec)
-    except UnitsError:
-        c = SkyCoord(ra,dec,unit='deg')
-    l,b = (c.galactic.l.value,c.galactic.b.value)
+    if galactic:
+        l, b = ra, dec
+    else:
+        try:
+            c = SkyCoord(ra,dec)
+        except UnitsError:
+            c = SkyCoord(ra,dec,unit='deg')
+        l,b = (c.galactic.l.value,c.galactic.b.value)
 
     if os.path.isabs(filename):
         folder = ''
@@ -104,6 +107,7 @@ def get_trilegal(filename,ra,dec,folder='.',
         store = pd.HDFStore(h5file)
         attrs = store.get_storer('df').attrs
         attrs.trilegal_args = {'version':trilegal_version,
+                               'ra':ra, 'dec':dec,
                                'l':l,'b':b,'area':area,
                                'AV':AV, 'sigma_AV':sigma_AV,
                                'filterset':filterset,

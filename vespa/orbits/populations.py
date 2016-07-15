@@ -3,7 +3,9 @@ from __future__ import division,print_function
 import sys,re,os
 import logging
 
-try:
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+
+if not on_rtd:
     import numpy as np
     from astropy.coordinates import SkyCoord,Angle
     import numpy.random as rand
@@ -19,7 +21,7 @@ try:
     DAY = 86400
     G = const.G.cgs.value
     
-except ImportError:
+else:
     np = None
     SkyCoord, Angle = (None, None)
     rand = None
