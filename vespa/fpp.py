@@ -363,7 +363,9 @@ class FPPCalculation(object):
 
         #apply contrast curve constraints if present
         if 'ccfiles' in config['constraints']:
-            ccfiles = list(config['constraints']['ccfiles'])
+            ccfiles = config['constraints']['ccfiles']
+            if isinstance(ccfiles, basestring):
+                ccfiles = [ccfiles]
             for ccfile in ccfiles:
                 if not os.path.isabs(ccfile):
                     ccfile = os.path.join(folder, ccfile)
