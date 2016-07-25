@@ -369,8 +369,8 @@ class FPPCalculation(object):
                     ccfile = os.path.join(folder, ccfile)
                 m = re.search('(\w+)_(\w+)\.cc',os.path.basename(ccfile))
                 if not m:
-                    logging.warning('Invalid CC filename ({}); '+
-                                     'skipping.'.format(ccfile))
+                    logging.warning('Invalid CC filename ({}); '.format(ccfile) +
+                                     'skipping.')
                     continue
                 else:
                     band = m.group(2)
