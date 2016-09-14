@@ -1158,6 +1158,7 @@ class BinaryPopulation(StarPopulation):
     """
     def __init__(self, stars=None,
                  primary=None,secondary=None,
+                 system=None,
                  orbpop=None, period=None,
                  ecc=None,
                  is_single=None,
@@ -1167,7 +1168,10 @@ class BinaryPopulation(StarPopulation):
         if stars is None and primary is not None:
             assert len(primary)==len(secondary)
 
-            stars = pd.DataFrame()
+            if system is None:
+                stars = pd.DataFrame()
+            else:
+                stars = system.copy()
 
             for c in primary.columns:
                 if re.search('_mag',c):
@@ -1190,6 +1194,65 @@ class BinaryPopulation(StarPopulation):
 
         StarPopulation.__init__(self,stars=stars,orbpop=orbpop,**kwargs)
 
+
+    @classmethod
+    def from_starmodel(cls, mod, n=1e4):
+        """Generates BinaryPopulation from a StarModel object describing bound binary
+
+        Requires StarModel to have exactly two obs_leaf_nodes, and only one "system"
+        (e.g., all model nodes must be bound.)
+
+        The purpose of creating a population in this way is primarily for analysis of 
+        whether the system is bound or not.  There can be multiple model nodes 
+        attached to the obs_leaves (i.e., the StarModel might actually be for a 
+        hierarchical triple), but there can be only one system.  And the resulting 
+        BinaryPopulation will combine the masses (& magnitudes) for multiple model child
+        nodes, if they exist.
+
+        When there are multiple model nodes for an observed star, only the mass
+        and mags will be kept as combined values.
+        """
+        # Check to make sure conditions hold
+        if len(mod.obs.obs_leaf_nodes)!=2:
+            raise ValueError('Must have exactly two observed stars at highest resolution.')
+
+        if len(mod.obs.systems)!=1:
+            raise ValueError('Must have exactly one system (all physically associated).')
+
+        stars = mod.random_samples(n)
+
+        #OK, now massage names and combine values to make object work as expected (_A, _B, etc.).
+        # -all the children from first obs leaf go (combined) in "primary" with tag removed
+        # -all the children from the second go (combined) in "secondary" with tag removed
+
+        pri_obs, sec_obs = mod.obs.obs_leaf_nodes 
+
+        pri_tags = ['_{}'.format(c.label) for c in pri_obs.children]
+        sec_tags = ['_{}'.format(c.label) for c in sec_obs.children]
+
+        if len(pri_tags)==1:
+            tag = pri_tags[0]
+            pri_cols = [c for c in stars.columns if c.endswith(tag)]
+            pri_cols_new = [c.replace(tag, '') for c in pri_cols]
+        else:
+            raise NotImplementedError('No support yet for multiple child nodes')
+
+        if len(sec_tags)==1:
+            tag = sec_tags[0]
+            sec_cols = [c for c in stars.columns if c.endswith(tag)]
+            sec_cols_new = [c.replace(tag, '') for c in sec_cols]
+        else:
+            raise NotImplementedError('No support yet for multiple child nodes')
+
+        primary = stars[pri_cols].rename(columns={c0:c1 for c0,c1 in zip(pri_cols, pri_cols_new)})
+        secondary = stars[sec_cols].rename(columns={c0:c1 for c0,c1 in zip(sec_cols, sec_cols_new)})
+
+        sys_tag = '_{}'.format(mod.obs.systems[0])
+        sys_cols = [c for c in stars.columns if c.endswith(sys_tag)]
+
+        system = stars[sys_cols].rename(columns={c:c.replace(sys_tag, '') for c in sys_cols})
+
+        return cls(primary=primary, secondary=secondary, system=system)
 
     @property
     def singles(self):

@@ -46,6 +46,41 @@ else:
                                                                        None, None)
 
 
+def rho_bg(b, rho_5=0.05, rho_20=0.005):
+        """
+        Density of BG stars (arcsec^-2) at Galactic latitude, given parameters
+
+        Given rho(5) = rho_5, rho(20) = rho_20,
+        solve for A,B in rho(b) = A*exp(-b/B)
+
+        Default parameters are a good fit to Morton & Johnson (2011) rho(b)
+        """
+        B = 15/np.log(rho_5/rho_20)
+        A = rho_5 / np.exp(-5./B)
+        return A*np.exp(-b/B)
+
+def draw_powerlaw(alpha, rng, N=1):
+    """
+    Returns random variate according to x^alpha, between rng[0] and rng[1]
+    """
+    try:
+        if alpha == -1:
+            alpha = -1.0000001
+    except ValueError: #if alpha is array
+        alpha[alpha==-1] = -1.0000001
+    # Normalization factor
+    x0, x1 = rng
+    x0_alpha_p_1 = x0**(alpha + 1)
+    C = (alpha + 1) / (x1**(alpha + 1) - x0_alpha_p_1)
+
+    if N==1:
+        u = np.random.random()
+    else:
+        u = np.random.random(int(N))
+    x = ((u * (alpha + 1)) / C + x0_alpha_p_1)**(1./(alpha + 1))
+
+    return x
+
 
 def randpos_in_circle(n,rad,return_rad=False):
     x = rand.random(n)*2*rad - rad

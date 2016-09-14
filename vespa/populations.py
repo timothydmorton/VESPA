@@ -55,6 +55,7 @@ from .stars.utils import draw_eccs, semimajor, withinroche
 from .stars.utils import mult_masses, randpos_in_circle
 from .stars.utils import fluxfrac, addmags
 from .stars.utils import RAGHAVAN_LOGPERKDE
+from .stars.utils import draw_powerlaw
 
 from .stars.constraints import UpperLimit
 
@@ -1072,10 +1073,11 @@ class PlanetPopulation(EclipsePopulation):
 
     def __init__(self, period=None, rprs=None,
                  mass=None, radius=None, Teff=None, logg=None,
-                 starmodel=None,
+                 starmodel=None, star_label=None,
                  band='Kepler', model='Planets', n=2e4,
                  fp_specific=None, u1=None, u2=None,
-                 rbin_width=0.3,
+                 rbin_width=0.3, 
+                 alpha=-1.56, alpha_unc=0.3, rp_rng=(0.5,20),
                  MAfn=None, lhoodcachefile=None):
 
         self.period = period
@@ -1085,21 +1087,62 @@ class PlanetPopulation(EclipsePopulation):
         self.Teff = Teff
         self.logg = logg
         self._starmodel = starmodel
+        if star_label is None:
+            star_label = '0_0'
+        self.star_label = star_label
+        self.alpha = alpha
+        self.alpha_unc = alpha_unc
+        self.rp_rng = rp_rng
 
         if radius is not None and mass is not None or starmodel is not None:
             # calculates eclipses
             logging.debug('generating planet population...')
             self.generate(rprs=rprs, mass=mass, radius=radius,
                           n=n, fp_specific=fp_specific,
-                          starmodel=starmodel,
-                          rbin_width=rbin_width,
+                          starmodel=starmodel, star_label=star_label,
+                          rbin_width=rbin_width, alpha=alpha, 
                           u1=u1, u2=u2, Teff=Teff, logg=logg,
                           MAfn=MAfn,lhoodcachefile=lhoodcachefile)
 
+    def _sample_planetprops(self, n, rstar=None, rbin_width=0.3):
+        if self.rprs is not None:
+            if len(rstar) != n:
+                raise ValueError('Whoops.  Length of rstar must equal n if provided')
+
+            rprs_bin_min = (1-rbin_width)*self.rprs
+            rprs_bin_max = (1+rbin_width)*self.rprs
+
+            radius_p = rstar * (np.random.random(int(n))*(rprs_bin_max - rprs_bin_min) + rprs_bin_min)
+        else:
+            alphas = self.alpha + self.alpha_unc*np.random.randn(int(n))
+            radius_p = draw_powerlaw(alphas, self.rp_rng, N=n) * REARTH / RSUN
+
+        mass_p = (radius_p*RSUN/REARTH)**2.06 * MEARTH/MSUN
+
+        return radius_p, mass_p
+
+
+    def _sample_starprops(self, n, ):
+        """Returns samples of radius & mass, point estimates of Teff, logg
+        """
+        samples = self._starmodel.random_samples(n)
+        label = self.star_label
+
+        b = self.band
+        mag1 = samples['{}_mag_{}'.format(b, label)]
+        magtot = samples['{}_mag'.format(b)]
+        F1 = 10**(-0.4*mag1)
+        Ftot = 10**(-0.4*magtot)
+        dilution = F1/Ftot
+
+        return (samples['radius_{}'.format(label)].values, samples['mass_{}'.format(label)].values,
+                 samples['Teff_{}'.format(label)].median(), samples['logg_{}'.format(label)].median(),
+                 dilution.values)
+
     def generate(self,rprs=None, mass=None, radius=None,
                 n=2e4, fp_specific=0.01, u1=None, u2=None,
-                 starmodel=None,
-                Teff=None, logg=None, rbin_width=0.3,
+                 starmodel=None, star_label=None,
+                Teff=None, logg=None, rbin_width=0.3, alpha=None,
                 MAfn=None, lhoodcachefile=None):
         """Generates Population
 
@@ -1108,29 +1151,33 @@ class PlanetPopulation(EclipsePopulation):
 
         n = int(n)
 
-        if starmodel is None:
-            if type(mass) is type((1,)):
-                mass = dists.Gaussian_Distribution(*mass)
-            if isinstance(mass, dists.Distribution):
-                mdist = mass
-                mass = mdist.rvs(1e5)
+        if False: #Old.
+            if starmodel is None:
+                if type(mass) is type((1,)):
+                    mass = dists.Gaussian_Distribution(*mass)
+                if isinstance(mass, dists.Distribution):
+                    mdist = mass
+                    mass = mdist.rvs(1e5)
 
-            if type(radius) is type((1,)):
-                radius = dists.Gaussian_Distribution(*radius)
-            if isinstance(radius, dists.Distribution):
-                rdist = radius
-                radius = rdist.rvs(1e5)
-        else:
-            samples = starmodel.random_samples(1e5)
-            mass = samples['mass'].values
-            radius = samples['radius'].values
-            Teff = samples['Teff'].mean()
-            logg = samples['logg'].mean()
+                if type(radius) is type((1,)):
+                    radius = dists.Gaussian_Distribution(*radius)
+                if isinstance(radius, dists.Distribution):
+                    rdist = radius
+                    radius = rdist.rvs(1e5)
+            else:
+                samples = starmodel.random_samples(1e5)
+                mass = samples['mass'].values
+                radius = samples['radius'].values
+                Teff = samples['Teff'].mean()
+                logg = samples['logg'].mean()
+
+        mass, radius, Teff, logg, dilution = self._sample_starprops(1e5)
 
         logging.debug('star mass: {}'.format(mass))
         logging.debug('star radius: {}'.format(radius))
         logging.debug('Teff: {}'.format(Teff))
         logging.debug('logg: {}'.format(logg))
+        logging.debug('dilution: {}'.format(dilution))
 
         if u1 is None or u2 is None:
             if Teff is None or logg is None:
@@ -1139,17 +1186,19 @@ class PlanetPopulation(EclipsePopulation):
             else:
                 u1,u2 = ldcoeffs(Teff, logg)
 
-        #use point estimate of rprs to construct planets in radius bin
-        #rp = self.rprs*np.median(radius)
-        #rbin_min = (1-rbin_width)*rp
-        #rbin_max = (1+rbin_width)*rp
+        if False:
+            #use point estimate of rprs to construct planets in radius bin
+            #rp = self.rprs*np.median(radius)
+            #rbin_min = (1-rbin_width)*rp
+            #rbin_max = (1+rbin_width)*rp
 
-        rprs_bin_min = (1-rbin_width)*self.rprs
-        rprs_bin_max = (1+rbin_width)*self.rprs
+            rprs_bin_min = (1-rbin_width)*self.rprs
+            rprs_bin_max = (1+rbin_width)*self.rprs
 
-        radius_p = radius * (np.random.random(int(1e5))*(rprs_bin_max - rprs_bin_min) + rprs_bin_min)
-        mass_p = (radius_p*RSUN/REARTH)**2.06 * MEARTH/MSUN #hokey, but doesn't matter
-
+            radius_p = radius * (np.random.random(int(1e5))*(rprs_bin_max - rprs_bin_min) + rprs_bin_min)
+            mass_p = (radius_p*RSUN/REARTH)**2.06 * MEARTH/MSUN #hokey, but doesn't matter
+            
+        radius_p, mass_p = self._sample_planetprops(1e5, rstar=radius, rbin_width=rbin_width)
         logging.debug('planet radius: {}'.format(radius_p))
 
         stars = pd.DataFrame()
@@ -1176,6 +1225,7 @@ class PlanetPopulation(EclipsePopulation):
             df['mass_B'] = mass_p[inds][ecl_inds]
             df['radius_A'] = radius[inds][ecl_inds]
             df['radius_B'] = radius_p[inds][ecl_inds]
+            df['dilution'] = dilution[inds][ecl_inds]
             df['u1'] = u1 * np.ones_like(df['mass_A'])
             df['u2'] = u2 * np.ones_like(df['mass_A'])
             df['P'] = self.period * np.ones_like(df['mass_A'])
@@ -1212,9 +1262,12 @@ class PlanetPopulation(EclipsePopulation):
 
         #finish below.
 
-        if fp_specific is None:
-            rp = stars['radius_2'].mean() * RSUN/REARTH
-            fp_specific = fp_fressin(rp)
+        if rprs is not None:
+            if fp_specific is None:
+                rp = stars['radius_2'].mean() * RSUN/REARTH
+                fp_specific = fp_fressin(rp)
+        else:
+            fp_specific = 1. # default = 1 planet/star
 
         priorfactors = {'fp_specific':fp_specific}
 
@@ -1224,9 +1277,14 @@ class PlanetPopulation(EclipsePopulation):
                                    period=self.period, model=self.model,
                                    priorfactors=priorfactors, prob=tot_prob,
                                    lhoodcachefile=lhoodcachefile)
+
+    @property
+    def dilution_factor(self):
+        return self.stars.dilution
+
     @property
     def _properties(self):
-        return ['rprs', 'Teff', 'logg'] + \
+        return ['rprs', 'Teff', 'logg', 'star_label', 'alpha'] + \
             super(PlanetPopulation, self)._properties
 
     def save_hdf(self, filename, path='', **kwargs):
