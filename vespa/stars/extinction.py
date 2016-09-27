@@ -13,16 +13,10 @@ def get_AV_infinity(ra,dec,frame='icrs'):
     """
     Gets the A_V exctinction at infinity for a given line of sight.
 
-    Queries the NED database using ``curl``.
-
-    .. note::
-
-        It would be desirable to rewrite this to avoid dependence
-        on ``curl``.
+    Queries the NED database.
 
     :param ra,dec:
         Desired coordinates, in degrees.
-
     :param frame: (optional)
         Frame of input coordinates (e.g., ``'icrs', 'galactic'``)
     """
@@ -38,22 +32,12 @@ def get_AV_infinity(ra,dec,frame='icrs'):
         '%3A'+'%i' % ram + '%3A' + '%05.2f' % ras + '&lat=%s' % decsign + '%i' % abs(decd) + '%3A' + '%i' % abs(decm) + '%3A' + '%05.2f' % abs(decs) + \
         '&pa=0.0&out_csys=Equatorial&out_equinox=J2000.0'
 
-    tmpfile = '/tmp/nedsearch%s%s.html' % (ra,dec)
-    cmd = 'curl -s \'%s\' -o %s' % (url,tmpfile)
-    sp.Popen(cmd,shell=True).wait()
-    AV = None
-    for line in open(tmpfile,'r'):
-        m = re.search('V \(0.54\)\s+(\S+)',line)
+    for line in urllib.request.urlopen(url).readlines():
+        m = re.search('^Landolt V \(0.54\)\s+(\d\.\d+)', line)
         if m:
-            AV = float(m.group(1))
-    if AV is None:
-        logging.warning('Error accessing NED, url={}'.format(url))
-        for line in open(tmpfile):
-            logging.warning(line)
+            AV = (float(m.group(1)))  
+            break
         
-
-
-    os.remove(tmpfile)
     return AV
     
     
