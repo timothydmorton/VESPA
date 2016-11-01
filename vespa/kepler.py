@@ -452,7 +452,11 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
                 logging.warning('TTV file exists for {}, but is empty.  No TTVs applied.'.format(koiname(koi)))
             else:
                 logging.debug('Reading transit times from {}'.format(self.ttfile))
-                tts = pd.read_table(self.ttfile,names=['tc','foo1','foo2'],delimiter='\s+')
+                tts = pd.read_table(self.ttfile,names=['tc','C-O','e_C-O'],
+                                    delimiter='\s+',comment='#' )
+                if tts['C-O'].std() < tts['e_C-O'].mean():
+                    self.has_ttvs = False
+                    logging.warning('TTV file exists for {}, but errors are too large.  No TTVs applied.'.format(koiname(koi)))
 
         #self.rowefitfile = '%s/n%i.dat' % (self.folder,num)
 
@@ -506,7 +510,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         dfs = pd.Series()
 
         if self.has_ttvs:
-            for t0 in tts['tc']:
+            for t0 in tts['tc'] + tts['C-O']:
                 t = lc['t'] - t0
                 ok = np.absolute(t) < (2*self.Tdur)
                 ts = ts.append(t[ok])
