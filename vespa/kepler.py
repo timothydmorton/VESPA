@@ -237,7 +237,8 @@ class KOI_FPPCalculation(FPPCalculation):
         #first check if pickled signal is there to be loaded
         trsigfile = os.path.join(folder,'trsig.pkl')
         if os.path.exists(trsigfile):
-            trsig = pickle.load(open(trsigfile,'rb'))
+            with open(trsigfile, 'rb') as f:
+                trsig = pickle.load(f)
         else:
             if use_JRowe:
                 trsig = JRowe_KeplerTransitSignal(koi, **trsig_kws)

@@ -16,12 +16,12 @@ if not on_rtd:
 else:
     np, pd, plt, rand = (None, None, None, None)
     gaussian_kde = None
-    
+
 try:
     import acor
 except ImportError:
     logging.warning('acor not available')
-    
+
 try:
     import corner
 except ImportError:
@@ -36,14 +36,14 @@ else:
     MAXSLOPE = None
 
 def load_pkl(filename):
-    fin = open(filename, 'rb')
-    return pickle.load(fin)
+    with open(filename, 'rb') as fin:
+        return pickle.load(fin)
 
 class TransitSignal(object):
     """A phased-folded transit signal.
 
     Epoch of the transit at 0, 'continuum' set at 1.
-    
+
     :param ts, fs, dfs:
         Times (days from mid-transit), fluxes (relative to 1),
         flux uncertainties.  dfs optional
@@ -68,7 +68,7 @@ class TransitSignal(object):
          as it is directly translated from some older code.  As
          such, not all methods/attributes are well documented.
 
-         
+
     """
     def __init__(self,ts,fs,dfs=None,P=None,p0=None,name='',maxslope=MAXSLOPE):
 
@@ -117,21 +117,20 @@ class TransitSignal(object):
            instead of pickle.
         """
         raise NotImplementedError
-        
+
 
     def triangle(self, **kwargs):
         pts = np.array([self.logdeps, self.durs, self.slopes]).T
         fig = corner.corner(pts, labels=['log (Depth)',
                                            'Duration', 'T/tau'], **kwargs)
         return fig
-    
+
     def save_pkl(self, filename):
         """
         Pickles TransitSignal.
         """
-        fout = open(filename, 'wb')
-        pickle.dump(self, fout)
-        fout.close()
+        with open(filename, 'wb') as fout:
+            pickle.dump(self, fout)
 
     #eventually make this save_hdf
     def save(self, filename):
@@ -139,7 +138,7 @@ class TransitSignal(object):
         Calls save_pkl function.
         """
         self.save_pkl(filename)
-        
+
     def __eq__(self,other):
         return hash(self) == hash(other)
 
@@ -153,7 +152,7 @@ class TransitSignal(object):
                               hasharray(self.durs),
                               hasharray(self.logdeps))
         return key
-        
+
     def plot(self, fig=None, plot_trap=False, name=False, trap_color='g',
              trap_kwargs=None, **kwargs):
         """
@@ -179,11 +178,11 @@ class TransitSignal(object):
         :param **kwargs: (optional)
             Additional keyword arguments passed to ``plt.plot``.
 
-            
+
         """
 
         setfig(fig)
-        
+
         plt.plot(self.ts,self.fs,'.',**kwargs)
 
         if plot_trap and hasattr(self,'trapfit'):
@@ -246,7 +245,7 @@ class TransitSignal(object):
             fs_done = np.load('%s/fs.npy' % savedir)
             alreadydone &= np.all(ts_done == self.ts[wok])
             alreadydone &= np.all(fs_done == self.fs[wok])
-        
+
         if alreadydone and not refit:
             logging.info('MCMC fit already done for %s.  Loading chains.' % self.name)
             Ts = np.load('%s/duration_chain.npy' % savedir)
@@ -321,8 +320,8 @@ class TransitSignal(object):
 
         durs,deps,logdeps,slopes = (Ts[ok],ds[ok],np.log10(ds[ok]),
                                               slopes[ok])
-        
-        
+
+
         inds = (np.arange(len(durs)/thin)*thin).astype(int)
         durs,deps,logdeps,slopes = (durs[inds],deps[inds],logdeps[inds],
                                               slopes[inds])
@@ -334,7 +333,7 @@ class TransitSignal(object):
         self.hasMCMC = True
 
     def corner(self, outfile=None, plot_contours=False, **kwargs):
-        fig = corner.corner(self.kde.dataset.T, labels=['Duration', 'log(depth)', 'T/tau'], 
+        fig = corner.corner(self.kde.dataset.T, labels=['Duration', 'log(depth)', 'T/tau'],
                             plot_contours=False, **kwargs)
 
         if outfile is not None:
@@ -379,12 +378,12 @@ class TransitSignal(object):
 
         points = np.array([self.durs,self.logdeps,self.slopes])
         self.kde = gaussian_kde(points)
-        
+
 
 class TransitSignal_FromSamples(TransitSignal):
     """Use this if all you have is the trapezoid-fit samples
     """
-    def __init__(self, period, durs, depths, slopes, 
+    def __init__(self, period, durs, depths, slopes,
                  name='', **kwargs):
         self.period = period
         self.durs = durs
@@ -426,8 +425,8 @@ class TransitSignal_ASCII(TransitSignal):
         except:
             e_f = None
         TransitSignal.__init__(self, t, f, e_f, **kwargs)
-        
-        
+
+
 ############# Exceptions ##############3
 
 class MCMCError(Exception):
