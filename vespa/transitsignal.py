@@ -23,7 +23,7 @@ except ImportError:
     logging.warning('acor not available')
     
 try:
-    import triangle
+    import corner
 except ImportError:
     pass
 
@@ -121,7 +121,7 @@ class TransitSignal(object):
 
     def triangle(self, **kwargs):
         pts = np.array([self.logdeps, self.durs, self.slopes]).T
-        fig = triangle.corner(pts, labels=['log (Depth)',
+        fig = corner.corner(pts, labels=['log (Depth)',
                                            'Duration', 'T/tau'], **kwargs)
         return fig
     
