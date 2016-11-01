@@ -8,7 +8,7 @@ try:
     from astropy.coordinates import SkyCoord
 except:
     SkyCoord = None
-    
+
 def get_AV_infinity(ra,dec,frame='icrs'):
     """
     Gets the A_V exctinction at infinity for a given line of sight.
@@ -30,7 +30,7 @@ def get_AV_infinity(ra,dec,frame='icrs'):
 
     rah,ram,ras = coords.ra.hms
     decd,decm,decs = coords.dec.dms
-    if decd > 0: 
+    if decd > 0:
         decsign = '%2B'
     else:
         decsign = '%2D'
@@ -42,19 +42,18 @@ def get_AV_infinity(ra,dec,frame='icrs'):
     cmd = 'curl -s \'%s\' -o %s' % (url,tmpfile)
     sp.Popen(cmd,shell=True).wait()
     AV = None
-    for line in open(tmpfile,'r'):
-        m = re.search('V \(0.54\)\s+(\S+)',line)
-        if m:
-            AV = float(m.group(1))
+    with open(tmpfile, 'r') as f:
+        for line in f:
+            m = re.search('V \(0.54\)\s+(\S+)',line)
+            if m:
+                AV = float(m.group(1))
     if AV is None:
         logging.warning('Error accessing NED, url={}'.format(url))
-        for line in open(tmpfile):
-            logging.warning(line)
-        
+        with open(tmpfile) as f:
+            for line in f:
+                logging.warning(line)
+
 
 
     os.remove(tmpfile)
     return AV
-    
-    
-    
