@@ -1,4 +1,4 @@
-__version__ = '0.4.9'
+__version__ = '0.4.10'
 
 try:
     __VESPA_SETUP__
