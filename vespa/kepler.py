@@ -38,13 +38,14 @@ except ImportError:
 
 #import kplr
 
-KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
-JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
-JROWE_FILE = resource_filename('vespa','data/jrowe_mcmc_fits.csv')
+KPLR_ROOT = os.getenv('KPLR_ROOT', os.path.expanduser('~/.kplr'))
+JROWE_DIR = os.getenv('JROWE_DIR', os.path.expanduser('~/.jrowe'))
+JROWE_FILE = resource_filename('vespa', 'data/jrowe_mcmc_fits.csv')
 JROWE_DATA = pd.read_csv(JROWE_FILE, index_col=0)
 
 
-KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
+KOI_FPPDIR = os.getenv('KOI_FPPDIR', os.path.expanduser('~/.koifpp'))
+TTV_DIR = os.getenv('TTV_DIR', os.path.expanduser('~/.koi_ttv'))
 STARFIELD_DIR = os.path.join(KOI_FPPDIR, 'starfields')
 STARMODEL_DIR = os.path.join(KOI_FPPDIR, 'starmodels')
 
@@ -397,7 +398,6 @@ def jrowe_fit(koi):
 class JRowe_KeplerTransitSignal(KeplerTransitSignal):
     def __init__(self,koi,mcmc=True,maxslope=None,refit_mcmc=False,
                  **kwargs):
-
         self.folder = '%s/koi%i.n' % (JROWE_DIR,
                                       koiname(koi,star=True,
                                                  koinum=True))
@@ -420,7 +420,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
 
         logging.debug('{} points read from file.'.format(len(lc)))
 
-        self.ttfile = '%s/koi%07.2f.tt' % (self.folder,koiname(koi,koinum=True))
+        self.ttfile = '%s/koi%07.2f.tt' % (TTV_DIR, koiname(koi,koinum=True))
         self.has_ttvs = os.path.exists(self.ttfile)
         if self.has_ttvs:
             if os.stat(self.ttfile)[6]==0:
