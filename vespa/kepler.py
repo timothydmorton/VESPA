@@ -444,7 +444,10 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
 
         logging.debug('{} points read from file.'.format(len(lc)))
 
-        self.ttfile = '%s/koi%07.2f.tt' % (TTV_DIR, koiname(koi,koinum=True))
+        self.ttfile = '%s/koi%07.2f.tt' % (TTV_DIR, koiname(koi, koinum=True))
+        if not os.path.exists(self.ttfile):
+            self.ttfile = '%s/koi%07.2f.tt' % (self.folder,
+                                               koiname(koi, koinum=True))
         self.has_ttvs = os.path.exists(self.ttfile)
         if self.has_ttvs:
             if os.stat(self.ttfile)[6]==0:
