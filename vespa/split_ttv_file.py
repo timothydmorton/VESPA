@@ -1,0 +1,26 @@
+"""
+ Split the ttv tile
+ Table 3 in Holczer+ 2016 ApJS 225 9H
+"""
+
+import urllib.request
+
+from astropy.table import Table
+
+TTV_FILE = 'apjsaa25b0t3_mrt.txt'
+URL = 'http://iopscience.iop.org/0067-0049/225/1/9/suppdata/' + TTV_FILE
+
+try:
+    ttvs = Table.read(TTV_FILE, format='cds')
+except IOError:
+    ttvfile = urllib.URLopener()
+    ttvfile.retrieve(URL, TTV_FILE)
+    ttvs = Table.read(TTV_FILE, format='cds')
+
+
+for koi in ttvs.group_by('KOI').groups:
+    file_name = 'koi{:07.2f}.tt'.format(koi['KOI'][0])
+    koi_tt = Table([koi['tn'], koi['O-C']/60/24, koi['e_O-C']/60/24])
+    koi_tt['O-C'].unit = 'd'
+    koi_tt['e_O-C'].unit = 'd'
+    koi_tt.write(file_name, format='ascii.commented_header')
