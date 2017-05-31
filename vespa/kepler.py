@@ -76,7 +76,7 @@ DAY = 86400
 RSUN = const.R_sun.cgs.value
 REARTH = const.R_earth.cgs.value
 
-KOIDATA = ku.DR24 #change to ku.DATA for cumulative table
+KOIDATA = ku.DR25 #change to ku.DATA for cumulative table
 
 def _get_starfields(**kwargs):
     from starutils.trilegal import get_trilegal
