@@ -36,7 +36,7 @@ except ImportError:
 
 #from simpledist import distributions as dists
 
-#import kplr
+import kplr
 
 KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
