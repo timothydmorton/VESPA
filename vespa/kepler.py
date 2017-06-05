@@ -65,11 +65,14 @@ DATAFOLDER = resource_filename('vespa','data')
 # ROBOVETDATA.index = ROBOVETDATA['TCE']
 
 
-MAXAV = pd.read_table(os.path.join(DATAFOLDER,
-                                   'koi_maxAV.txt'),
-                      delim_whitespace=True,
-                      names=['koi','maxAV'])
-MAXAV.index = MAXAV['koi']
+KOI_MAXAV_FILE = os.path.join(DATAFOLDER, 'koi_maxAV.txt')
+try:
+    MAXAV = pd.read_table(KOI_MAXAV_FILE,
+                          delim_whitespace=True,
+                          names=['koi','maxAV'])
+    MAXAV.index = MAXAV['koi']
+except IOError:
+    logging.warning('{} does not exist.'.format(KOI_MAXAV_FILE))
 
 import astropy.constants as const
 G = const.G.cgs.value
@@ -190,7 +193,7 @@ def koi_maxAV(koi):
 def _generate_koi_maxAV_table():
     kois = np.array(ku.DR25.index)
     maxAV = np.array([get_AV_infinity(*ku.radec(k)) for k in kois])
-    
+
 
 
 def koi_propdist(koi, prop):
