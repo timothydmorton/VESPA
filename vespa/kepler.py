@@ -40,8 +40,8 @@ import kplr
 
 KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
 JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
-JROWE_FILE = resource_filename('vespa','data/jrowe_mcmc_fits.csv')
-JROWE_DATA = pd.read_csv(JROWE_FILE, index_col=0)
+# JROWE_FILE = resource_filename('vespa','data/jrowe_mcmc_fits.csv')
+# JROWE_DATA = pd.read_csv(JROWE_FILE, index_col=0)
 
 
 KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
@@ -56,13 +56,14 @@ CHIPLOC_FILE = resource_filename('vespa','data/kepler_chiplocs.txt')
 CHAINSDIR = os.path.join(KOI_FPPDIR, 'trap_chains')
 
 DATAFOLDER = resource_filename('vespa','data')
-WEAKSECFILE = os.path.join(DATAFOLDER, 'weakSecondary_socv9p2vv.csv')
-WEAKSECDATA = pd.read_csv(WEAKSECFILE,skiprows=8)
-WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
+# WEAKSECFILE = os.path.join(DATAFOLDER, 'weakSecondary_socv9p2vv.csv')
+# WEAKSECDATA = pd.read_csv(WEAKSECFILE,skiprows=8)
+# WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
 
-ROBOVETFILE = os.path.join(DATAFOLDER, 'RoboVetter-Input.txt')
-ROBOVETDATA = pd.read_table(ROBOVETFILE, delim_whitespace=True)
-ROBOVETDATA.index = ROBOVETDATA['TCE']
+# ROBOVETFILE = os.path.join(DATAFOLDER, 'RoboVetter-Input.txt')
+# ROBOVETDATA = pd.read_table(ROBOVETFILE, delim_whitespace=True)
+# ROBOVETDATA.index = ROBOVETDATA['TCE']
+
 
 MAXAV = pd.read_table(os.path.join(DATAFOLDER,
                                    'koi_maxAV.txt'),
@@ -185,6 +186,12 @@ def koi_maxAV(koi):
         ra,dec = ku.radec(koi)
         maxAV = get_AV_infinity(ra,dec)
     return maxAV
+
+def _generate_koi_maxAV_table():
+    kois = np.array(ku.DR25.index)
+    maxAV = np.array([get_AV_infinity(*ku.radec(k)) for k in kois])
+    
+
 
 def koi_propdist(koi, prop):
     """
