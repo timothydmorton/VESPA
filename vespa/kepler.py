@@ -193,7 +193,7 @@ def koi_maxAV(koi):
 def _generate_koi_maxAV_table():
     kois = np.array(ku.DR25.index)
     maxAV = np.array([get_AV_infinity(*ku.radec(k)) for k in kois])
-
+    np.savetxt(KOI_MAXAV_FILE, np.array([kois, maxAV]).T, fmt='%.2f %.3f')
 
 
 def koi_propdist(koi, prop):
