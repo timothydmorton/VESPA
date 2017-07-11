@@ -405,6 +405,8 @@ def jrowe_fit_old(koi):
                          delimiter='\s+')
 
 def jrowe_fit(koi):
+    return jrowe_fit_old(koi)
+
     koi = koiname(koi)
 
     pars = ['RHO', 'EP1','PE1', 'BB1', 'RD1']
