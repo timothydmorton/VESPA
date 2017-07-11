@@ -622,9 +622,8 @@ class EclipsePopulation(StarPopulation):
         N = trsig.kde.dataset.shape[1]
         lh = self.kde(trsig.kde.dataset).sum() / N
 
-        fout = open(cachefile, 'a')
-        fout.write('%i %g\n' % (key,lh))
-        fout.close
+        with open(cachefile, 'a') as fout:
+            fout.write('%i %g\n' % (key, lh))
 
         return lh
 
@@ -2933,13 +2932,14 @@ def _loadcache(cachefile):
     """
     cache = {}
     if os.path.exists(cachefile):
-        for line in open(cachefile):
-            line = line.split()
-            if len(line)==2:
-                try:
-                    cache[int(line[0])] = float(line[1])
-                except:
-                    pass
+        with open(cachefile) as f:
+            for line in f:
+                line = line.split()
+                if len(line) == 2:
+                    try:
+                        cache[int(line[0])] = float(line[1])
+                    except:
+                        pass
     return cache
 
 

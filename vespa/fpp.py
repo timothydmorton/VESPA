@@ -267,7 +267,8 @@ class FPPCalculation(object):
         #create TransitSignal
         if os.path.exists(trsig_file):
             logging.info('Loading transit signal from {}...'.format(trsig_file))
-            trsig = pickle.load(open(trsig_file,'rb'))
+            with open(trsig_file, 'rb') as f:
+                trsig = pickle.load(f)
         else:
             if 'photfile' not in config:
                 raise AttributeError('If transit pickle file (trsig.pkl) '+
@@ -424,7 +425,8 @@ class FPPCalculation(object):
         """
         popset = PopulationSet.load_hdf(os.path.join(folder,'popset.h5'))
         sigfile = os.path.join(folder,'trsig.pkl')
-        trsig = pickle.load(open(sigfile, 'rb'))
+        with open(sigfile, 'rb') as f:
+            trsig = pickle.load(f)
         return cls(trsig, popset, folder=folder)
 
     def FPPplots(self, folder=None, format='png', tag=None, **kwargs):
@@ -861,9 +863,8 @@ class FPPCalculation(object):
             new = FPPCalculation(self.trsig, self.popset.resample(), folder=self.folder)
             h,l = new.write_results(to_file=False)
             lines.append(l)
-        fout = open(os.path.join(self.folder, filename),'w')
-        fout.write(h + '\n')
-        for l in lines:
-            fout.write(l + '\n')
-        fout.close()
+        with open(os.path.join(self.folder, filename),'w') as fout:
+            fout.write(h + '\n')
+            for l in lines:
+                fout.write(l + '\n')
         return h, lines

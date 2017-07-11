@@ -41,13 +41,13 @@ except ImportError:
 
 import kplr
 
-KPLR_ROOT = os.getenv('KPLR_ROOT',os.path.expanduser('~/.kplr'))
-JROWE_DIR = os.getenv('JROWE_DIR','~/.jrowe')
-# JROWE_FILE = resource_filename('vespa','data/jrowe_mcmc_fits.csv')
+KPLR_ROOT = os.getenv('KPLR_ROOT', os.path.expanduser('~/.kplr'))
+JROWE_DIR = os.getenv('JROWE_DIR', os.path.expanduser('~/.jrowe'))
+# JROWE_FILE = resource_filename('vespa', 'data/jrowe_mcmc_fits.csv')
 # JROWE_DATA = pd.read_csv(JROWE_FILE, index_col=0)
 
-
-KOI_FPPDIR = os.getenv('KOI_FPPDIR',os.path.expanduser('~/.koifpp'))
+KOI_FPPDIR = os.getenv('KOI_FPPDIR', os.path.expanduser('~/.koifpp'))
+TTV_DIR = os.getenv('TTV_DIR', os.path.expanduser('~/.koi_ttv'))
 STARFIELD_DIR = os.path.join(KOI_FPPDIR, 'starfields')
 STARMODEL_DIR = os.path.join(KOI_FPPDIR, 'starmodels')
 
@@ -260,7 +260,8 @@ class KOI_FPPCalculation(FPPCalculation):
         #first check if pickled signal is there to be loaded
         trsigfile = os.path.join(folder,'trsig.pkl')
         if os.path.exists(trsigfile):
-            trsig = pickle.load(open(trsigfile,'rb'))
+            with open(trsigfile, 'rb') as f:
+                trsig = pickle.load(f)
         else:
             if use_JRowe:
                 trsig = JRowe_KeplerTransitSignal(koi, **trsig_kws)
@@ -421,7 +422,6 @@ def jrowe_fit(koi):
 class JRowe_KeplerTransitSignal(KeplerTransitSignal):
     def __init__(self,koi,mcmc=True,maxslope=None,refit_mcmc=False,
                  **kwargs):
-
         self.folder = '%s/koi%i.n' % (JROWE_DIR,
                                       koiname(koi,star=True,
                                                  koinum=True))
@@ -444,7 +444,10 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
 
         logging.debug('{} points read from file.'.format(len(lc)))
 
-        self.ttfile = '%s/koi%07.2f.tt' % (self.folder,koiname(koi,koinum=True))
+        self.ttfile = '%s/koi%07.2f.tt' % (TTV_DIR, koiname(koi, koinum=True))
+        if not os.path.exists(self.ttfile):
+            self.ttfile = '%s/koi%07.2f.tt' % (self.folder,
+                                               koiname(koi, koinum=True))
         self.has_ttvs = os.path.exists(self.ttfile)
         if self.has_ttvs:
             if os.stat(self.ttfile)[6]==0:
@@ -452,7 +455,11 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
                 logging.warning('TTV file exists for {}, but is empty.  No TTVs applied.'.format(koiname(koi)))
             else:
                 logging.debug('Reading transit times from {}'.format(self.ttfile))
-                tts = pd.read_table(self.ttfile,names=['tc','foo1','foo2'],delimiter='\s+')
+                tts = pd.read_table(self.ttfile,names=['tc','C-O','e_C-O'],
+                                    delimiter='\s+',comment='#' )
+                if tts['C-O'].std() < tts['e_C-O'].mean():
+                    self.has_ttvs = False
+                    logging.warning('TTV file exists for {}, but errors are too large.  No TTVs applied.'.format(koiname(koi)))
 
         #self.rowefitfile = '%s/n%i.dat' % (self.folder,num)
 
@@ -506,7 +513,7 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
         dfs = pd.Series()
 
         if self.has_ttvs:
-            for t0 in tts['tc']:
+            for t0 in tts['tc'] + tts['C-O']:
                 t = lc['t'] - t0
                 ok = np.absolute(t) < (2*self.Tdur)
                 ts = ts.append(t[ok])
