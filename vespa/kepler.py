@@ -64,9 +64,9 @@ DATAFOLDER = resource_filename('vespa','data')
 # WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
 
 # ROBOVETFILE = os.path.join(DATAFOLDER, 'RoboVetter-Input.txt')
-ROBOVETFILE = os.path.join(DATAFOLDER, 'kplr_dr25_obs_robovetter_input.txt')
-ROBOVETDATA = pd.read_table(ROBOVETFILE, delim_whitespace=True)
-ROBOVETDATA.index = ROBOVETDATA['TCE']
+ROBOVETFILE = os.path.join(DATAFOLDER, 'dr25', 'kplr_dr25_obs_robovetter_input.txt')
+# ROBOVETDATA = pd.read_table(ROBOVETFILE, delim_whitespace=True)
+# ROBOVETDATA.index = ROBOVETDATA['TCE']
 
 
 KOI_MAXAV_FILE = os.path.join(DATAFOLDER, 'koi_maxAV.txt')
