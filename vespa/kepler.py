@@ -75,6 +75,7 @@ try:
     MAXAV.index = MAXAV['koi']
 except IOError:
     logging.warning('{} does not exist.'.format(KOI_MAXAV_FILE))
+    MAXAV = None
 
 import astropy.constants as const
 G = const.G.cgs.value
@@ -186,6 +187,8 @@ def default_r_exclusion(koi,rmin=0.5):
 
 def koi_maxAV(koi):
     try:
+        if MAXAV is None:
+            raise KeyError
         maxAV = MAXAV.ix[ku.koiname(koi),'maxAV']
     except KeyError:
         ra,dec = ku.radec(koi)
@@ -194,8 +197,9 @@ def koi_maxAV(koi):
 
 def _generate_koi_maxAV_table():
     kois = np.array(ku.DR25.index)
-    maxAV = tqdm([get_AV_infinity(*ku.radec(k)) for k in kois])
-    maxAV = np.array(maxAV)
+    maxAV = np.zeros(len(kois))
+    for i,k in tqdm(enumerate(kois)):
+        maxAV[i] = get_AV_infinity(*ku.radec(k))
     np.savetxt(KOI_MAXAV_FILE, np.array([kois, maxAV]).T, fmt='%.2f %.3f')
 
 
