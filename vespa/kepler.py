@@ -196,13 +196,14 @@ def koi_maxAV(koi):
         maxAV = get_AV_infinity(ra,dec)
     return maxAV
 
+
+def _getAV(k):
+    return get_AV_infinity(*ku.radec(k))
+
 def _generate_koi_maxAV_table(procs=1):
     kois = np.array(ku.DR25.index)
     pool = choose_pool(mpi=False, processes=procs)
-    def getAV(k):
-        return get_AV_infinity(*ku.radec(k))
-
-    maxAV = pool.map(getAV, kois)
+    maxAV = pool.map(_getAV, kois)
 
     np.savetxt(KOI_MAXAV_FILE, np.array([kois, maxAV]).T, fmt='%.2f %.3f')
 
