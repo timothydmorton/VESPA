@@ -112,7 +112,7 @@ def modelshift_weaksec(koi):
     """
     Max secondary depth based on model-shift secondary test from Jeff Coughlin
 
-    secondary metric: D_sec_dv * (1 + 3*F_red_dv / sig_sec_dv)
+    secondary metric: mod_depth_sec_dv * (1 + 3*mod_fred_dv / mod_sig_sec_dv)
     """
     num = KOIDATA.ix[ku.koiname(koi), 'koi_tce_plnt_num']
     if np.isnan(num):
@@ -126,11 +126,11 @@ def modelshift_weaksec(koi):
     except KeyError:
         raise NoWeakSecondaryError(koi)
 
-    depth_dv = r['D_sec_dv'] * (1 + 3*r['F_red_dv'] / r['sig_sec_dv'])
-    depth_alt = r['D_sec_alt'] * (1 + 3*r['F_red_alt'] / r['sig_sec_alt'])
+    depth_dv = r['mod_depth_sec_dv'] * (1 + 3*r['mod_fred_dv'] / r['mod_sig_sec_dv'])
+    depth_alt = r['mod_depth_sec_alt'] * (1 + 3*r['mod_fred_alt'] / r['mod_sig_sec_alt'])
 
-    logging.debug(r[['D_sec_dv','F_red_dv','sig_sec_dv']])
-    logging.debug(r[['D_sec_alt','F_red_alt','sig_sec_alt']])
+    logging.debug(r[['mod_depth_sec_dv','mod_fred_dv','mod_sig_sec_dv']])
+    logging.debug(r[['mod_depth_sec_alt','mod_fred_alt','mod_sig_sec_alt']])
 
     if np.isnan(depth_dv) and np.isnan(depth_alt):
         #return weaksec_vv2(koi)
