@@ -3,12 +3,11 @@ VESPA
 .. image:: https://zenodo.org/badge/6253/timothydmorton/VESPA.svg   
     :target: http://dx.doi.org/10.5281/zenodo.16467
 
-
 Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating false positive probabilities for transit signals
 
 For usage and more info, `check out the documentation <http://vespa.rtfd.org>`_.
 
-[Note: be aware that the documentation is out of date (though not totally useless) and I have not yet updated it; please email me or raise an issue if you have problems.]
+[NOTE: While `isochrones <http://github.com/timothydmorton/isochrones>`_ has been updated to version 1.0, vespa only works with isochrones version 0.9.1.  This is an awkward situation that I plan to resolve before too long, pending partially on NASA funding for me to continue to support these packages.]
 
 Installation
 ------------
