@@ -15,6 +15,8 @@ from configobj import ConfigObj
 
 from scipy.integrate import quad
 
+from tqdm import tqdm
+
 from astropy.coordinates import SkyCoord
 
 from isochrones.starmodel import StarModel
@@ -192,7 +194,7 @@ def koi_maxAV(koi):
 
 def _generate_koi_maxAV_table():
     kois = np.array(ku.DR25.index)
-    maxAV = np.array([get_AV_infinity(*ku.radec(k)) for k in kois])
+    maxAV = np.array(tqdm([get_AV_infinity(*ku.radec(k)) for k in kois]))
     np.savetxt(KOI_MAXAV_FILE, np.array([kois, maxAV]).T, fmt='%.2f %.3f')
 
 
