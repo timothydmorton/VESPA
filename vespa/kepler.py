@@ -205,7 +205,7 @@ def _generate_koi_maxAV_table(procs=1):
     pool = choose_pool(mpi=False, processes=procs)
     maxAV = pool.map(_getAV, kois)
 
-    np.savetxt(KOI_MAXAV_FILE, np.array([kois, maxAV]).T, fmt='%.2f %.3f')
+    np.savetxt(KOI_MAXAV_FILE, np.array([kois, maxAV]).T, fmt='%s %.3f')
 
 
 def koi_propdist(koi, prop):
