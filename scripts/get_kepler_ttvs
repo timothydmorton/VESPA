@@ -3,6 +3,8 @@
  Split the ttv tile
  Table 3 in Holczer+ 2016 ApJS 225 9H
 """
+from future.standard_library import install_aliases
+install_aliases()
 
 import urllib.request
 
