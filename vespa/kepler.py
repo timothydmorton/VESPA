@@ -16,6 +16,7 @@ from configobj import ConfigObj
 from scipy.integrate import quad
 
 from tqdm import tqdm
+from schwimmbad import choose_pool
 
 from astropy.coordinates import SkyCoord
 
@@ -195,11 +196,14 @@ def koi_maxAV(koi):
         maxAV = get_AV_infinity(ra,dec)
     return maxAV
 
-def _generate_koi_maxAV_table():
+def _generate_koi_maxAV_table(procs=1):
     kois = np.array(ku.DR25.index)
-    maxAV = np.zeros(len(kois))
-    for i,k in tqdm(enumerate(kois)):
-        maxAV[i] = get_AV_infinity(*ku.radec(k))
+    pool = choose_pool(procs)
+    def getAV(k):
+        return get_AV_infinity(*ku.radec(k))
+
+    maxAV = pool.map(kois, getAV)
+
     np.savetxt(KOI_MAXAV_FILE, np.array([kois, maxAV]).T, fmt='%.2f %.3f')
 
 
