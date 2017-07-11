@@ -198,7 +198,7 @@ def koi_maxAV(koi):
 
 def _generate_koi_maxAV_table(procs=1):
     kois = np.array(ku.DR25.index)
-    pool = choose_pool(procs)
+    pool = choose_pool(mpi=False, processes=procs)
     def getAV(k):
         return get_AV_infinity(*ku.radec(k))
 
