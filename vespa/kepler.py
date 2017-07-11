@@ -202,7 +202,7 @@ def _generate_koi_maxAV_table(procs=1):
     def getAV(k):
         return get_AV_infinity(*ku.radec(k))
 
-    maxAV = pool.map(kois, getAV)
+    maxAV = pool.map(getAV, kois)
 
     np.savetxt(KOI_MAXAV_FILE, np.array([kois, maxAV]).T, fmt='%.2f %.3f')
 
