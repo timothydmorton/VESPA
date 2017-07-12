@@ -24,10 +24,10 @@ warnings.simplefilter("ignore", DeprecationWarning)
 
 if __name__=='__main__':
 
-    DATAFOLDER = resource_filename('vespa','data')
-    WEAKSECFILE = os.path.join(DATAFOLDER, 'weakSecondary_socv9p2vv.csv')
-    WEAKSECDATA = pd.read_csv(WEAKSECFILE,skiprows=8)
-    WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
+    # DATAFOLDER = resource_filename('vespa','data')
+    # WEAKSECFILE = os.path.join(DATAFOLDER, 'weakSecondary_socv9p2vv.csv')
+    # WEAKSECDATA = pd.read_csv(WEAKSECFILE,skiprows=8)
+    # WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
 
     parser = argparse.ArgumentParser(description='Generate FP models for a list of KOIs')
 
