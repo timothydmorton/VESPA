@@ -155,6 +155,8 @@ def pipeline_weaksec(koi):
 
 def weaksec_vv2(koi):
     try:
+        raise KeyError # just skip this, as WEAKSECDATA is obselete
+        
         weaksec = WEAKSECDATA.ix[ku.koiname(koi)]
         secthresh = (weaksec['depth'] + 3*weaksec['e_depth'])*1e-6
         if weaksec['depth'] <= 0:
