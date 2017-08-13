@@ -88,7 +88,7 @@ class FPPCalculation(object):
     @classmethod
     def from_ini(cls, folder='.',
                  ini_file='fpp.ini', recalc=False, refit_trap=False,
-                 star_ini_file='star.ini', ichrone=DARTMOUTH,
+                 star_ini_file='star.ini', ichrone='dartmouth', 
                  **kwargs):
         """
         To enable simple usage, initializes a FPPCalculation from a .ini file

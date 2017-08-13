@@ -50,7 +50,7 @@ from .stars.populations import ColormatchMultipleStarPopulation
 from .stars.populations import Spectroscopic_MultipleStarPopulation
 from .stars.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
 from .stars.populations import Observed_BinaryPopulation, Observed_TriplePopulation
-from .stars.populations import DARTMOUTH
+# from .stars.populations import DARTMOUTH
 from .stars.utils import draw_eccs, semimajor, withinroche
 from .stars.utils import mult_masses, randpos_in_circle
 from .stars.utils import fluxfrac, addmags
@@ -1121,10 +1121,10 @@ class PlanetPopulation(EclipsePopulation):
                 radius = rdist.rvs(1e5)
         else:
             samples = starmodel.random_samples(1e5)
-            mass = samples['mass'].values
-            radius = samples['radius'].values
-            Teff = samples['Teff'].mean()
-            logg = samples['logg'].mean()
+            mass = samples['mass_0_0'].values
+            radius = samples['radius_0_0'].values
+            Teff = samples['Teff_0_0'].mean()
+            logg = samples['logg_0_0'].mean()
 
         logging.debug('star mass: {}'.format(mass))
         logging.debug('star radius: {}'.format(radius))
@@ -1714,7 +1714,7 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
     """
     def __init__(self, period=None, mags=None,
                  ra=None, dec=None, trilegal_filename=None,
-                 n=2e4, ichrone=DARTMOUTH, band='Kepler',
+                 n=2e4, ichrone='dartmouth', band='Kepler',
                  maxrad=10, f_binary=0.4, model='BEBs',
                  MAfn=None, lhoodcachefile=None,
                  **kwargs):
@@ -1751,7 +1751,7 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
 
     def generate(self, trilegal_filename, ra=None, dec=None,
-                 n=2e4, ichrone=DARTMOUTH, MAfn=None,
+                 n=2e4, ichrone='dartmouth', MAfn=None,
                  mags=None, maxrad=None, f_binary=0.4, **kwargs):
         """
         Generate population.
@@ -1769,6 +1769,8 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
         mass = bgpop.stars['m_ini'].values
         age = bgpop.stars['logAge'].values
         feh = bgpop.stars['[M/H]'].values
+
+        ichrone = get_ichrone(ichrone)
 
         pct = 0.05 #pct distance from "edges" of ichrone interpolation
         mass[mass < ichrone.minmass*(1+pct)] = ichrone.minmass*(1+pct)
