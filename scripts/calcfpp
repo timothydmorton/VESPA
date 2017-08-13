@@ -110,6 +110,7 @@ if __name__=='__main__':
     parser.add_argument('--bootstrap', type=int, default=0)
     parser.add_argument('--include_artificial', action='store_true')
     parser.add_argument('--artificial_prior', type=float, default=10./200000)
+    parser.add_argument('--stellar_models', default='dartmouth', type=str)
 
 
     args = parser.parse_args()
@@ -155,16 +156,16 @@ if __name__=='__main__':
 
             for mult,Model in zip(['single','binary','triple'],
                                   [StarModel, BinaryStarModel, TripleStarModel]):
-                starmodel_file = os.path.join(folder, 'dartmouth_starmodel_{}.h5'.format(mult))
+                starmodel_file = os.path.join(folder, '{}_starmodel_{}.h5'.format(args.stellar_models, mult))
                 triangle_file1 = os.path.join(folder, 
-                                              'dartmouth_triangle_{}_physical.png'.format(mult))
+                                              '{}_triangle_{}_physical.png'.format(args.stellar_models, mult))
                 triangle_file2 = os.path.join(folder, 
-                                              'dartmouth_triangle_{}_observed.png'.format(mult))
+                                              '{}_triangle_{}_observed.png'.format(args.stellar_models, mult))
                 if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
                     logger.info('Making StarModel triangle plots...')
                     starmodel = Model.load_hdf(starmodel_file)
                     triangle_base = os.path.join(folder, 
-                                                 'dartmouth_triangle_{}'.format(mult))
+                                                 '{}_triangle_{}'.format(args.stellar_models, mult))
                     starmodel.triangle_plots(triangle_base)
 
             if args.bootstrap > 0:

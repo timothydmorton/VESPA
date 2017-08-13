@@ -35,6 +35,7 @@ from ..plotutils import setfig,plot2dhist
 try:
     from isochrones.starmodel import StarModel, BinaryStarModel
     from isochrones.starmodel import TripleStarModel
+    from isochrones import get_ichrone
 except ImportError:
     StarModel, BinaryStarModel, TripleStarModel = (None, None, None)
 
@@ -58,8 +59,9 @@ from .utils import distancemodulus, addmags, dfromdm
 from .trilegal import get_trilegal
 
 try:
-    from isochrones.dartmouth import Dartmouth_Isochrone
-    DARTMOUTH = Dartmouth_Isochrone()
+    from isochrones import get_ichrone
+    # from isochrones.dartmouth import Dartmouth_Isochrone
+    # DARTMOUTH = Dartmouth_Isochrone()
     #DARTMOUTH.radius(1,9.6,0.0) #first call takes a long time for some reason
 except ImportError:
     logging.warning('isochrones package not installed; population simulations will not be fully functional')
@@ -1343,7 +1345,7 @@ class Simulated_BinaryPopulation(BinaryPopulation):
 
     """
     def __init__(self,M=None,q_fn=None,P_fn=None,ecc_fn=None,
-                 n=1e4,ichrone=DARTMOUTH, qmin=0.1, bands=BANDS,
+                 n=1e4,ichrone='dartmouth', qmin=0.1, bands=BANDS,
                  age=9.6,feh=0.0, minmass=0.12, **kwargs):
 
         if q_fn is None:
@@ -1361,12 +1363,13 @@ class Simulated_BinaryPopulation(BinaryPopulation):
                           n=n, bands=bands, **kwargs)
 
     def generate(self, M, age=9.6, feh=0.0,
-                 ichrone=DARTMOUTH, n=1e4, bands=None, **kwargs):
+                 ichrone='dartmouth', n=1e4, bands=None, **kwargs):
         """
         Function that generates population.
 
         Called by ``__init__`` if ``M`` is passed.
         """
+        ichrone = get_ichrone(ichrone, bands=bands)
         if np.size(M) > 1:
             n = np.size(M)
         else:
@@ -1433,7 +1436,7 @@ class Raghavan_BinaryPopulation(Simulated_BinaryPopulation):
 
 
     """
-    def __init__(self,M=None,e_M=0,n=1e4,ichrone=DARTMOUTH,
+    def __init__(self,M=None,e_M=0,n=1e4,ichrone='dartmouth',
                  age=9.5, feh=0.0, q_fn=None, qmin=0.1,
                  minmass=0.12, **kwargs):
 
@@ -1631,7 +1634,7 @@ class Observed_BinaryPopulation(BinaryPopulation):
                  Teff=None,
                  logg=None, feh=None,
                  starmodel=None, n=2e4,
-                 ichrone=DARTMOUTH, bands=BANDS,
+                 ichrone='dartmouth', bands=BANDS,
                  period=None, ecc=None,
                  orbpop=None, stars=None,
                  **kwargs):
@@ -1686,11 +1689,12 @@ class Observed_BinaryPopulation(BinaryPopulation):
 
 
     def generate(self, mags=None, mag_errs=None,
-                 n=1e4, ichrone=DARTMOUTH,
+                 n=1e4, ichrone='dartmouth',
                  starmodel=None, Teff=None, logg=None, feh=None,
                  bands=BANDS, orbpop=None, period=None,
                  ecc=None, **kwargs):
 
+        ichrone = get_ichrone(ichrone, bands=bands)
         if starmodel is None:
             params = self.starmodel_props
             logging.info('Fitting BinaryStarModel to {}...'.format(params))
@@ -1759,7 +1763,7 @@ class Observed_TriplePopulation(TriplePopulation):
                  Teff=None,
                  logg=None, feh=None,
                  starmodel=None, n=2e4,
-                 ichrone=DARTMOUTH, bands=BANDS,
+                 ichrone='dartmouth', bands=BANDS,
                  period=None, ecc=None,
                  orbpop=None, stars=None,
                  **kwargs):
@@ -1813,10 +1817,12 @@ class Observed_TriplePopulation(TriplePopulation):
 
 
     def generate(self, mags=None, mag_errs=None,
-                 n=1e4, ichrone=DARTMOUTH,
+                 n=1e4, ichrone='dartmouth',
                  starmodel=None, Teff=None, logg=None, feh=None,
                  bands=BANDS, orbpop=None, period=None,
                  ecc=None, **kwargs):
+
+        ichrone = get_ichrone(ichrone, bands=bands)
 
         if starmodel is None:
             params = self.starmodel_props
@@ -1920,7 +1926,7 @@ class MultipleStarPopulation(TriplePopulation):
     def __init__(self, mA=None, age=9.6, feh=0.0,
                  f_binary=0.4, f_triple=0.12,
                  qmin=0.1, minmass=0.11,
-                 n=1e4, ichrone=DARTMOUTH,
+                 n=1e4, ichrone='dartmouth',
                  multmass_fn=mult_masses,
                  period=None,
                  period_long_fn=draw_raghavan_periods,
@@ -1954,7 +1960,7 @@ class MultipleStarPopulation(TriplePopulation):
             TriplePopulation.__init__(self, stars=stars, orbpop=orbpop, **kwargs)
 
 
-    def generate(self, mA=1, age=9.6, feh=0.0, n=1e5, ichrone=DARTMOUTH,
+    def generate(self, mA=1, age=9.6, feh=0.0, n=1e5, ichrone='dartmouth',
                  orbpop=None, bands=None, **kwargs):
         """
         Generates population.
@@ -1963,6 +1969,7 @@ class MultipleStarPopulation(TriplePopulation):
         providing ``stars``, and if ``mA`` is provided.
 
         """
+        ichrone = get_ichrone(ichrone, bands=bands)
 
         n = int(n)
         #star with m1 orbits (m2+m3).  So mA (most massive)
@@ -2088,7 +2095,7 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
     """
     def __init__(self, mags=None, colors=['JK'], colortol=0.1,
                  mA=None, age=9.6, feh=0.0, n=2e4,
-                 ichrone=DARTMOUTH,
+                 ichrone='dartmouth',
                  starfield=None, stars=None, **kwargs):
 
         self.mags = mags
@@ -2108,7 +2115,7 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
                           **kwargs)
 
 
-    def generate(self, mA=None, age=9.6, feh=0.0, ichrone=DARTMOUTH,
+    def generate(self, mA=None, age=9.6, feh=0.0, ichrone='dartmouth',
                  n=2e4, **kwargs):
         """
         Generating function for population
@@ -2160,6 +2167,9 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
                 age = age*np.ones(1)
             if np.size(feh)==1:
                 feh = feh*np.ones(1)
+
+
+        ichrone = get_ichrone(ichrone, bands=bands)
 
         #only permit mass, age, feh values allowed by ichrone
         pct = 0.05 #pct distance from "edges" of ichrone interpolation
@@ -2293,7 +2303,7 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
     """
     def __init__(self, filename=None, Teff=None, logg=None, feh=None,
                  starmodel=None,
-                 n=2e4, path='', ichrone=DARTMOUTH,
+                 n=2e4, path='', ichrone='dartmouth',
                  mcmc_kws=None, **kwargs):
 
         self.Teff = Teff
