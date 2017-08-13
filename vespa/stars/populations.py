@@ -1704,11 +1704,11 @@ class Observed_BinaryPopulation(BinaryPopulation):
         self._starmodel = starmodel
 
         samples = starmodel.random_samples(n)
-        age, feh = (np.ascontiguousarray(samples['age']),
-                    np.ascontiguousarray(samples['feh']))
-        dist, AV = (samples['distance'], samples['AV'])
-        mass_A, mass_B = (np.ascontiguousarray(samples['mass_A']),
-                          np.ascontiguousarray(samples['mass_B']))
+        age, feh = (np.ascontiguousarray(samples['age_0']),
+                    np.ascontiguousarray(samples['feh_0']))
+        dist, AV = (samples['distance_0'], samples['AV_0'])
+        mass_A, mass_B = (np.ascontiguousarray(samples['mass_0_0']),
+                          np.ascontiguousarray(samples['mass_0_1']))
         primary = ichrone(mass_A, age, feh,
                           distance=dist, AV=AV, bands=BANDS)
         secondary = ichrone(mass_B, age, feh,
@@ -1831,12 +1831,12 @@ class Observed_TriplePopulation(TriplePopulation):
         self._starmodel = starmodel
 
         samples = starmodel.random_samples(n)
-        age, feh = (np.ascontiguousarray(samples['age']),
-                    np.ascontiguousarray(samples['feh']))
-        dist, AV = (samples['distance'], samples['AV'])
-        mass_A, mass_B, mass_C = (np.ascontiguousarray(samples['mass_A']),
-                                  np.ascontiguousarray(samples['mass_B']),
-                                  np.ascontiguousarray(samples['mass_C']))
+        age, feh = (np.ascontiguousarray(samples['age_0']),
+                    np.ascontiguousarray(samples['feh_0']))
+        dist, AV = (samples['distance_0'], samples['AV_0'])
+        mass_A, mass_B, mass_C = (np.ascontiguousarray(samples['mass_0_0']),
+                                  np.ascontiguousarray(samples['mass_0_1']),
+                                  np.ascontiguousarray(samples['mass_0_2']))
         primary = ichrone(mass_A, age, feh,
                           distance=dist, AV=AV, bands=BANDS)
         secondary = ichrone(mass_B, age, feh,
@@ -2320,9 +2320,9 @@ class Spectroscopic_MultipleStarPopulation(MultipleStarPopulation):
                 logging.info('Done.')
 
             samples = self.starmodel.random_samples(n)
-            super(type(self),self).__init__(mA=samples['mass'],
-                                            age=samples['age'],
-                                            feh=samples['feh'],
+            super(type(self),self).__init__(mA=samples['mass_0_0'],
+                                            age=samples['age_0'],
+                                            feh=samples['feh_0'],
                                             **kwargs)
         else:
             pass
