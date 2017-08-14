@@ -1702,8 +1702,8 @@ class Observed_BinaryPopulation(BinaryPopulation):
             starmodel.fit()
             logging.info('BinaryStarModel fit Done.')
 
-        if type(starmodel) != BinaryStarModel:
-            raise TypeError('starmodel must be BinaryStarModel.')
+        # if type(starmodel) != BinaryStarModel:
+        #     raise TypeError('starmodel must be BinaryStarModel.')
 
         self._starmodel = starmodel
 
@@ -1831,8 +1831,8 @@ class Observed_TriplePopulation(TriplePopulation):
             starmodel.fit()
             logging.info('TripleStarModel fit Done.')
 
-        if type(starmodel) != TripleStarModel:
-            raise TypeError('starmodel must be TripleStarModel.')
+        # if type(starmodel) != TripleStarModel:
+        #     raise TypeError('starmodel must be TripleStarModel.')
 
         self._starmodel = starmodel
 
