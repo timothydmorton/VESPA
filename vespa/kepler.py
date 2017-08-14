@@ -64,9 +64,12 @@ DATAFOLDER = resource_filename('vespa','data')
 # WEAKSECDATA.index = WEAKSECDATA['KOI'].apply(ku.koiname)
 
 # ROBOVETFILE = os.path.join(DATAFOLDER, 'RoboVetter-Input.txt')
-ROBOVETFILE = os.path.join(DATAFOLDER, 'dr25', 'kplr_dr25_obs_robovetter_input.h5')
-ROBOVETDATA = pd.read_hdf(ROBOVETFILE, 'df')
-ROBOVETDATA.index = ROBOVETDATA['TCE_ID']
+try:
+    ROBOVETFILE = os.path.join(DATAFOLDER, 'dr25', 'kplr_dr25_obs_robovetter_input.h5')
+    ROBOVETDATA = pd.read_hdf(ROBOVETFILE, 'df')
+    ROBOVETDATA.index = ROBOVETDATA['TCE_ID']
+except IOError:
+    logging.warning("DR25 robovet data not available.")
 
 
 KOI_MAXAV_FILE = os.path.join(DATAFOLDER, 'koi_maxAV.txt')

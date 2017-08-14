@@ -133,6 +133,7 @@ if __name__=='__main__':
                                         recalc=args.recalc,
                                         refit_trap=args.refit_trap,
                                         star_ini_file=args.star_inifile,
+                                        ichrone=args.ichrone,
                                         n=args.n)
 
             if args.refit_trsig:
