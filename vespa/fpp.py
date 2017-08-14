@@ -30,7 +30,7 @@ try:
     from isochrones import StarModel, BinaryStarModel, TripleStarModel
 except ImportError:
     StarModel = None
-from .stars.populations import DARTMOUTH
+# from .stars.populations import DARTMOUTH
 
 try:
     from tables.exceptions import HDF5ExtError
@@ -192,7 +192,7 @@ class FPPCalculation(object):
         #load starmodels if there;
         # if not, create them.
         if 'starmodel_basename' not in config:
-            starmodel_basename = 'dartmouth_starmodel'
+            starmodel_basename = '{}_starmodel'.format(ichrone)
         else:
             starmodel_basename = config['starmodel_basename']
         single_starmodel_file = os.path.join(folder,'{}_single.h5'.format(starmodel_basename))
@@ -206,7 +206,7 @@ class FPPCalculation(object):
         except:
             single_starmodel = StarModel.from_ini(ichrone, folder,
                                            ini_file=star_ini_file)
-            logging.info('Fitting single StarModel to {}...'.format(single_starmodel.properties))
+            logging.info('Fitting single StarModel with {} models...'.format(ichrone))
             single_starmodel.fit()
             single_starmodel.save_hdf(single_starmodel_file)
             triangle_base = os.path.join(folder, '{}_triangle_single'.format(starmodel_basename))
@@ -220,7 +220,7 @@ class FPPCalculation(object):
         except:
             binary_starmodel = BinaryStarModel.from_ini(ichrone, folder,
                                                         ini_file=star_ini_file)
-            logging.info('Fitting BinaryStarModel to {}...'.format(binary_starmodel.properties))
+            logging.info('Fitting BinaryStarModel with {} models...'.format(ichrone))
             binary_starmodel.fit()
             binary_starmodel.save_hdf(binary_starmodel_file)
             triangle_base = os.path.join(folder, '{}_triangle_binary'.format(starmodel_basename))
@@ -234,7 +234,7 @@ class FPPCalculation(object):
         except:
             triple_starmodel = TripleStarModel.from_ini(ichrone, folder,
                                                         ini_file=star_ini_file)
-            logging.info('Fitting TripleStarModel to {}...'.format(triple_starmodel.properties))
+            logging.info('Fitting TripleStarModel with {} models...'.format(ichrone))
             triple_starmodel.fit()
             triple_starmodel.save_hdf(triple_starmodel_file)
             triangle_base = os.path.join(folder, '{}_triangle_triple'.format(starmodel_basename))

@@ -29,7 +29,7 @@ except ImportError:
     GridSearchCV = None
 
 if not on_rtd:
-    from isochrones import StarModel
+    from isochrones import StarModel, get_ichrone
 else:
     class StarModel(object):
         pass
