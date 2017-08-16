@@ -204,6 +204,7 @@ class FPPCalculation(object):
             single_starmodel = StarModel.load_hdf(single_starmodel_file)
             logging.info('Single StarModel loaded from {}'.format(single_starmodel_file))
         except:
+            os.remove(single_starmodel_file)
             single_starmodel = StarModel.from_ini(ichrone, folder,
                                            ini_file=star_ini_file)
             logging.info('Fitting single StarModel with {} models...'.format(ichrone))
@@ -218,6 +219,7 @@ class FPPCalculation(object):
             binary_starmodel = BinaryStarModel.load_hdf(binary_starmodel_file)
             logging.info('BinaryStarModel loaded from {}'.format(binary_starmodel_file))
         except:
+            os.remove(binary_starmodel_file)
             binary_starmodel = BinaryStarModel.from_ini(ichrone, folder,
                                                         ini_file=star_ini_file)
             logging.info('Fitting BinaryStarModel with {} models...'.format(ichrone))
@@ -232,6 +234,7 @@ class FPPCalculation(object):
             triple_starmodel = TripleStarModel.load_hdf(triple_starmodel_file)
             logging.info('TripleStarModel loaded from {}'.format(triple_starmodel_file))
         except:
+            os.remove(triple_starmodel_file)
             triple_starmodel = TripleStarModel.from_ini(ichrone, folder,
                                                         ini_file=star_ini_file)
             logging.info('Fitting TripleStarModel with {} models...'.format(ichrone))
