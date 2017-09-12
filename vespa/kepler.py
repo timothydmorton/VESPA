@@ -570,6 +570,15 @@ class JRowe_KeplerTransitSignal(KeplerTransitSignal):
             os.makedirs(folder)
             super(JRowe_KeplerTransitSignal,self).MCMC(savedir=folder,**kwargs)
 
+def use_property(kepid, prop):
+    """Returns true if provenance of property is SPE or AST
+    """
+    try:
+        prov = kicu.DATA.ix[kepid, '{}_prov'.format(prop)]
+        return any([prov.startswith(s) for s in ['SPE', 'AST']])
+    except KeyError:
+        raise MissingStellarError('{} not in stellar table?'.format(kepid))
+
 
 def star_config(koi, bands=['g','r','i','z','J','H','K'],
                 unc=dict(g=0.05, r=0.05, i=0.05, z=0.05,
@@ -595,28 +604,24 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
     config['Kepler'] = mags['Kepler']
 
     kepid = KOIDATA.ix[koi,'kepid']
-    try:
-        m = re.match('SPE', kicu.DATA.ix[kepid, 'teff_prov'])
-    except KeyError:
-        raise MissingStellarError('{} not in stellar table?'.format(kepid))
-    if m:
+
+    if use_property('teff'):
         teff, e_teff = (kicu.DATA.ix[kepid, 'teff'],
                           kicu.DATA.ix[kepid, 'teff_err1'])
         if not any(np.isnan([teff, e_teff])):
             config['Teff'] = (teff, e_teff)
 
+    if use_property('logg'):
+        logg, e_logg = (kicu.DATA.ix[kepid, 'logg'],
+                          kicu.DATA.ix[kepid, 'logg_err1'])
+        if not any(np.isnan([logg, e_logg])):
+            config['logg'] = (logg, e_logg)
+
+    if use_property('feh'):
         feh, e_feh = (kicu.DATA.ix[kepid, 'feh'],
-                         kicu.DATA.ix[kepid, 'feh_err1'])
+                          kicu.DATA.ix[kepid, 'feh_err1'])
         if not any(np.isnan([feh, e_feh])):
             config['feh'] = (feh, e_feh)
-        try:
-            logg, e_logg = (kicu.DATA.ix[kepid, 'logg'],
-                              kicu.DATA.ix[kepid, 'logg_err1'])
-            if not any(np.isnan([logg, e_logg])):
-                config['logg'] = (logg, e_logg)
-        except:
-            pass
-
 
     for kw,val in kwargs.items():
         config[kw] = val
