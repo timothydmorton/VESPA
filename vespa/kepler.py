@@ -605,19 +605,19 @@ def star_config(koi, bands=['g','r','i','z','J','H','K'],
 
     kepid = KOIDATA.ix[koi,'kepid']
 
-    if use_property('teff'):
+    if use_property(kepid, 'teff'):
         teff, e_teff = (kicu.DATA.ix[kepid, 'teff'],
                           kicu.DATA.ix[kepid, 'teff_err1'])
         if not any(np.isnan([teff, e_teff])):
             config['Teff'] = (teff, e_teff)
 
-    if use_property('logg'):
+    if use_property(kepid, 'logg'):
         logg, e_logg = (kicu.DATA.ix[kepid, 'logg'],
                           kicu.DATA.ix[kepid, 'logg_err1'])
         if not any(np.isnan([logg, e_logg])):
             config['logg'] = (logg, e_logg)
 
-    if use_property('feh'):
+    if use_property(kepid, 'feh'):
         feh, e_feh = (kicu.DATA.ix[kepid, 'feh'],
                           kicu.DATA.ix[kepid, 'feh_err1'])
         if not any(np.isnan([feh, e_feh])):
