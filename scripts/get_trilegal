@@ -53,7 +53,7 @@ $filename = $code . ".dat";
 print "retrieving data from $filename ...\n";
 while () {
   `sleep 40`;
-  `wget -o lixo -O$filename ${webserver}/~lgirardi/tmp/$filename`;
+  `wget -o lixo -O$filename ${webserver}/tmp/$filename`;
   $_=`tail -1 $filename`;
   if (/normally/) {
     print "model downloaded!..\n";
