@@ -94,7 +94,7 @@ def get_trilegal(filename,ra,dec,folder='.', galactic=False,
                                                                   filterset,maglim,outfile)
     sp.Popen(cmd,shell=True).wait()
     if convert_h5:
-        df = pd.read_table(outfile, sep='\s+', skip_footer=1, engine='python')
+        df = pd.read_table(outfile, sep='\s+', skipfooter=1, engine='python')
         df = df.rename(columns={'#Gc':'Gc'})
         for col in df.columns:
             if col not in NONMAG_COLS:
