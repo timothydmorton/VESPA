@@ -13,14 +13,12 @@ if not on_rtd:
     import numpy.random as rand
     from scipy.stats import gaussian_kde
     import corner
+    from emcee.autocorr import integrated_time, AutocorrError
 else:
     np, pd, plt, rand = (None, None, None, None)
     gaussian_kde = None
 
-try:
-    import acor
-except ImportError:
-    logging.warning('acor not available')
+
 
 try:
     import corner
@@ -286,15 +284,14 @@ class TransitSignal(object):
             print(tcs)
 
         N = len(Ts)
-        self.Ts_acor = acor.acor(Ts)[1]
-        self.ds_acor = acor.acor(ds)[1]
-        self.slopes_acor = acor.acor(slopes)[1]
-        self.tcs_acor = acor.acor(tcs)[1]
-        self.fit_converged = True
-        for t in [self.Ts_acor,self.ds_acor,
-                  self.slopes_acor,self.tcs_acor]:
-            if t > 0.1*N:
-                self.fit_converged = False
+        try:
+            self.Ts_acor = integrated_time(Ts)
+            self.ds_acor = integrated_time(ds)
+            self.slopes_acor = integrated_time(slopes)
+            self.tcs_acor = integrated_time(tcs)
+            self.fit_converged = True
+        except AutocorrError:
+            self.fit_converged = False
 
 
         ok = (Ts > 0) & (ds > 0) & (slopes > 0) & (slopes < self.maxslope)
