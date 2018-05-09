@@ -4,8 +4,8 @@ This script runs an FPP calculation for a provided
 transit signal.
 
 All parameters are defined in the ``.ini`` files,
-which are by default assumed to be 
-in the current path (or in the folder defined as the 
+which are by default assumed to be
+in the current path (or in the folder defined as the
 argument to this script).
 
 The ``fpp.ini`` file should be of the following form::
@@ -32,16 +32,16 @@ and ``star.ini`` should look something like this::
     H = 9.135, 0.03
     K = 8.899, 0.02
     Kepler = 12.473
-      
+
 Running this script will create the following files,
 in the same directory as the ``.ini`` file:
 
   * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
   * ``starfield.h5``: the TRILEGAL field star simulation
   * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
-  * ``starmodel_triangle_physical.png,
-     starmodel_triangle_observed.png``:
-     :class:`isochrones.StarModel` triangle plots.
+  * ``starmodel_corner_physical.png,
+     starmodel_corner_observed.png``:
+     :class:`isochrones.StarModel` corner plots.
   * ``popset.h5``: the :class:`vespa.PopulationSet` object
     representing the model population simulations.
   * ``eb.png, heb.png, beb.png, pl.png``: likelihood plots
@@ -96,7 +96,7 @@ def initLogging(filename, logger):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
-    
+
     parser.add_argument('folders', nargs='*', default=['.'])
     parser.add_argument('-i','--inifile', type=str, default='fpp.ini')
     parser.add_argument('-s','--star_inifile', type=str, default='star.ini')
@@ -116,7 +116,7 @@ if __name__=='__main__':
     args = parser.parse_args()
 
     logger = None #dummy
-            
+
     for folder in args.folders:
         #initialize logger for this folder:
 
@@ -129,7 +129,7 @@ if __name__=='__main__':
 
         try:
 
-            f = FPPCalculation.from_ini(folder, ini_file=args.inifile, 
+            f = FPPCalculation.from_ini(folder, ini_file=args.inifile,
                                         recalc=args.recalc,
                                         refit_trap=args.refit_trap,
                                         star_ini_file=args.star_inifile,
@@ -149,7 +149,7 @@ if __name__=='__main__':
                 longmodel = LongModel(args.artificial_prior, f['pl'].stars.duration.quantile(0.99))
                 f.add_population(boxmodel)
                 f.add_population(longmodel)
-                
+
             f.FPPplots(recalc_lhood=args.recalc_lhood)
             if args.bootstrap > 0:
                 logger.info('Re-fitting trapezoid MCMC model...')
@@ -158,22 +158,22 @@ if __name__=='__main__':
             for mult,Model in zip(['single','binary','triple'],
                                   [StarModel, BinaryStarModel, TripleStarModel]):
                 starmodel_file = os.path.join(folder, '{}_starmodel_{}.h5'.format(args.ichrone, mult))
-                triangle_file1 = os.path.join(folder, 
-                                              '{}_triangle_{}_physical.png'.format(args.ichrone, mult))
-                triangle_file2 = os.path.join(folder, 
-                                              '{}_triangle_{}_observed.png'.format(args.ichrone, mult))
-                if not os.path.exists(triangle_file1) or not os.path.exists(triangle_file2):
-                    logger.info('Making StarModel triangle plots...')
+                corner_file1 = os.path.join(folder,
+                                              '{}_corner_{}_physical.png'.format(args.ichrone, mult))
+                corner_file2 = os.path.join(folder,
+                                              '{}_corner_{}_observed.png'.format(args.ichrone, mult))
+                if not os.path.exists(corner_file1) or not os.path.exists(corner_file2):
+                    logger.info('Making StarModel corner plots...')
                     starmodel = Model.load_hdf(starmodel_file)
-                    triangle_base = os.path.join(folder, 
-                                                 '{}_triangle_{}'.format(args.ichrone, mult))
-                    starmodel.triangle_plots(triangle_base)
+                    corner_base = os.path.join(folder,
+                                                 '{}_corner_{}'.format(args.ichrone, mult))
+                    starmodel.corner_plots(corner_base)
 
             if args.bootstrap > 0:
                 logger.info('Bootstrap results ({}) written to {}.'.format(args.bootstrap,
                                                                           os.path.join(os.path.abspath(folder),
                                                                                    'results_bootstrap.txt')))
-            logger.info('FPP calculation successful. ' + 
+            logger.info('FPP calculation successful. ' +
                         'Results/plots written to {}.'.format(os.path.abspath(folder)))
 
             print('FPP for {}: {}'.format(f.name,f.FPP()))
@@ -181,6 +181,3 @@ if __name__=='__main__':
             raise
         except:
             logger.error('FPP calculation failed for {}.'.format(folder), exc_info=True)
-
-
-
