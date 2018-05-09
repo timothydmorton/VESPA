@@ -18,7 +18,7 @@ else:
     gaussian_kde = None
 
 try:
-    from acor._acor import acor
+    import acor
 except ImportError:
     logging.warning('acor not available')
 
@@ -286,10 +286,10 @@ class TransitSignal(object):
             print(tcs)
 
         N = len(Ts)
-        self.Ts_acor = acor(Ts)[1]
-        self.ds_acor = acor(ds)[1]
-        self.slopes_acor = acor(slopes)[1]
-        self.tcs_acor = acor(tcs)[1]
+        self.Ts_acor = acor.acor(Ts)[1]
+        self.ds_acor = acor.acor(ds)[1]
+        self.slopes_acor = acor.acor(slopes)[1]
+        self.tcs_acor = acor.acor(tcs)[1]
         self.fit_converged = True
         for t in [self.Ts_acor,self.ds_acor,
                   self.slopes_acor,self.tcs_acor]:
