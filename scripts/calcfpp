@@ -110,7 +110,7 @@ if __name__=='__main__':
     parser.add_argument('--bootstrap', type=int, default=0)
     parser.add_argument('--include_artificial', action='store_true')
     parser.add_argument('--artificial_prior', type=float, default=10./200000)
-    parser.add_argument('--ichrone', default='dartmouth', type=str)
+    parser.add_argument('--ichrone', default='mist', type=str)
 
 
     args = parser.parse_args()
