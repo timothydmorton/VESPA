@@ -2,6 +2,7 @@ from __future__ import print_function, division
 
 import os, os.path, re
 import logging
+from six import string_types
 try:
     import cPickle as pickle
 except ImportError:
@@ -289,7 +290,7 @@ class FPPCalculation(object):
         #apply contrast curve constraints if present
         if 'ccfiles' in config['constraints']:
             ccfiles = config['constraints']['ccfiles']
-            if isinstance(ccfiles, basestring):
+            if isinstance(ccfiles, string_types):
                 ccfiles = [ccfiles]
             for ccfile in ccfiles:
                 if not os.path.isabs(ccfile):
