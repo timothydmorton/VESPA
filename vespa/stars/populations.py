@@ -1018,15 +1018,13 @@ class StarPopulation(object):
 
         """
         if os.path.exists(filename):
-            store = pd.HDFStore(filename)
-            if path in store:
-                store.close()
-                if overwrite:
-                    os.remove(filename)
-                elif not append:
-                    raise IOError('{} in {} exists.  Set either overwrite or append option.'.format(path,filename))
-            else:
-                store.close()
+            with pd.HDFStore(filename) as store:
+                if path in store:
+                    if overwrite:
+                        os.remove(filename)
+                    elif not append:
+                        raise IOError('{} in {} exists.  '.format(path,filename) +
+                                     'Set either overwrite or append option.')
 
         if properties is None:
             properties = {}
@@ -1040,14 +1038,13 @@ class StarPopulation(object):
         if self.orbpop is not None:
             self.orbpop.save_hdf(filename, path=path+'/orbpop')
 
-        store = pd.HDFStore(filename)
-        attrs = store.get_storer('{}/stars'.format(path)).attrs
-        attrs.selectfrac_skip = self.selectfrac_skip
-        attrs.distribution_skip = self.distribution_skip
-        attrs.name = self.name
-        attrs.poptype = type(self)
-        attrs.properties = properties
-        store.close()
+        with pd.HDFStore(filename) as store:
+            attrs = store.get_storer('{}/stars'.format(path)).attrs
+            attrs.selectfrac_skip = self.selectfrac_skip
+            attrs.distribution_skip = self.distribution_skip
+            attrs.name = self.name
+            attrs.poptype = type(self)
+            attrs.properties = properties
 
     @classmethod
     def load_hdf(cls, filename, path=''):
@@ -1084,25 +1081,24 @@ class StarPopulation(object):
         stars = pd.read_hdf(filename,path+'/stars', autoclose=True)
         constraint_df = pd.read_hdf(filename,path+'/constraints', autoclose=True)
 
-        store = pd.HDFStore(filename)
-        has_orbpop = '{}/orbpop/df'.format(path) in store
-        has_triple_orbpop = '{}/orbpop/long/df'.format(path) in store
-        attrs = store.get_storer('{}/stars'.format(path)).attrs
+        with pd.HDFStore(filename) as store:
+            has_orbpop = '{}/orbpop/df'.format(path) in store
+            has_triple_orbpop = '{}/orbpop/long/df'.format(path) in store
+            attrs = store.get_storer('{}/stars'.format(path)).attrs
 
-        poptype = attrs.poptype
-        new = poptype()
+            poptype = attrs.poptype
+            new = poptype()
 
-        #if poptype != type(self):
-        #    raise TypeError('Saved population is {}.  Please instantiate proper class before loading.'.format(poptype))
+            #if poptype != type(self):
+            #    raise TypeError('Saved population is {}.  Please instantiate proper class before loading.'.format(poptype))
 
 
-        distribution_skip = attrs.distribution_skip
-        selectfrac_skip = attrs.selectfrac_skip
-        name = attrs.name
+            distribution_skip = attrs.distribution_skip
+            selectfrac_skip = attrs.selectfrac_skip
+            name = attrs.name
 
-        for kw,val in attrs.properties.items():
-            setattr(new, kw, val)
-        store.close()
+            for kw,val in attrs.properties.items():
+                setattr(new, kw, val)
 
         #load orbpop if there
         orbpop = None
@@ -2509,9 +2505,9 @@ class BGStarPopulation_TRILEGAL(BGStarPopulation):
                 get_trilegal(basefilename,ra,dec,**kwargs)
                 logging.info('Done.')
                 stars = pd.read_hdf(h5filename,'df', autoclose=True)
-            store = pd.HDFStore(h5filename)
-            self.trilegal_args = store.get_storer('df').attrs.trilegal_args
-            store.close()
+
+            with pd.HDFStore(h5filename) as store:
+                self.trilegal_args = store.get_storer('df').attrs.trilegal_args
 
             c = SkyCoord(self.trilegal_args['l'],self.trilegal_args['b'],
                          unit='deg',frame='galactic')
@@ -2547,4 +2543,3 @@ class PoorColorsError(Exception):
         self.apply_constraint(LowerLimit(self.dmags(),self.dmaglim,name='bright blend limit'),overwrite=True)
         self._apply_all_constraints()  #not necessary?
 '''
-

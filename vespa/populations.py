@@ -2220,18 +2220,17 @@ class PopulationSet(object):
         """
         Loads PopulationSet from file
         """
-        store = pd.HDFStore(filename)
-        models = []
-        types = []
-        for k in store.keys():
-            m = re.search('/(\S+)/stars', k)
-            if m:
-                models.append(m.group(1))
-                types.append(store.get_storer(m.group(0)).attrs.poptype)
-        poplist = []
-        for m,t in zip(models,types):
-            poplist.append(t().load_hdf(filename, path='{}/{}'.format(path,m)))
-        store.close()
+        with pd.HDFStore(filename) as store:
+            models = []
+            types = []
+            for k in store.keys():
+                m = re.search('/(\S+)/stars', k)
+                if m:
+                    models.append(m.group(1))
+                    types.append(store.get_storer(m.group(0)).attrs.poptype)
+            poplist = []
+            for m,t in zip(models,types):
+                poplist.append(t().load_hdf(filename, path='{}/{}'.format(path,m)))
 
         return cls(poplist) #how to deal with saved constraints?
         #PopulationSet.__init__(self, poplist) #how to deal with saved constraints?

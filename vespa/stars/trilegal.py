@@ -104,14 +104,13 @@ def get_trilegal(filename,ra,dec,folder='.', galactic=False,
         else:
             h5file = '{}/{}'.format(folder,filename)
         df.to_hdf(h5file,'df')
-        store = pd.HDFStore(h5file)
-        attrs = store.get_storer('df').attrs
-        attrs.trilegal_args = {'version':trilegal_version,
-                               'ra':ra, 'dec':dec,
-                               'l':l,'b':b,'area':area,
-                               'AV':AV, 'sigma_AV':sigma_AV,
-                               'filterset':filterset,
-                               'maglim':maglim,
-                               'binaries':binaries}
-        store.close()
+        with pd.HDFStore(h5file) as store:
+            attrs = store.get_storer('df').attrs
+            attrs.trilegal_args = {'version':trilegal_version,
+                                   'ra':ra, 'dec':dec,
+                                   'l':l,'b':b,'area':area,
+                                   'AV':AV, 'sigma_AV':sigma_AV,
+                                   'filterset':filterset,
+                                   'maglim':maglim,
+                                   'binaries':binaries}
         os.remove(outfile)
