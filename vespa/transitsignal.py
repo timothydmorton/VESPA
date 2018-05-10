@@ -14,6 +14,7 @@ if not on_rtd:
     from scipy.stats import gaussian_kde
     import corner
     from emcee.autocorr import integrated_time, AutocorrError
+    from astropy.io import ascii
 else:
     np, pd, plt, rand = (None, None, None, None)
     gaussian_kde = None
@@ -103,7 +104,18 @@ class TransitSignal(object):
 
         logging.debug('trapezoidal leastsq fit: {}'.format(self.trapfit))
 
-        self.hasMCMC=False
+        self.hasMCMC = False
+
+    @classmethod
+    def from_ascii(cls, filename, **kwargs):
+        table = ascii.read(filename).to_pandas()
+        if len(table.columns)==3:
+            return cls(table.iloc[:, 0], table.iloc[:, 1], table.iloc[:, 2],
+                        **kwargs)
+        elif len(table.columns)==2:
+            return cls(table.iloc[:, 0], table.iloc[:, 1],
+                        **kwargs)
+
 
     def save_hdf(self, filename, path=''):
         """
