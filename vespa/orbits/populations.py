@@ -20,7 +20,7 @@ if not on_rtd:
     AU = const.au.cgs.value
     DAY = 86400
     G = const.G.cgs.value
-    
+
 else:
     np = None
     SkyCoord, Angle = (None, None)
@@ -32,21 +32,21 @@ else:
     const = None
     MSUN, AU, DAY, G = (None, None, None, None)
 
-    
+
 from .utils import semimajor,random_spherepos,orbitproject,orbit_posvel
 
 from ..plotutils import setfig
 from ..hashutils import hashcombine, hashdf
 
 
-class TripleOrbitPopulation(object):             
+class TripleOrbitPopulation(object):
     """
     Stars 2 and 3 orbit each other (short orbit), far from star 1 (long orbit)
 
     This object defines the orbits of a triple star system,
     with orbits calculated assuming the "long" orbit does not perturb
     the "short" orbit, which will not be true in the long run, but should
-    be true over short timescales as long as ``Plong >> Pshort``. 
+    be true over short timescales as long as ``Plong >> Pshort``.
 
     A :class:`TripleOrbitPopulation` is essentially made up of two
     :class:`OrbitPopulation` objects: one for the "long" orbit
@@ -57,14 +57,14 @@ class TripleOrbitPopulation(object):
         If not :class:`astropy.units.Quantity` objects, then assumed to be
         in solar mass units.  May be single value or array-like.
 
-    :param Plong,Pshort: 
+    :param Plong,Pshort:
         Orbital Periods.  Plong is orbital period of 2+3 and 1; Pshort is orbital
         period of 2 and 3.  If not :class:`astropy.units.Quantity` objects,
         assumed to be in days.  Can be single value or array-like.
         N.B. If any item in Pshort happens to be
-        longer than the corresponding item in Plong, they will be switched. 
+        longer than the corresponding item in Plong, they will be switched.
 
-    :param ecclong,eccshort: (optional) 
+    :param ecclong,eccshort: (optional)
         Eccentricities.  Same story (long vs. short).  Default=0 (circular).
         Can be single value or array-like.
 
@@ -113,14 +113,14 @@ class TripleOrbitPopulation(object):
 
     def __hash__(self):
         return hashcombine(self.orbpop_long, self.orbpop_short)
-        
+
     @property
     def RV(self):
         """
         Instantaneous RV of star 1 with respect to system center-of-mass
         """
         return self.RV_1
-        
+
     @property
     def RV_1(self):
         """
@@ -136,7 +136,7 @@ class TripleOrbitPopulation(object):
         return -self.orbpop_long.RV * (self.orbpop_long.M1 /
                                         (self.orbpop_long.M1 + self.orbpop_long.M2)) +\
                 self.orbpop_short.RV_com1
-                
+
     @property
     def RV_3(self):
         """
@@ -162,7 +162,7 @@ class TripleOrbitPopulation(object):
 
         """
         return self.dRV_1(dt)
-    
+
     def dRV_1(self,dt):
         """
         Returns difference in RVs (separated by time dt) of star 1.
@@ -204,7 +204,7 @@ class TripleOrbitPopulation(object):
         """
         self.orbpop_long.save_hdf(filename,'{}/long'.format(path))
         self.orbpop_short.save_hdf(filename,'{}/short'.format(path))
-        
+
 
     def __add__(self, other):
         if type(self) != type(other):
@@ -227,13 +227,13 @@ class TripleOrbitPopulation(object):
         :param df_long, df_short:
             :class:`pandas.DataFrame` objects to pass to
             :func:`OrbitPopulation.from_df`.
-            
+
         """
         pop = cls(1,1,1,1,1) #dummy population
         pop.orbpop_long = OrbitPopulation.from_df(df_long)
         pop.orbpop_short = OrbitPopulation.from_df(df_short)
         return pop
-        
+
     @classmethod
     def load_hdf(cls, filename, path=''):
         """
@@ -244,18 +244,18 @@ class TripleOrbitPopulation(object):
 
         :param path:
             Path within HDF file where data is stored.
-            
+
         """
-        df_long = pd.read_hdf(filename,'{}/long/df'.format(path), autoclose=True)
-        df_short = pd.read_hdf(filename,'{}/short/df'.format(path), autoclose=True)
+        df_long = pd.read_hdf(filename,'{}/long/df'.format(path))
+        df_short = pd.read_hdf(filename,'{}/short/df'.format(path))
         return cls.from_df(df_long, df_short)
-        
-            
+
+
 class OrbitPopulation(object):
     """Population of orbits.
 
-    :param M1,M2: 
-        Primary and secondary masses (if not ``Quantity``, 
+    :param M1,M2:
+        Primary and secondary masses (if not ``Quantity``,
         assumed to be in solar masses).  Can be ``float``, array-like
         or ``Quantity``.
 
@@ -355,11 +355,11 @@ class OrbitPopulation(object):
 
     def __hash__(self):
         return hashdf(self.dataframe)
-    
+
     @property
     def Rsky(self):
         """
-        Sky separation of stars, in projected AU. 
+        Sky separation of stars, in projected AU.
         """
         return np.sqrt(self.position.x**2 + self.position.y**2)
 
@@ -383,13 +383,13 @@ class OrbitPopulation(object):
         RVs of star 2 relative to center-of-mass
         """
         return -self.RV * (self.M1 / (self.M1 + self.M2))
-    
+
     def dRV(self,dt,com=False):
         """Change in RV of star 1 for time separation dt (default=days)
 
-        :param dt: 
+        :param dt:
             Time separation for which to compute RV change.  If not a ``Quantity``,
-            then assumed to be in days. 
+            then assumed to be in days.
         :type dt:
             float, array-like, or ``Quantity``
 
@@ -410,7 +410,7 @@ class OrbitPopulation(object):
         pos,vel = orbit_posvel(newM,self.ecc,self.semimajor.value,
                                self.mred.value,
                                self.obspos)
-        
+
         if com:
             return (vel.z - self.RV) * (self.M2 / (self.M1 + self.M2))
         else:
@@ -438,7 +438,7 @@ class OrbitPopulation(object):
                 return self._RV_measurements
             else:
                 pass
-            
+
         RVs = Quantity(np.zeros((len(ts),self.N)),unit='km/s')
         for i,t in enumerate(ts):
             RVs[i,:] = self.dRV(t,com=True)
@@ -502,7 +502,7 @@ class OrbitPopulation(object):
         if log:
             plt.xscale('log')
             plt.yscale('log')
-    
+
     def save_hdf(self,filename,path=''):
         """
         Saves all relevant data to .h5 file; so state can be restored.
@@ -524,7 +524,7 @@ class OrbitPopulation(object):
         return cls(df['M1'], df['M2'], df['P'],
                    ecc=df['ecc'], mean_anomaly=df['mean_anomaly'],
                    obsx=df['obsx'], obsy=df['obsy'], obsz=df['obsz'])
-        
+
     @classmethod
     def load_hdf(cls, filename, path=''):
         """Loads OrbitPopulation from HDF file.
@@ -535,9 +535,9 @@ class OrbitPopulation(object):
         :param path:
             Path within HDF file store where :class:`OrbitPopulation` is saved.
         """
-        df = pd.read_hdf(filename,'{}/df'.format(path), autoclose=True)
+        df = pd.read_hdf(filename,'{}/df'.format(path))
         return cls.from_df(df)
-        
+
 
 class BinaryGrid(OrbitPopulation):
     def __init__(self, M1, qmin=0.1, qmax=1, Pmin=0.5, Pmax=365, N=1e5, logP=True, eccfn=None):
@@ -575,8 +575,8 @@ class BinaryGrid(OrbitPopulation):
         else:
             Ps = rand.random(size=N)*(Pmax - Pmin) + Pmin
 
-        
-            
+
+
         if eccfn is None:
             eccs = 0
         else:
@@ -591,8 +591,8 @@ class BinaryGrid(OrbitPopulation):
                    plot=True,fig=None,contour=True,sigma=1):
         """Writes a grid of RV RMS values, assuming observations at given times.
 
-        Caveat Emptor: Written a long time ago, and 
-        hasn't really been tested. 
+        Caveat Emptor: Written a long time ago, and
+        hasn't really been tested.
 
         :param ts:
             Times of observations
@@ -673,7 +673,7 @@ class BinaryGrid(OrbitPopulation):
                     levels = np.arange(0,20,2)
                 c = plt.contour(logPbin_centers,mbin_centers,pctiles,levels=levels,colors='k')
                 plt.clabel(c, fontsize=10, inline=1)
-                
+
             else:
                 extent = [np.log10(self.P.min()),np.log10(self.P.max()),self.M2.min(),self.M2.max()]
                 im = plt.imshow(pctiles,cmap='Greys',extent=extent,aspect='auto')
@@ -692,4 +692,3 @@ class BinaryGrid(OrbitPopulation):
             plt.ylabel('M2')
 
         return mbins,Pbins,pctiles,ns
-            

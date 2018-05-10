@@ -1078,8 +1078,8 @@ class StarPopulation(object):
             was saved with :func:`StarPopulation.save_hdf`.
 
         """
-        stars = pd.read_hdf(filename,path+'/stars', autoclose=True)
-        constraint_df = pd.read_hdf(filename,path+'/constraints', autoclose=True)
+        stars = pd.read_hdf(filename,path+'/stars')
+        constraint_df = pd.read_hdf(filename,path+'/constraints')
 
         with pd.HDFStore(filename) as store:
             has_orbpop = '{}/orbpop/df'.format(path) in store
@@ -2130,7 +2130,7 @@ class ColormatchMultipleStarPopulation(MultipleStarPopulation):
             if self.starfield is None:
                 raise ValueError('If masses are not provided, then starfield must be.')
             if type(self.starfield) == type(''):
-                df = pd.read_hdf(self.starfield,'df', autoclose=True)
+                df = pd.read_hdf(self.starfield,'df')
             else:
                 raise ValueError('Please pass filename of starfield, not full dataframe.')
                 #df = starfield
@@ -2497,14 +2497,14 @@ class BGStarPopulation_TRILEGAL(BGStarPopulation):
 
             if os.path.exists(h5filename):
                 logging.info('Loading TRILEGAL simulation from {}'.format(h5filename))
-                stars = pd.read_hdf(h5filename,'df', autoclose=True)
+                stars = pd.read_hdf(h5filename,'df')
             else:
                 if ra is None or dec is None:
                     raise ValueError('Must provide ra,dec if simulation file does not already exist.')
                 logging.info('Getting TRILEGAL simulation at {}, {}...'.format(ra,dec))
                 get_trilegal(basefilename,ra,dec,**kwargs)
                 logging.info('Done.')
-                stars = pd.read_hdf(h5filename,'df', autoclose=True)
+                stars = pd.read_hdf(h5filename,'df')
 
             with pd.HDFStore(h5filename) as store:
                 self.trilegal_args = store.get_storer('df').attrs.trilegal_args
