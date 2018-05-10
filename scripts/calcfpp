@@ -99,7 +99,6 @@ if __name__=='__main__':
 
     parser.add_argument('folders', nargs='*', default=['.'])
     parser.add_argument('-i','--inifile', type=str, default='fpp.ini')
-    parser.add_argument('-s','--star_inifile', type=str, default='star.ini')
     parser.add_argument('-n','--n', type=int, default=20000)
     parser.add_argument('--recalc', action='store_true')
     parser.add_argument('--debug', action='store_true')
@@ -132,7 +131,6 @@ if __name__=='__main__':
             f = FPPCalculation.from_ini(folder, ini_file=args.inifile,
                                         recalc=args.recalc,
                                         refit_trap=args.refit_trap,
-                                        star_ini_file=args.star_inifile,
                                         ichrone=args.ichrone,
                                         n=args.n)
 

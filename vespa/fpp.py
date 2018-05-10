@@ -11,6 +11,7 @@ except ImportError:
 try:
     from configobj import ConfigObj
     import numpy as np
+    import pandas as pd
     import matplotlib.pyplot as plt
     from matplotlib import cm
 except ImportError:
@@ -86,10 +87,8 @@ class FPPCalculation(object):
             pop.lhoodcachefile = lhoodcachefile
 
     @classmethod
-    def from_ini(cls, folder='.',
-                 ini_file='fpp.ini', recalc=False, refit_trap=False,
-                 star_ini_file='star.ini', ichrone='dartmouth', 
-                 **kwargs):
+    def from_ini(cls, folder, ini_file='fpp.ini', ichrone='mist', recalc=False,
+                refit_trap=False, **kwargs):
         """
         To enable simple usage, initializes a FPPCalculation from a .ini file
 
@@ -174,181 +173,103 @@ class FPPCalculation(object):
             * ``popset.h5``: the :class:`vespa.PopulationSet` object
               representing the model population simulations.
 
+        Raises
+        ------
+        RuntimeError :
+            If single, double, and triple starmodels are
+            not computed, then raises with admonition to run
+            `starfit --all`.
+
+        AttributeError :
+            If `trsig.pkl` not present in folder, and
+            `photfile` is not defined in config file.
+
         """
 
-        if not os.path.isabs(ini_file):
-            config = ConfigObj(os.path.join(folder,ini_file))
-        else:
-            config = ConfigObj(ini_file)
+        # Check if all starmodel fits are done.
+        # If not, tell user to run 'starfit --all'
+        config = ConfigObj(os.path.join(folder, ini_file))
 
-        folder = os.path.abspath(folder)
+        # Load required entries from ini_file
+        try:
+            name = config['name']
+            ra, dec = config['ra'], config['dec']
+            period = float(config['period'])
+            rprs = float(config['rprs'])
+        except KeyError as err:
+            raise KeyError('Missing required element of ini file: {}'.format(err))
 
-        #required items
-        name = config['name']
-        ra, dec = config['ra'], config['dec']
-        period = float(config['period'])
-        rprs = float(config['rprs'])
+        def fullpath(filename):
+            if os.path.isabs(filename):
+                return filename
+            else:
+                return os.path.join(folder, filename)
 
-        #load starmodels if there;
-        # if not, create them.
-        if 'starmodel_basename' not in config:
-            starmodel_basename = '{}_starmodel'.format(ichrone)
-        else:
-            starmodel_basename = config['starmodel_basename']
+        # Non-required entries with default values
+        popset_file = fullpath(config.get('popset', 'popset.h5'))
+        starfield_file = fullpath(config.get('starfield', 'starfield.h5'))
+        trsig_file = fullpath(config.get('trsig', 'trsig.pkl'))
+
+        # Check for StarModel fits
+        starmodel_basename = config.get('starmodel_basename',
+                                        '{}_starmodel'.format(ichrone))
         single_starmodel_file = os.path.join(folder,'{}_single.h5'.format(starmodel_basename))
         binary_starmodel_file = os.path.join(folder,'{}_binary.h5'.format(starmodel_basename))
         triple_starmodel_file = os.path.join(folder,'{}_triple.h5'.format(starmodel_basename))
 
-        #Single
         try:
             single_starmodel = StarModel.load_hdf(single_starmodel_file)
-            logging.info('Single StarModel loaded from {}'.format(single_starmodel_file))
-        except:
-            os.remove(single_starmodel_file)
-            single_starmodel = StarModel.from_ini(ichrone, folder,
-                                           ini_file=star_ini_file)
-            logging.info('Fitting single StarModel with {} models...'.format(ichrone))
-            single_starmodel.fit()
-            single_starmodel.save_hdf(single_starmodel_file)
-            triangle_base = os.path.join(folder, '{}_triangle_single'.format(starmodel_basename))
-            single_starmodel.triangle_plots(triangle_base)
-            logging.info('StarModel fit done.')
+            binary_starmodel = StarModel.load_hdf(binary_starmodel_file)
+            triple_starmodel = StarModel.load_hdf(triple_starmodel_file)
+        except Exception as e:
+            print(e)
+            raise RuntimeError('Cannot load StarModels.  ' +
+                               'Please run `starfit --all {}`.'.format(folder))
 
-        #Binary
-        try:
-            binary_starmodel = BinaryStarModel.load_hdf(binary_starmodel_file)
-            logging.info('BinaryStarModel loaded from {}'.format(binary_starmodel_file))
-        except:
-            os.remove(binary_starmodel_file)
-            binary_starmodel = BinaryStarModel.from_ini(ichrone, folder,
-                                                        ini_file=star_ini_file)
-            logging.info('Fitting BinaryStarModel with {} models...'.format(ichrone))
-            binary_starmodel.fit()
-            binary_starmodel.save_hdf(binary_starmodel_file)
-            triangle_base = os.path.join(folder, '{}_triangle_binary'.format(starmodel_basename))
-            binary_starmodel.triangle_plots(triangle_base)
-            logging.info('BinaryStarModel fit done.')
-
-        #Triple
-        try:
-            triple_starmodel = TripleStarModel.load_hdf(triple_starmodel_file)
-            logging.info('TripleStarModel loaded from {}'.format(triple_starmodel_file))
-        except:
-            os.remove(triple_starmodel_file)
-            triple_starmodel = TripleStarModel.from_ini(ichrone, folder,
-                                                        ini_file=star_ini_file)
-            logging.info('Fitting TripleStarModel with {} models...'.format(ichrone))
-            triple_starmodel.fit()
-            triple_starmodel.save_hdf(triple_starmodel_file)
-            triangle_base = os.path.join(folder, '{}_triangle_triple'.format(starmodel_basename))
-            triple_starmodel.triangle_plots(triangle_base)
-            logging.info('TripleStarModel fit done.')
-
-
-        if 'popset' in config:
-            popset_file = config['popset']
-            if not os.path.isabs(popset_file):
-                popset_file = os.path.join(folder, popset_file)
-        else:
-            popset_file = os.path.join(folder,'popset.h5')
-
-        if 'starfield' in config:
-            trilegal_file = config['starfield']
-            if not os.path.isabs(trilegal_file):
-                trilegal_file = os.path.join(folder, trilegal_file)
-        else:
-            trilegal_file = os.path.join(folder,'starfield.h5')
-
-        if 'trsig' in config:
-            trsig_file = config['trsig']
-            if not os.path.isabs(trsig_file):
-                trsig_file = os.path.join(folder, trsig_file)
-        else:
-            trsig_file = os.path.join(folder,'trsig.pkl')
-
-
-        #create TransitSignal
+        # Create (or load) TransitSignal
         if os.path.exists(trsig_file):
             logging.info('Loading transit signal from {}...'.format(trsig_file))
             with open(trsig_file, 'rb') as f:
                 trsig = pickle.load(f)
         else:
-            if 'photfile' not in config:
-                raise AttributeError('If transit pickle file (trsig.pkl) '+
-                                     'not present, "photfile" must be'+
+            try:
+                photfile = fullpath(config['photfile'])
+            except KeyError:
+                raise AttributeError('If transit pickle file (trsig.pkl) ' +
+                                     'not present, "photfile" must be' +
                                      'defined.')
-            if not os.path.isabs(config['photfile']):
-                photfile = os.path.join(folder,config['photfile'])
-            else:
-                photfile = config['photfile']
 
-            logging.info('Reading transit signal photometry ' +
-                         'from {}...'.format(photfile))
-            try:
-                ts, fs, dfs = np.loadtxt(photfile, unpack=True)
-            except:
-                ts, fs, dfs = np.loadtxt(photfile, delimiter=',', unpack=True)
+            trsig = TransitSignal.from_ascii(photfile, P=period, name=name)
+            if not trsig.hasMCMC or refit_trap:
+                logging.info('Fitting transitsignal with MCMC...')
+                trsig.MCMC()
+                trsig.save(trsig_file)
 
-            trsig = TransitSignal(ts, fs, dfs, P=period, name=name)
-            logging.info('Fitting transitsignal with MCMC...')
-            trsig.MCMC()
-            trsig.save(trsig_file)
-
-        #create PopulationSet
-        try:
+        # Create (or load) PopulationSet
+        do_only = DEFAULT_MODELS
+        if os.path.exists(popset_file):
             if recalc:
-                if os.path.exists(popset_file):
-                    os.remove(popset_file)
-                raise RuntimeError #just to get to except block
-            try:
-                popset = PopulationSet.load_hdf(popset_file)
-            except HDF5ExtError:
                 os.remove(popset_file)
-                logging.warning('{} file corrupted; removing.'.format(popset_file))
-                raise RuntimeError #to get to except block
-            for m in DEFAULT_MODELS:
-                popset[m] #should there be a better way to check this? (yes)
-            if refit_trap:
-                os.remove(popset_file)
-                for pop in popset.poplist:
-                    logging.info('Re-fitting trapezoids for {}...'.format(pop.model))
-                    pop.fit_trapezoids()
-                    pop.save_hdf(popset_file, pop.modelshort,
-                                 append=True)
-                popset = PopulationSet.load_hdf(popset_file)
-
-            logging.info('PopulationSet loaded from {}'.format(popset_file))
-        except:
-            if recalc:
-                do_only = DEFAULT_MODELS
             else:
-                try:
-                    popset = PopulationSet.load_hdf(popset_file)
-                    do_only = []
-                    for m in DEFAULT_MODELS:
-                        try:
-                            popset[m]
-                        except:
-                            do_only.append(m)
-                except:
-                    do_only = DEFAULT_MODELS
+                with pd.HDFStore(popset_file) as store:
+                    do_only = [m for m in DEFAULT_MODELS if m not in store]
+        if do_only:
+            logging.info('Generating {} models for PopulationSet...'.format(do_only))
+        else:
+            logging.info('Populations ({}) already generated.'.format(DEFAULT_MODELS))
 
-            if os.path.exists(popset_file):
-                logging.warning('{} exists, but regenerating Population Set ({})...'.format(popset_file, do_only),
-                                exc_info=True)
-
-
-            popset = PopulationSet(period=period, mags=single_starmodel.mags,
-                                   ra=ra, dec=dec,
-                                   trilegal_filename=trilegal_file,
-                                   starmodel=single_starmodel,
-                                   binary_starmodel=binary_starmodel,
-                                   triple_starmodel=triple_starmodel,
-                                   rprs=rprs, do_only=do_only,
-                                   savefile=popset_file, **kwargs)
+        popset = PopulationSet(period=period, mags=single_starmodel.mags,
+                               ra=ra, dec=dec,
+                               trilegal_filename=starfield_file, # Maybe change parameter name?
+                               starmodel=single_starmodel,
+                               binary_starmodel=binary_starmodel,
+                               triple_starmodel=triple_starmodel,
+                               rprs=rprs, do_only=do_only,
+                               savefile=popset_file, **kwargs)
 
 
         fpp = cls(trsig, popset, folder=folder)
+
 
         #############
         # Apply constraints
@@ -393,7 +314,6 @@ class FPPCalculation(object):
             fpp.apply_vcc(vcc)
 
         return fpp
-
 
     def __getattr__(self, attr):
         if attr != 'popset':
