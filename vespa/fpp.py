@@ -11,6 +11,7 @@ except ImportError:
 try:
     from configobj import ConfigObj
     import numpy as np
+    import pandas as pd
     import matplotlib.pyplot as plt
     from matplotlib import cm
 except ImportError:
@@ -86,7 +87,8 @@ class FPPCalculation(object):
             pop.lhoodcachefile = lhoodcachefile
 
     @classmethod
-    def from_ini(cls, folder, ini_file='fpp.ini', ichrone='mist', recalc=False, **kwargs):
+    def from_ini(cls, folder, ini_file='fpp.ini', ichrone='mist', recalc=False,
+                refit_trap=False, **kwargs):
         """
         To enable simple usage, initializes a FPPCalculation from a .ini file
 
@@ -238,7 +240,7 @@ class FPPCalculation(object):
                                      'defined.')
 
             trsig = TransitSignal.from_ascii(photfile, P=period, name=name)
-            if not trsig.hasMCMC:
+            if not trsig.hasMCMC or refit_trap:
                 logging.info('Fitting transitsignal with MCMC...')
                 trsig.MCMC()
                 trsig.save(trsig_file)
@@ -251,7 +253,10 @@ class FPPCalculation(object):
             else:
                 with pd.HDFStore(popset_file) as store:
                     do_only = [m for m in DEFAULT_MODELS if m not in store]
-        logging.info('Generating {} models for PopulationSet...'.format(do_only))
+        if do_only:
+            logging.info('Generating {} models for PopulationSet...'.format(do_only))
+        else:
+            logging.info('Populations ({}) already generated.'.format(DEFAULT_MODELS))
 
         popset = PopulationSet(period=period, mags=single_starmodel.mags,
                                ra=ra, dec=dec,
