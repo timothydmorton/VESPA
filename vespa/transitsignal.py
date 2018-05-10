@@ -110,10 +110,10 @@ class TransitSignal(object):
     def from_ascii(cls, filename, **kwargs):
         table = ascii.read(filename).to_pandas()
         if len(table.columns)==3:
-            return cls(table.iloc[:, 0], table.iloc[:, 1], table.iloc[:, 2],
+            return cls(table.iloc[:, 0].values, table.iloc[:, 1].values, table.iloc[:, 2].values,
                         **kwargs)
         elif len(table.columns)==2:
-            return cls(table.iloc[:, 0], table.iloc[:, 1],
+            return cls(table.iloc[:, 0].values, table.iloc[:, 1].values,
                         **kwargs)
 
 
