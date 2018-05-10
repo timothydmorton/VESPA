@@ -1,4 +1,4 @@
-__version__ = '0.4.10'
+__version__ = '0.5-dev'
 
 try:
     __VESPA_SETUP__
@@ -44,4 +44,3 @@ if not __VESPA_SETUP__:
     from .transitsignal import TransitSignal
 
     from .fpp import FPPCalculation
-
