@@ -13,7 +13,7 @@ try:
 except ImportError:
     np, pd = (None, None)
     UnitsError, SkyCoord = (None, None)
-    
+
 from .extinction import get_AV_infinity
 
 NONMAG_COLS = ['Gc','logAge', '[M/H]', 'm_ini', 'logL', 'logTe', 'logg',
@@ -34,7 +34,7 @@ def get_trilegal(filename,ra,dec,folder='.', galactic=False,
 
         Would be desirable to re-write the get_trilegal script
         all in python.
-                 
+
     :param filename:
         Desired output filename.  If extension not provided, it will
         be added.
@@ -70,7 +70,7 @@ def get_trilegal(filename,ra,dec,folder='.', galactic=False,
         If true, text file downloaded from TRILEGAL will be converted
         into a ``pandas.DataFrame`` stored in an HDF file, with ``'df'``
         path.
-                 
+
     """
     if galactic:
         l, b = ra, dec
@@ -94,7 +94,7 @@ def get_trilegal(filename,ra,dec,folder='.', galactic=False,
                                                                   filterset,maglim,outfile)
     sp.Popen(cmd,shell=True).wait()
     if convert_h5:
-        df = pd.read_table(outfile, sep='\s+', skip_footer=1, engine='python')
+        df = pd.read_table(outfile, sep='\s+', skipfooter=1, engine='python')
         df = df.rename(columns={'#Gc':'Gc'})
         for col in df.columns:
             if col not in NONMAG_COLS:
@@ -115,5 +115,3 @@ def get_trilegal(filename,ra,dec,folder='.', galactic=False,
                                'binaries':binaries}
         store.close()
         os.remove(outfile)
-    
-    
