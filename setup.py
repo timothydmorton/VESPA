@@ -9,7 +9,7 @@ except ImportError:
     on_rtd = True
     numpy = None
     build_ext = None
-    
+
 import os
 
 def readme():
@@ -44,7 +44,7 @@ if not on_rtd:
                                 include_dirs=[numpy.get_include()])]
 else:
     transit_utils = None
-        
+
 setup(name = "VESPA",
       version = version,
       description = "Calculate astrophysical false positive probabilities for transiting exoplanet signals",
@@ -55,9 +55,9 @@ setup(name = "VESPA",
       #packages = ['vespa', 'vespa/stars',
       #            'vespa/orbits'],
       packages = find_packages(),
-      package_data = {'vespa': ['data/*', 'tests/*.ini',
-                                'tests/*.h5', 'tests/*.pkl',
-                                'tests/*.cc'],
+      package_data = {'vespa': ['data/*', 'tests/kepler-22/*.ini',
+                                'tests/kepler-22/*.h5', 'tests/kepler-22/*.pkl',
+                                'tests/kepler-22/*.cc'],
                       'vespa.stars': ['data/*'],
                       'vespa.orbits':['data/*']},
       ext_modules = cythonize(transit_utils),
@@ -76,8 +76,8 @@ setup(name = "VESPA",
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Astronomy'
         ],
-      install_requires=['pandas>=0.13','simpledist>=0.1.11', 'emcee', 
-                        'isochrones>=1.0', 'acor', 'numba>=0.20', 'batman-package>=2.1', 
+      install_requires=['pandas>=0.13','simpledist>=0.1.11', 'emcee',
+                        'isochrones>=1.0', 'acor', 'numba>=0.20', 'batman-package>=2.1',
                         'configobj'],
       zip_safe=False
-) 
+)
