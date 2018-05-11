@@ -46,7 +46,6 @@ from .plotutils import setfig, plot2dhist
 from .hashutils import hashcombine
 
 from .stars.populations import StarPopulation, MultipleStarPopulation
-from .stars.populations import Spectroscopic_MultipleStarPopulation
 from .stars.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
 from .stars.populations import Observed_BinaryPopulation, Observed_TriplePopulation
 # from .stars.populations import DARTMOUTH
