@@ -12,7 +12,6 @@ if not __VESPA_SETUP__:
                'HEBPopulation', 'BEBPopulation',
                'PlanetPopulation', 'PopulationSet',
                'StarPopulation', 'MultipleStarPopulation',
-               'ColormatchMultipleStarPopulation',
                'Spectroscopic_MultipleStarPopulation',
                'BGStarPopulation', 'BGStarPopulation_TRILEGAL',
                'BinaryPopulation', 'Simulated_BinaryPopulation',
@@ -23,7 +22,6 @@ if not __VESPA_SETUP__:
     #StarPopulation & children
     from .stars.populations import StarPopulation
     from .stars.populations import MultipleStarPopulation
-    from .stars.populations import ColormatchMultipleStarPopulation
     from .stars.populations import Spectroscopic_MultipleStarPopulation
     from .stars.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
     from .stars.populations import BinaryPopulation

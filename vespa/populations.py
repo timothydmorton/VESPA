@@ -46,7 +46,6 @@ from .plotutils import setfig, plot2dhist
 from .hashutils import hashcombine
 
 from .stars.populations import StarPopulation, MultipleStarPopulation
-from .stars.populations import ColormatchMultipleStarPopulation
 from .stars.populations import Spectroscopic_MultipleStarPopulation
 from .stars.populations import BGStarPopulation, BGStarPopulation_TRILEGAL
 from .stars.populations import Observed_BinaryPopulation, Observed_TriplePopulation
@@ -1249,7 +1248,7 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
 
 
     Inherits from :class:`EclipsePopulation` and
-    :class:`stars.ColormatchMultipleStarPopulation`.
+    :class:`stars.Observed_BinaryPopulation`.
 
     :param period:
         Orbital period
@@ -1305,8 +1304,6 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
         self.lhoodcachefile = lhoodcachefile
 
         if mags is not None or starmodel is not None:
-            #generates stars from ColormatchMultipleStarPopulation
-            # and eclipses using calculate_eclipses
             self.generate(mags=mags, n=n, MAfn=MAfn, mag_errs=mag_errs,
                           f_binary=f_binary, starmodel=starmodel,
                           **kwargs)
@@ -1452,7 +1449,7 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
     by
 
     Inherits from :class:`EclipsePopulation` and
-    :class:`stars.ColormatchMultipleStarPopulation`.
+    :class:`stars.Observed_TriplePopulation`.
 
     :param period:
         Orbital period
@@ -1509,8 +1506,6 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
         self.lhoodcachefile = lhoodcachefile
 
         if mags is not None or starmodel is not None:
-            #generates stars from ColormatchMultipleStarPopulation
-            # and eclipses using calculate_eclipses
             self.generate(mags=mags, n=n, MAfn=MAfn, mag_errs=mag_errs,
                           f_triple=f_triple, starmodel=starmodel,
                           **kwargs)
