@@ -1,0 +1,18 @@
+sudo: false
+language: python
+matrix:
+    include:
+
+        # Linux
+        - os: linux
+          env: PYTHON_VERSION=3.6
+
+        # OSX
+        - os: osx
+          env: PYTHON_VERSION=3.6
+
+install:
+    - source .ci/travis.sh
+
+script:
+    - nosetests isochrones

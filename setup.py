@@ -76,8 +76,8 @@ setup(name = "VESPA",
         'Topic :: Scientific/Engineering',
         'Topic :: Scientific/Engineering :: Astronomy'
         ],
-      install_requires=['pandas>=0.13','simpledist>=0.1.11', 'emcee',
-                        'isochrones>=1.0', 'acor', 'numba>=0.20', 'batman-package>=2.1',
+      install_requires=['pandas>=0.21','simpledist>=0.1.13', 'emcee',
+                        'isochrones>=1.1.1', 'batman-package>=2.1',
                         'configobj'],
       zip_safe=False
 )
