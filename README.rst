@@ -1,13 +1,10 @@
 VESPA
 ======
-.. image:: https://zenodo.org/badge/6253/timothydmorton/VESPA.svg   
-    :target: http://dx.doi.org/10.5281/zenodo.16467
+[![Build Status](https://travis-ci.com/timothydmorton/VESPA.svg?branch=master)](https://travis-ci.com/timothydmorton/VESPA)
 
 Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating false positive probabilities for transit signals
 
 For usage and more info, `check out the documentation <http://vespa.rtfd.org>`_.
-
-[NOTE: While `isochrones <http://github.com/timothydmorton/isochrones>`_ has been updated to version 1.0, vespa only works with isochrones version 0.9.1.  This is an awkward situation that I plan to resolve before too long, pending partially on NASA funding for me to continue to support these packages.]
 
 Installation
 ------------
@@ -35,9 +32,9 @@ Basic Usage
 The simplest way to run an FPP calculation straight out of the box is
 as follows.
 
-1. Make a text file containing the transit photometry in three columns: ``t_from_midtransit`` [days], ``flux`` [relative, where out-of-transit is normalized to unity], and ``flux_err``.  The file should not have a header row (no titles); and can be either whitespace or comma-delimited (will be ingested by ``np.loadtxt``).  
+1. Make a text file containing the transit photometry in three columns: ``t_from_midtransit`` [days], ``flux`` [relative, where out-of-transit is normalized to unity], and ``flux_err``.  The file should not have a header row (no titles); and can be either whitespace or comma-delimited (will be ingested by ``np.loadtxt``).
 
-2. Make a ``star.ini`` file that contains the observed properties of the target star (photometric and/or spectroscopic, whatever is available):: 
+2. Make a ``star.ini`` file that contains the observed properties of the target star (photometric and/or spectroscopic, whatever is available)::
 
 	    #provide spectroscopic properties if available
             #Teff = 3503, 80  #value, uncertainty
@@ -62,16 +59,16 @@ as follows.
             photfile = lc_k2oi.csv #contains transit photometry
 
 	    [constraints]
-	    maxrad = 12  # aperture radius [arcsec] 
-	    secthresh = 1e-4 # Maximum allowed depth of potential secondary eclipse 
+	    maxrad = 12  # aperture radius [arcsec]
+	    secthresh = 1e-4 # Maximum allowed depth of potential secondary eclipse
 
 4. Run the following from the command line (from within the same folder that has ``star.ini`` and ``fpp.ini``)::
 
-	$  calcfpp 
-	 
+	$  calcfpp
+
 Or, if you put the files in a folder called ``mycandidate``, then you can run ``calcfpp mycandidate``::
-	 
-This will run the calculation for you, creating result files, diagnostic plots, etc.  
+
+This will run the calculation for you, creating result files, diagnostic plots, etc.
 It should take 20-30 minutes.  If you want to do a shorter
 version to test, you can try ``calcfpp -n 1000`` (the default is 20000).  The first
 time you run it though, about half the time is doing the stellar modeling, so it will still
