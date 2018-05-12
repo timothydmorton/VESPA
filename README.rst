@@ -1,6 +1,7 @@
 VESPA
 ======
-[![Build Status](https://travis-ci.com/timothydmorton/VESPA.svg?branch=master)](https://travis-ci.com/timothydmorton/VESPA)
+.. image:: https://travis-ci.com/timothydmorton/VESPA.svg?branch=master
+    :target: https://travis-ci.com/timothydmorton/VESPA
 
 Validation of Exoplanet Signals using a Probabilistic Algorithm--- calculating false positive probabilities for transit signals
 
