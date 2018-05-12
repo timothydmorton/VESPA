@@ -1,4 +1,4 @@
-__version__ = '0.5-dev'
+__version__ = '0.5.dev1'
 
 try:
     __VESPA_SETUP__
