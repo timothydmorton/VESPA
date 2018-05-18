@@ -981,8 +981,9 @@ class EclipsePopulation(StarPopulation):
         new.stars = new.stars.iloc[inds].reset_index()
 
         # Resample constraints
-        for c in new._constraints:
-            new._constraints[c] = new._constraints[c].resample(inds)
+        if hasattr(new, '_constraints'):
+            for c in new._constraints:
+                new._constraints[c] = new._constraints[c].resample(inds)
 
         new._make_kde()
         return new
