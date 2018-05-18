@@ -1731,10 +1731,10 @@ class Observed_BinaryPopulation(BinaryPopulation):
                                                   path='{}/starmodel'.format(path))
         return pop
 
-    def __getattr__(self, attr):
-        # Don't remember why I've done this.  Must be a reason.
-        if attr not in ['starmodel','_starmodel']:
-            return getattr(self.starmodel, attr)
+    # def __getattr__(self, attr):
+    #     # Don't remember why I've done this.  Must be a reason.
+    #     if attr not in ['starmodel','_starmodel']:
+    #         return getattr(self.starmodel, attr)
 
 class Observed_TriplePopulation(TriplePopulation):
     """
@@ -1863,10 +1863,10 @@ class Observed_TriplePopulation(TriplePopulation):
                                                   path='{}/starmodel'.format(path))
         return pop
 
-    def __getattr__(self, attr):
-        # Why did I do this again?  Probably a reason...
-        if attr not in ['starmodel', '_starmodel']:
-            return getattr(self.starmodel, attr)
+    # def __getattr__(self, attr):
+    #     # Why did I do this again?  Probably a reason...
+    #     if attr not in ['starmodel', '_starmodel']:
+    #         return getattr(self.starmodel, attr)
 
 
 class MultipleStarPopulation(TriplePopulation):

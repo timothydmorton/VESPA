@@ -318,7 +318,7 @@ class FPPCalculation(object):
 
     def __getattr__(self, attr):
         if attr != 'popset':
-            return getattr(self.popset,attr)
+            return getattr(self.popset, attr)
 
     def save(self, overwrite=True):
         """

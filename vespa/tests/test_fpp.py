@@ -11,6 +11,7 @@ def test_fpp(dirname='kepler-22'):
     dirname = os.path.join(ROOT,dirname)
     f = FPPCalculation.from_ini(dirname, n=100, recalc=True)
     f.FPP()
+    f.bootstrap_FPP(N=3)
 
 def test_fpp_cc(dirname='kepler-22'):
     dirname = os.path.join(ROOT, dirname)

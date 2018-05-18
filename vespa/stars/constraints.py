@@ -17,7 +17,7 @@ class Constraint(object):
 
     def __init__(self,mask,name='',**kwargs):
         self.name = name
-        self.ok = mask
+        self.ok = np.array(mask)
         #self.frac = float(self.ok.sum())/np.size(mask)
         for kw in kwargs:
             setattr(self,kw,kwargs[kw])
@@ -44,11 +44,11 @@ class Constraint(object):
     @property
     def wok(self):
         return np.where(self.ok)[0]
-    
+
     @property
     def frac(self):
         return float(self.ok.sum())/self.N
-    
+
     def resample(self, inds):
         """Returns copy of constraint, with mask rearranged according to indices
         """
@@ -93,9 +93,9 @@ class RangeConstraint(Constraint):
 class UpperLimit(RangeConstraint):
     def __init__(self,vals,hi,name='',**kwargs):
         RangeConstraint.__init__(self,vals,name=name,lo=-np.inf,hi=hi,**kwargs)
-        
+
     def __str__(self):
-        return '{} < {:.3g}'.format(self.name,self.hi)    
+        return '{} < {:.3g}'.format(self.name,self.hi)
 
 class LowerLimit(RangeConstraint):
     def __init__(self,vals,lo,name='',**kwargs):
@@ -116,11 +116,10 @@ class FunctionLowerLimit(Constraint):
 
     def __init__(self,xs,ys,fn,name='',**kwargs):
         Constraint.__init__(self,ys > fn(xs),name=name,xs=xs,ys=ys,fn=fn,**kwargs)
-    
+
 class FunctionUpperLimit(Constraint):
     arrays = Constraint.arrays + ('xs','ys')
 
     def __init__(self,xs,ys,fn,name='',**kwargs):
         Constraint.__init__(self,ys < fn(xs),name=name,
                             xs=xs,ys=ys,fn=fn,**kwargs)
-    
