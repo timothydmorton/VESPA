@@ -4,8 +4,13 @@ from pkg_resources import resource_filename
 
 import os, os.path
 import tempfile
+import unittest
+import logging
+
+from pandas.util.testing import assert_frame_equal
 import tables as tb
 
+from vespa.populations import EclipsePopulation
 from vespa.populations import HEBPopulation
 from vespa.populations import EBPopulation
 from vespa.populations import BEBPopulation
@@ -17,80 +22,79 @@ from isochrones.starmodel import TripleStarModel
 
 from vespa.transit_basic import MAInterpolationFunction
 
-TMP = tempfile.gettempdir()
-
 MAfn = MAInterpolationFunction(nzs=100,nps=200,pmin=0.007,pmax=1/0.007)
 
-def test_heb(filename=os.path.join(TMP,'test_heb.h5')):
-    mags = {'H': 10.211,
-            'J': 10.523,
-            'K': 10.152000000000001}
+class MetaTestPopulation(type):
+    @property
+    def __test__(cls):
+        return cls.population_type is not None
+
+class TestPopulation(unittest.TestCase, metaclass=MetaTestPopulation):
+    population_type = None
+    starmodel_type = None
+    models = 'mist'
+    star_multiplicity = 'single'
+    name = 'kepler-22'
+    n = 100
+    mags = {'H': 10.211, 'J': 10.523, 'K': 10.152, 'Kepler':11.664}
     period = 289.8622
-    starmodel_file = resource_filename('vespa','tests/kepler-22/mist_starmodel_triple.h5')
-    starmodel = TripleStarModel.load_hdf(starmodel_file)
-    pop = HEBPopulation(mags=mags, starmodel=starmodel,
-                        period=period, n=100, MAfn=MAfn)
-    pop.save_hdf(filename, overwrite=True)
-    assert len(tb.file._open_files.get_handlers_by_name(filename)) == 0
 
-    pop2 = HEBPopulation.load_hdf(filename)
-    assert len(tb.file._open_files.get_handlers_by_name(filename)) == 0
-    assert type(pop2)==HEBPopulation
-    os.remove(filename)
+    def setUp(self):
+        self.pop = self.population_type(**self.population_kwargs)
 
+    @property
+    def population_kwargs(self):
+        return self._get_population_kwargs()
 
-def test_eb(filename=os.path.join(TMP,'test_eb.h5')):
-    mags = {'H': 10.211,
-            'J': 10.523,
-            'K': 10.152000000000001}
-    period = 289.8622
-    starmodel_file = resource_filename('vespa','tests/kepler-22/mist_starmodel_binary.h5')
-    starmodel = BinaryStarModel.load_hdf(starmodel_file)
-    pop = EBPopulation(mags=mags, starmodel=starmodel,
-                       period=period, n=100, MAfn=MAfn)
+    def _get_population_kwargs(self):
+        filename = os.path.join('tests', self.name,
+                                '{}_starmodel_{}.h5'.format(self.models, self.star_multiplicity))
+        starmodel_file = resource_filename('vespa', filename)
+        starmodel = self.starmodel_type.load_hdf(starmodel_file)
+        return dict(mags=self.mags, starmodel=starmodel,
+                                        period=self.period, n=self.n, MAfn=MAfn)
 
-    pop.save_hdf(filename, overwrite=True)
-    assert len(tb.file._open_files.get_handlers_by_name(filename)) == 0
+    def test_roundtrip(self):
+        with tempfile.NamedTemporaryFile() as file:
+            self.pop.save_hdf(file.name, overwrite=True)
+            assert len(tb.file._open_files.get_handlers_by_name(file.name)) == 0
 
-    pop2 = EBPopulation.load_hdf(filename)
-    assert len(tb.file._open_files.get_handlers_by_name(filename)) == 0
-    assert type(pop2)==EBPopulation
-    os.remove(filename)
+            pop2 = self.population_type.load_hdf(file.name)
+            assert len(tb.file._open_files.get_handlers_by_name(file.name)) == 0
+            assert type(pop2) == self.population_type
+            assert_frame_equal(self.pop.stars, pop2.stars)
 
-def test_beb(filename=os.path.join(TMP,'test_beb.h5')):
-    trilegal_filename = resource_filename('vespa','tests/kepler-22/starfield.h5')
-    mags = {'H': 10.211,
-            'J': 10.523,
-            'K': 10.152000000000001,
-            'Kepler':12.0}
-    period = 289.8622
-    pop = BEBPopulation(period=period, mags=mags,
-                        trilegal_filename=trilegal_filename,
-                        n=100, MAfn=MAfn)
+    def test_resample(self):
+        pop2 = self.pop.resample()
+        assert len(pop2.stars) == len(self.pop.stars)
 
-    pop.save_hdf(filename, overwrite=True)
-    assert len(tb.file._open_files.get_handlers_by_name(filename)) == 0
+class TestHEBPopulation(TestPopulation):
+    population_type = HEBPopulation
+    starmodel_type = TripleStarModel
+    star_multiplicity = 'triple'
 
-    pop2 = BEBPopulation.load_hdf(filename)
-    assert len(tb.file._open_files.get_handlers_by_name(filename)) == 0
+class TestEBPopulation(TestPopulation):
+    population_type = EBPopulation
+    starmodel_type = BinaryStarModel
+    star_multiplicity = 'binary'
 
-    assert type(pop2)==BEBPopulation
-    os.remove(filename)
+class TestBEBPopulation(TestPopulation):
+    population_type = BEBPopulation
 
-def test_pl(filename=os.path.join(TMP,'test_pl.h5')):
-    mass = (0.83,0.03)
-    radius = (0.91,0.03)
-    period = 289.8622
+    def _get_population_kwargs(self):
+        filename = os.path.join('tests', self.name, 'starfield.h5')
+        trilegal_filename = resource_filename('vespa', filename)
+        return dict(mags=self.mags, trilegal_filename=trilegal_filename,
+                    period=self.period, n=self.n, MAfn=MAfn)
+
+class TestPlanetPopulation(TestPopulation):
+    population_type = PlanetPopulation
+    starmodel_type = StarModel
+    star_multiplicity = 'single'
     rprs = 0.02
-    starmodel_file = resource_filename('vespa','tests/kepler-22/mist_starmodel_single.h5')
-    starmodel = StarModel.load_hdf(starmodel_file)
-    pop = PlanetPopulation(period=period, rprs=rprs,
-                       starmodel=starmodel, n=100, MAfn=MAfn)
 
-    pop.save_hdf(filename, overwrite=True)
-    assert len(tb.file._open_files.get_handlers_by_name(filename)) == 0
-
-    pop2 = PlanetPopulation.load_hdf(filename)
-    assert len(tb.file._open_files.get_handlers_by_name(filename)) == 0
-    assert type(pop2)==PlanetPopulation
-    os.remove(filename)
+    def _get_population_kwargs(self):
+        kwargs = super()._get_population_kwargs()
+        del kwargs['mags']
+        kwargs['rprs'] = self.rprs
+        return kwargs
