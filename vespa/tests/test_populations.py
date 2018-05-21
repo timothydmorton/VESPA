@@ -64,6 +64,12 @@ class TestPopulation(unittest.TestCase, metaclass=MetaTestPopulation):
             assert type(pop2) == self.population_type
             assert_frame_equal(self.pop.stars, pop2.stars)
 
+            try:
+                assert_frame_equal(self.pop.starmodel.samples, pop2.starmodel.samples)
+                assert self.pop.starmodel.print_ascii() == pop2.starmodel.print_ascii()
+            except AttributeError:
+                pass
+
     def test_resample(self):
         pop2 = self.pop.resample()
         assert len(pop2.stars) == len(self.pop.stars)
