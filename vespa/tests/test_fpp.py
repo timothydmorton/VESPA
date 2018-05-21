@@ -13,7 +13,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 class TestFPP(unittest.TestCase):
     name = 'kepler-22'
     ini_file = 'fpp.ini'
-    n = 100
+    n = 200
     recalc = True
 
     def setUp(self):
