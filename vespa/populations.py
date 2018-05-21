@@ -169,6 +169,7 @@ class EclipsePopulation(StarPopulation):
         :class:`vespa.stars.StarPopulation`.
 
     """
+
     def __init__(self, stars=None, period=None, model='',
                  priorfactors=None, lhoodcachefile=None,
                  orbpop=None, prob=None,
@@ -942,8 +943,11 @@ class EclipsePopulation(StarPopulation):
 
         #setup lazy loading of starmodel if present
         try:
-            new._starmodel_file = filename
-            new._starmodel_path = '{}/starmodel'.format(path)
+            with pd.HDFStore(filename) as store:
+                if '{}/starmodel'.format(path) in store:
+                    new._starmodel = None
+                    new._starmodel_file = filename
+                    new._starmodel_path = '{}/starmodel'.format(path)
         except:
             pass
 
@@ -956,12 +960,12 @@ class EclipsePopulation(StarPopulation):
 
     @property
     def starmodel(self):
-        if self._starmodel is None:
-            if hasattr(self, '_starmodel_file') and hasattr(self, '_starmodel_path'):
-                self._starmodel = StarModel.load_hdf(self._starmodel_file,
-                                                     path=self._starmodel_path)
-            else:
-                raise AttributeError('{} does not have starmodel.'.format(self))
+        if not hasattr(self, '_starmodel'):
+            raise AttributeError('{} does not have starmodel.'.format(self))
+
+        if (hasattr(self, '_starmodel_file') and hasattr(self, '_starmodel_path')):
+            self._starmodel = StarModel.load_hdf(self._starmodel_file,
+                                                 path=self._starmodel_path)
 
         return self._starmodel
 
