@@ -2227,9 +2227,9 @@ class PopulationSet(object):
                 if m:
                     models.append(m.group(1))
                     types.append(store.get_storer(m.group(0)).attrs.poptype)
-            poplist = []
-            for m,t in zip(models,types):
-                poplist.append(t().load_hdf(filename, path='{}/{}'.format(path,m)))
+        poplist = []
+        for m,t in zip(models,types):
+            poplist.append(t().load_hdf(filename, path='{}/{}'.format(path,m)))
 
         return cls(poplist) #how to deal with saved constraints?
         #PopulationSet.__init__(self, poplist) #how to deal with saved constraints?
