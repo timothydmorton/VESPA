@@ -13,7 +13,7 @@ if not on_rtd:
 else:
     np, pd, plt = (None, None, None)
     interpolate, quad = (None, None)
-    
+
 from ..plotutils import setfig
 from ..hashutils import hashcombine, hasharray
 
@@ -96,7 +96,7 @@ class ContrastCurve(object):
         if type(other) in [type(1),type(1.)]:
             dmags = self.dmags + other
             return ContrastCurve(self.rs,dmags,self.band,self.mag)
-            
+
     def __repr__(self):
         return '<%s: %s>' % (type(self),self.name)
 
@@ -113,7 +113,7 @@ class ContrastCurveConstraint(FunctionLowerLimit):
         self.dmags = dmags
         self.cc = cc
         FunctionLowerLimit.__init__(self,rs,dmags,cc,name=name,**kwargs)
-        
+
     def __str__(self):
         return '%s contrast curve' % self.name
 
