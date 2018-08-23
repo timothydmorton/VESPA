@@ -90,10 +90,6 @@ def get_trilegal(filename,ra,dec,folder='.', galactic=False,
     else:
         outfile = '{}/{}'.format(folder,filename)
     AV = get_AV_infinity(l,b,frame='galactic')
-    #cmd = 'get_trilegal %s %f %f %f %i %.3f %.2f %s 1 %.1f %s' % (trilegal_version,l,b,
-    #                                                              area,binaries,AV,sigma_AV,
-    #                                                              filterset,maglim,outfile)
-    #sp.Popen(cmd,shell=True).wait()
     trilegal_webcall(trilegal_version,l,b,area,binaries,AV,sigma_AV,filterset,maglim,outfile)
     if convert_h5:
         df = pd.read_table(outfile, sep='\s+', skipfooter=1, engine='python')
