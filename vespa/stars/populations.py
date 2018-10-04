@@ -60,9 +60,6 @@ from .trilegal import get_trilegal
 
 try:
     from isochrones import get_ichrone
-    # from isochrones.dartmouth import Dartmouth_Isochrone
-    # DARTMOUTH = Dartmouth_Isochrone()
-    #DARTMOUTH.radius(1,9.6,0.0) #first call takes a long time for some reason
 except ImportError:
     logging.warning('isochrones package not installed; population simulations will not be fully functional')
     DARTMOUTH = None
@@ -1341,7 +1338,7 @@ class Simulated_BinaryPopulation(BinaryPopulation):
 
     """
     def __init__(self,M=None,q_fn=None,P_fn=None,ecc_fn=None,
-                 n=1e4,ichrone='dartmouth', qmin=0.1, bands=BANDS,
+                 n=1e4,ichrone='mist', qmin=0.1, bands=BANDS,
                  age=9.6,feh=0.0, minmass=0.12, **kwargs):
 
         if q_fn is None:
@@ -1359,7 +1356,7 @@ class Simulated_BinaryPopulation(BinaryPopulation):
                           n=n, bands=bands, **kwargs)
 
     def generate(self, M, age=9.6, feh=0.0,
-                 ichrone='dartmouth', n=1e4, bands=None, **kwargs):
+                 ichrone='mist', n=1e4, bands=None, **kwargs):
         """
         Function that generates population.
 
@@ -1432,7 +1429,7 @@ class Raghavan_BinaryPopulation(Simulated_BinaryPopulation):
 
 
     """
-    def __init__(self,M=None,e_M=0,n=1e4,ichrone='dartmouth',
+    def __init__(self,M=None,e_M=0,n=1e4,ichrone='mist',
                  age=9.5, feh=0.0, q_fn=None, qmin=0.1,
                  minmass=0.12, **kwargs):
 
@@ -1813,7 +1810,7 @@ class Observed_TriplePopulation(TriplePopulation):
 
 
     def generate(self, mags=None, mag_errs=None,
-                 n=1e4, ichrone='dartmouth',
+                 n=1e4, ichrone='mist',
                  starmodel=None, Teff=None, logg=None, feh=None,
                  bands=BANDS, orbpop=None, period=None,
                  ecc=None, **kwargs):
@@ -1956,7 +1953,7 @@ class MultipleStarPopulation(TriplePopulation):
             TriplePopulation.__init__(self, stars=stars, orbpop=orbpop, **kwargs)
 
 
-    def generate(self, mA=1, age=9.6, feh=0.0, n=1e5, ichrone='dartmouth',
+    def generate(self, mA=1, age=9.6, feh=0.0, n=1e5, ichrone='mist',
                  orbpop=None, bands=None, **kwargs):
         """
         Generates population.
