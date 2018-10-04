@@ -767,10 +767,10 @@ class FPPCalculation(object):
         if skipmodels is None:
             skipmodels = []
         logging.debug('evaluating likelihoods for %s' % self.trsig.name)
-        for model in self.popset.modelnames:
+        for shortmodel, model in zip(self.popset.shortmodelnames, self.popset.modelnames):
             if model=='Planets':
                 continue
-            if model not in skipmodels:
+            if (model not in skipmodels) and (shortmodel not in skipmodels):
                 prior = self.prior(model)
                 lhood = self.lhood(model)
                 Lfpp += prior*lhood
