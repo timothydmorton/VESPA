@@ -1919,7 +1919,7 @@ class MultipleStarPopulation(TriplePopulation):
     def __init__(self, mA=None, age=9.6, feh=0.0,
                  f_binary=0.4, f_triple=0.12,
                  qmin=0.1, minmass=0.11,
-                 n=1e4, ichrone='dartmouth',
+                 n=1e4, ichrone='mist',
                  multmass_fn=mult_masses,
                  period=None,
                  period_long_fn=draw_raghavan_periods,
