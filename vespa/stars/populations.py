@@ -1630,7 +1630,7 @@ class Observed_BinaryPopulation(BinaryPopulation):
                  Teff=None,
                  logg=None, feh=None,
                  starmodel=None, n=2e4,
-                 ichrone='dartmouth', bands=BANDS,
+                 ichrone='mist', bands=BANDS,
                  period=None, ecc=None,
                  orbpop=None, stars=None,
                  **kwargs):
@@ -1685,7 +1685,7 @@ class Observed_BinaryPopulation(BinaryPopulation):
 
 
     def generate(self, mags=None, mag_errs=None,
-                 n=1e4, ichrone='dartmouth',
+                 n=1e4, ichrone='mist',
                  starmodel=None, Teff=None, logg=None, feh=None,
                  bands=BANDS, orbpop=None, period=None,
                  ecc=None, **kwargs):
@@ -1759,7 +1759,7 @@ class Observed_TriplePopulation(TriplePopulation):
                  Teff=None,
                  logg=None, feh=None,
                  starmodel=None, n=2e4,
-                 ichrone='dartmouth', bands=BANDS,
+                 ichrone='mist', bands=BANDS,
                  period=None, ecc=None,
                  orbpop=None, stars=None,
                  **kwargs):

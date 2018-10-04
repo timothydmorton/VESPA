@@ -1713,7 +1713,7 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
     """
     def __init__(self, period=None, mags=None,
                  ra=None, dec=None, trilegal_filename=None,
-                 n=2e4, ichrone='dartmouth', band='Kepler',
+                 n=2e4, ichrone='mist', band='Kepler',
                  maxrad=10, f_binary=0.4, model='BEBs',
                  MAfn=None, lhoodcachefile=None,
                  **kwargs):
@@ -1750,7 +1750,7 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
 
     def generate(self, trilegal_filename, ra=None, dec=None,
-                 n=2e4, ichrone='dartmouth', MAfn=None,
+                 n=2e4, ichrone='mist', MAfn=None,
                  mags=None, maxrad=None, f_binary=0.4, **kwargs):
         """
         Generate population.
