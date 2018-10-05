@@ -38,6 +38,7 @@ class TestPopulation(unittest.TestCase, metaclass=MetaTestPopulation):
     n = 100
     mags = {'H': 10.211, 'J': 10.523, 'K': 10.152, 'Kepler':11.664}
     period = 289.8622
+    cadence = 0.02
 
     def setUp(self):
         self.pop = self.population_type(**self.population_kwargs)
@@ -52,7 +53,7 @@ class TestPopulation(unittest.TestCase, metaclass=MetaTestPopulation):
         starmodel_file = resource_filename('vespa', filename)
         starmodel = self.starmodel_type.load_hdf(starmodel_file)
         return dict(mags=self.mags, starmodel=starmodel,
-                                        period=self.period, n=self.n, MAfn=MAfn)
+                    period=self.period, n=self.n, MAfn=MAfn, cadence=self.cadence)
 
     def test_roundtrip(self):
         with tempfile.NamedTemporaryFile() as file:
@@ -64,11 +65,21 @@ class TestPopulation(unittest.TestCase, metaclass=MetaTestPopulation):
             assert type(pop2) == self.population_type
             assert_frame_equal(self.pop.stars, pop2.stars)
 
+            assert self.pop.cadence == pop2.cadence
+
             try:
                 assert_frame_equal(self.pop.starmodel.samples, pop2.starmodel.samples)
                 assert self.pop.starmodel.print_ascii() == pop2.starmodel.print_ascii()
             except AttributeError:
                 pass
+
+    def test_kwargs(self):
+        assert self.period == self.pop.period
+        assert self.n == self.pop.n
+        assert self.cadence == self.pop.cadence
+
+        if hasattr(self.pop, 'mags'):
+            assert self.mags == self.pop.mags
 
     def test_resample(self):
         pop2 = self.pop.resample()
@@ -91,7 +102,7 @@ class TestBEBPopulation(TestPopulation):
         filename = os.path.join('tests', self.name, 'starfield.h5')
         trilegal_filename = resource_filename('vespa', filename)
         return dict(mags=self.mags, trilegal_filename=trilegal_filename,
-                    period=self.period, n=self.n, MAfn=MAfn)
+                    period=self.period, n=self.n, MAfn=MAfn, cadence=self.cadence)
 
 class TestPlanetPopulation(TestPopulation):
     population_type = PlanetPopulation

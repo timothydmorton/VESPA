@@ -200,6 +200,13 @@ class FPPCalculation(object):
         except KeyError as err:
             raise KeyError('Missing required element of ini file: {}'.format(err))
 
+        try:
+            cadence = float(config['cadence'])
+        except KeyError:
+            logging.warning('Cadence not provided in fpp.ini; defaulting to Kepler cadence.')
+            logging.warning('If this is not a Kepler target, please set cadence (in days).')
+            cadence = 1626./86400 # Default to Kepler cadence
+
         def fullpath(filename):
             if os.path.isabs(filename):
                 return filename
@@ -254,12 +261,24 @@ class FPPCalculation(object):
             else:
                 with pd.HDFStore(popset_file) as store:
                     do_only = [m for m in DEFAULT_MODELS if m not in store]
+
+        # Check that properties of saved population match requested
+        try:
+            popset = PopulationSet.load_hdf(popset_file)
+            for pop in popset.poplist:
+                if pop.cadence != cadence:
+                    raise ValueError('Requested cadence ({}) '.format(cadence) +
+                                    'does not match stored {})! Set recalc=True.'.format(pop.cadence))
+        except:
+            raise
+
         if do_only:
             logging.info('Generating {} models for PopulationSet...'.format(do_only))
         else:
             logging.info('Populations ({}) already generated.'.format(DEFAULT_MODELS))
 
-        popset = PopulationSet(period=period, mags=single_starmodel.mags,
+        popset = PopulationSet(period=period, cadence=cadence,
+                               mags=single_starmodel.mags,
                                ra=ra, dec=dec,
                                trilegal_filename=starfield_file, # Maybe change parameter name?
                                starmodel=single_starmodel,

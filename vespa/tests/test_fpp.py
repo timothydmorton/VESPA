@@ -15,11 +15,18 @@ class TestFPP(unittest.TestCase):
     ini_file = 'fpp.ini'
     n = 200
     recalc = True
+    refit_trap = False
+    cadence = 0.02 # should be what is in ini files
 
     def setUp(self):
         dirname = os.path.join(ROOT, self.name)
         self.f = FPPCalculation.from_ini(dirname, ini_file=self.ini_file,
-                                    n=self.n, recalc=self.recalc)
+                                    n=self.n, recalc=self.recalc,
+                                    refit_trap=self.refit_trap)
+
+    def test_cadence(self):
+        for pop in self.f.modelnames:
+            assert self.f[pop].cadence == self.cadence
 
     def test_fpp(self):
         fpp = self.f.FPP()
@@ -37,3 +44,11 @@ class TestFPP_CC(TestFPP):
 class TestFPP_CC2(TestFPP):
     ini_file = 'fpp_cc2.ini'
     recalc = False
+
+# class TestFPP_cadence(TestFPP):
+#     ini_file = 'fpp_cadence.ini'
+#     cadence = 0.01 # should be same as in fpp_cadence.ini
+
+#     def test_cadence(self):
+#         for pop in self.f.modelnames:
+#             assert self.f[pop].cadence == self.cadence
