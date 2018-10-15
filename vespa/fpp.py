@@ -205,7 +205,7 @@ class FPPCalculation(object):
         except KeyError:
             logging.warning('Cadence not provided in fpp.ini; defaulting to Kepler cadence.')
             logging.warning('If this is not a Kepler target, please set cadence (in days).')
-            cadence = 1626./86400 # Default to Kepler cadence
+            cadence = 1626.0/86400 # Default to Kepler cadence
 
         def fullpath(filename):
             if os.path.isabs(filename):
