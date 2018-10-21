@@ -44,6 +44,7 @@ class TestFPP_CC(TestFPP):
 class TestFPP_CC2(TestFPP):
     ini_file = 'fpp_cc2.ini'
     recalc = False
+    print(TestFPP.f.popset.resample())
 
 # class TestFPP_cadence(TestFPP):
 #     ini_file = 'fpp_cadence.ini'
