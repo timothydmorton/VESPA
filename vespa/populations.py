@@ -513,8 +513,9 @@ class EclipsePopulation(StarPopulation):
         from numpy.linalg.linalg import LinAlgError
         try:
           kde = gaussian_kde(np.vstack(points)) #backward compatibility?
-        except LinAlgError:
-          print(np.vstack(points), np.shape(np.vstack(points)))
+        except LinAlgError as e:
+          if 'singular matrix' in str(e):
+            print(np.vstack(points), np.shape(np.vstack(points)))
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
         factor = kde.factor
