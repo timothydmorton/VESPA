@@ -514,7 +514,7 @@ class EclipsePopulation(StarPopulation):
         try:
           kde = gaussian_kde(np.vstack(points)) #backward compatibility?
           #print(np.vstack(points), np.shape(np.vstack(points)))
-        except LinAlgError
+        except LinAlgError:
           print(np.vstack(points), np.shape(np.vstack(points)))
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
