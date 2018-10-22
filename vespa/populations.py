@@ -513,7 +513,7 @@ class EclipsePopulation(StarPopulation):
         from numpy.linalg.linalg import LinAlgError
         try:
           kde = gaussian_kde(np.vstack(points)) #backward compatibility?
-          print(np.vstack(points), np.shape(np.vstack(points)))
+          #print(np.vstack(points), np.shape(np.vstack(points)))
         except :
           print("Error")
           print(np.vstack(points), np.shape(np.vstack(points)))
