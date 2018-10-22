@@ -514,7 +514,7 @@ class EclipsePopulation(StarPopulation):
         from scipy import linalg
         try:
           kde = gaussian_kde(np.vstack(points)) #backward compatibility?
-          inv = linalg.lv(kde._data_covariance)
+          inv = linalg.inv(kde._data_covariance)
           #print(np.vstack(points), np.shape(np.vstack(points)))
         except np.linalg.linalg.LinAlgError:
           print(np.vstack(points), np.shape(np.vstack(points)))
