@@ -510,12 +510,11 @@ class EclipsePopulation(StarPopulation):
         points = np.array([durs[second_ok],
                            logdeps[second_ok],
                            slopes[second_ok]])
-        from numpy.linalg.linalg import LinAlgError
+        from numpy.linalg import LinAlgError
         try:
           kde = gaussian_kde(np.vstack(points)) #backward compatibility?
           #print(np.vstack(points), np.shape(np.vstack(points)))
-        except :
-          print("Error")
+        except LinAlgError
           print(np.vstack(points), np.shape(np.vstack(points)))
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
