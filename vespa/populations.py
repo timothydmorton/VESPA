@@ -602,7 +602,7 @@ class EclipsePopulation(StarPopulation):
             self.kde._compute_covariance()
 
 
-    def _density(self, logd, dur, slope):
+    def _density(self, dataset):
         """
         Evaluate KDE at given points.
 
