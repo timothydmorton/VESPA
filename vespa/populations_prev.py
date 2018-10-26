@@ -514,17 +514,14 @@ class EclipsePopulation(StarPopulation):
         points = np.ma.array([logdeps,
                               durs,
                               slopes], mask=np.row_stack((~second_ok, ~second_ok, ~second_ok)))
-
-        points = points.compress(~points.mask[0],axis=1).data
         #from numpy.linalg import LinAlgError
-        
+        from scipy import linalg
         try:
-          from scipy import linalg
-          kde = gaussian_kde(points) #backward compatibility?
+          kde = gaussian_kde(np.vstack(points)) #backward compatibility?
           inv = linalg.inv(kde._data_covariance)
           #print(np.vstack(points), np.shape(np.vstack(points)))
         except np.linalg.linalg.LinAlgError:
-          print(points, np.shape(points))
+          print(np.vstack(points), np.shape(np.vstack(points)))
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
         factor = kde.factor
