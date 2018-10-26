@@ -35,6 +35,7 @@ class TestFPP(unittest.TestCase):
     def test_bootstrap(self):
         h, lines = self.f.bootstrap_FPP(N=3)
         for line in lines:
+            print("line:"+line+'\n'+"linesplit:"+(line.split()[-1]))
             assert float(line.split()[-1]) > 0
 
 class TestFPP_CC(TestFPP):
