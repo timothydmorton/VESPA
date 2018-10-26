@@ -23,8 +23,6 @@ else:
 try:
     from sklearn.neighbors import KernelDensity
     from sklearn.grid_search import GridSearchCV
-    from sklearn.preprocessing import normalize
-    from sklearn.model_selection import LeaveOneOut
 except ImportError:
     logging.warning('sklearn not available')
     KernelDensity = None
@@ -450,7 +448,6 @@ class EclipsePopulation(StarPopulation):
                 logging.info('{0} changed to {1} for {2} model'.format(kw,kwargs[kw],
                                                                        self.model))
 
-    #Yangyang: method 2: use sklearn
     def _make_kde(self, use_sklearn=False, bandwidth=None, rtol=1e-6,
                   sig_clip=50, no_sig_clip=False, cov_all=True,
                   **kwargs):
@@ -493,53 +490,34 @@ class EclipsePopulation(StarPopulation):
             return
             #raise EmptyPopulationError('< 4 valid systems in population')
 
-        #try:
-          #import warnings
-          #warnings.simplefilter("error")
-          #logdeps = np.log10(np.ma.array(self.depth, mask=~first_ok))
-          #warnings.resetwarnings()
-        #except RuntimeWarning:
-        #  print(logdeps) 
-        #  from nose.tools import set_trace; set_trace()
-        #  set_trace()
-          #exit()
-        #warnings.resetwarnings()
-        logdeps = np.log10(np.ma.array(self.depth, mask=~first_ok))
-        durs = np.ma.array(self.stars['duration'], mask=~first_ok)
-        slopes = np.ma.array(self.stars['slope'], mask=~first_ok)
+        logdeps = np.log10(self.depth)
+        durs = self.stars['duration']
+        slopes = self.stars['slope']
 
         #Now sigma-clip those points that passed first cuts
         ok = np.ones(len(logdeps), dtype=bool)
         for x in [logdeps, durs, slopes]:
-            med = np.ma.median(x)
-            mad = np.ma.median((x - med).__abs__())
-            after_clip = np.ma.masked_where((x - med).__abs__() / mad > sig_clip, x)
-            ok &= ~after_clip.mask
+            med = np.median(x[first_ok])
+            mad = np.median(np.absolute(x[first_ok] - med))
+            ok &= np.absolute(x - med) / mad < sig_clip
 
-        #from nose.tools import set_trace; set_trace()
-        #set_trace()
-        #print(ok, first_ok)
-        second_ok = ok & first_ok
-        assert np.allclose(second_ok, ok)
+        second_ok = first_ok & ok
 
         # Before making KDE for real, first calculate
         #  covariance and inv_cov of uncut data, to use
         #  when it's cut, too.
-        
-        
-        points = np.ma.array([logdeps,
-                              durs,
-                              slopes], mask=np.row_stack((~second_ok, ~second_ok, ~second_ok)))
-        
-        #from nose.tools import set_trace; set_trace()
-        #set_trace()
-        points = points.compress(~points.mask[0],axis=1).data                                      
+
+        points = np.array([durs[second_ok],
+                           logdeps[second_ok],
+                           slopes[second_ok]])
+        #from numpy.linalg import LinAlgError
+        from scipy import linalg
         try:
-           from scipy import linalg
-           kde = gaussian_kde(points) #backward compatibility?
-           inv = linalg.inv(kde._data_covariance)
+          kde = gaussian_kde(np.vstack(points)) #backward compatibility?
+          inv = linalg.inv(kde._data_covariance)
+          #print(np.vstack(points), np.shape(np.vstack(points)))
         except np.linalg.linalg.LinAlgError:
-           print(points, np.vstack(points))
+          print(np.vstack(points), np.shape(np.vstack(points)))
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
         factor = kde.factor
@@ -548,13 +526,9 @@ class EclipsePopulation(StarPopulation):
 
         ok = second_ok & self.distok
 
-        points = np.ma.array([durs,
-                              logdeps,
-                              slopes], mask=np.row_stack((~ok, ~ok, ~ok)))
-        points = points.compress(~points.mask[0],axis=1)
-        logdeps = points.data[1]
-        durs = points.data[0]
-        slopes = points.data[2]
+        logdeps = logdeps[ok]
+        durs = durs[ok]
+        slopes = slopes[ok]
 
         if ok.sum() < 4 and not self.empty:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
@@ -577,66 +551,46 @@ class EclipsePopulation(StarPopulation):
             self.mean_slope = slopes.mean()
             self.std_slope = slopes.std()
 
-            points_pre = np.array([durs_normed, logdeps_normed, slopes_normed])
-            try:
-              points_skl = normalize(np.transpose([durs, logdeps, slopes]))
-            except ValueError:
-              from nose.tools import set_trace; set_trace()
-              set_trace()
-            #assert np.allclose(points_pre, points_skl)
-            
+            points = np.array([logdeps_normed, durs_normed, slopes_normed])
+
             #find best bandwidth.  For some reason this doesn't work?
             if bandwidth is None:
-                bandwidths = np.linspace(0.05,1,100)
-                grid = GridSearchCV(KernelDensity(kernel='gaussian'),\
-                    {'bandwidth': bandwidths},\
-                    cv=3)
-                grid.fit(points_skl)
+                grid = GridSearchCV(KernelDensity(rtol=rtol),
+                                    {'bandwidth':np.linspace(0.05,1,50)})
+                grid.fit(points)
                 self._best_bandwidth = grid.best_params_
                 self.kde = grid.best_estimator_
             else:
-                self.kde = KernelDensity(rtol=rtol, bandwidth=bandwidth).fit(points_skl)
+                self.kde = KernelDensity(rtol=rtol, bandwidth=bandwidth).fit(points)
         else:
             self.sklearn_kde = False
-            #Yangyang: method 1
-            points = (points+1e-07*np.random.uniform(-1.0, 1.0, np.shape(points))).data
-            try:
-              from scipy import linalg
-              
-              self.kde = gaussian_kde(points, **kwargs) #backward compatibility?
-            except np.linalg.linalg.LinAlgError:
-              print(points, np.shape(points))
-              from nose.tools import set_trace; set_trace()
-              set_trace()
-              self.kde = gaussian_kde(points, **kwargs)
+            points = np.array([durs, logdeps, slopes])
+            self.kde = gaussian_kde(np.vstack(points), **kwargs) #backward compatibility?
 
             # Reset covariance based on uncut data
-            
             self.kde._data_covariance = cov_all
             self.kde._data_inv_cov = icov_all
             self.kde._compute_covariance()
 
 
-    def _density(self, dataset):
+    def _density(self, logd, dur, slope):
         """
         Evaluate KDE at given points.
 
         Prepares data according to whether sklearn or scipy
         KDE in use.
 
-        :param dataset, include dur, logd, slope:
+        :param log, dur, slope:
             Trapezoidal shape parameters.
         """
         if self.sklearn_kde:
             #TODO: fix preprocessing
-            #Yangyang's modification(method2):
-            #pts = np.array([(logd - self.mean_logdepth)/self.std_logdepth,
-            #                (dur - self.mean_dur)/self.std_dur,
-            #                (slope - self.mean_slope)/self.std_slope])
-            pts = normalize(dataset.T)#(#sample, #features)to make consistent with scipy method, besides their density is in log, then...
-            return np.exp(self.kde.score_samples(pts))
+            pts = np.array([(logd - self.mean_logdepth)/self.std_logdepth,
+                            (dur - self.mean_dur)/self.std_dur,
+                            (slope - self.mean_slope)/self.std_slope])
+            return self.kde.score_samples(pts)
         else:
-            return self.kde(dataset)
+            return self.kde(np.array([logd, dur, slope]))
 
     def lhood(self, trsig, recalc=False, cachefile=None):
         """Returns likelihood of transit signal
@@ -672,7 +626,7 @@ class EclipsePopulation(StarPopulation):
             return 0
 
         N = trsig.kde.dataset.shape[1]
-        lh = np.sum(self._density(trsig.kde.dataset)) / N
+        lh = self.kde(trsig.kde.dataset).sum() / N
 
         with open(cachefile, 'a') as fout:
             fout.write('%i %g\n' % (key, lh))
@@ -1125,7 +1079,9 @@ class PlanetPopulation(EclipsePopulation):
 
     """
 
-    def __init__(self, period=None, rprs=None,
+    def __init__(self, period=None,
+                 cadence=1626./86400, #Kepler observing cadence, in days
+                 rprs=None,
                  mass=None, radius=None, Teff=None, logg=None,
                  starmodel=None,
                  band='Kepler', model='Planets', n=2e4,
@@ -1134,6 +1090,8 @@ class PlanetPopulation(EclipsePopulation):
                  MAfn=None, lhoodcachefile=None):
 
         self.period = period
+        self.cadence = cadence
+        self.n = n
         self.model = model
         self.band = band
         self.rprs = rprs
@@ -1276,7 +1234,8 @@ class PlanetPopulation(EclipsePopulation):
         self._starmodel = starmodel
 
         EclipsePopulation.__init__(self, stars=stars,
-                                   period=self.period, model=self.model,
+                                   period=self.period, cadence=self.cadence,
+                                   model=self.model,
                                    priorfactors=priorfactors, prob=tot_prob,
                                    lhoodcachefile=lhoodcachefile)
     @property
@@ -1349,13 +1308,17 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
 
     """
 
-    def __init__(self, period=None, mags=None, mag_errs=None,
+    def __init__(self, period=None,
+                 cadence=1626./86400, #Kepler observing cadence, in days
+                 mags=None, mag_errs=None,
                  Teff=None, logg=None, feh=None,
                  starmodel=None,
                  band='Kepler', model='EBs', f_binary=0.4, n=2e4,
                  MAfn=None, lhoodcachefile=None, **kwargs):
 
         self.period = period
+        self.cadence = cadence
+        self.n = n
         self.model = model
         self.band = band
         self.lhoodcachefile = lhoodcachefile
@@ -1479,7 +1442,8 @@ class EBPopulation(EclipsePopulation, Observed_BinaryPopulation):
         priorfactors = {'f_binary':f_binary}
 
         EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
-                                   period=self.period, model=self.model,
+                                   period=self.period, cadence=self.cadence,
+                                   model=self.model,
                                    priorfactors=priorfactors, prob=tot_prob,
                                    lhoodcachefile=self.lhoodcachefile)
 
@@ -1551,13 +1515,17 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
 
     """
 
-    def __init__(self, period=None, mags=None, mag_errs=None,
+    def __init__(self, period=None,
+                 cadence=1626./86400, #Kepler observing cadence, in days
+                 mags=None, mag_errs=None,
                  Teff=None, logg=None, feh=None,
                  starmodel=None,
                  band='Kepler', model='HEBs', f_triple=0.12, n=2e4,
                  MAfn=None, lhoodcachefile=None, **kwargs):
 
         self.period = period
+        self.cadence = cadence
+        self.n = n
         self.model = model
         self.band = band
         self.lhoodcachefile = lhoodcachefile
@@ -1689,7 +1657,8 @@ class HEBPopulation(EclipsePopulation, Observed_TriplePopulation):
         priorfactors = {'f_triple':f_triple}
 
         EclipsePopulation.__init__(self, stars=stars, orbpop=orbpop,
-                                   period=self.period, model=self.model,
+                                   period=self.period, cadence=self.cadence,
+                                   model=self.model,
                                    priorfactors=priorfactors, prob=tot_prob,
                                    lhoodcachefile=self.lhoodcachefile)
 
@@ -1764,13 +1733,17 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
 
     """
-    def __init__(self, period=None, mags=None,
+    def __init__(self, period=None,
+                 cadence=1626./86400, #Kepler observing cadence, in days
+                 mags=None,
                  ra=None, dec=None, trilegal_filename=None,
-                 n=2e4, ichrone='dartmouth', band='Kepler',
+                 n=2e4, ichrone='mist', band='Kepler',
                  maxrad=10, f_binary=0.4, model='BEBs',
                  MAfn=None, lhoodcachefile=None,
                  **kwargs):
         self.period = period
+        self.cadence = cadence
+        self.n = n
         self.model = model
         self.band = band
         self.lhoodcachefile = lhoodcachefile
@@ -1803,7 +1776,7 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
 
 
     def generate(self, trilegal_filename, ra=None, dec=None,
-                 n=2e4, ichrone='dartmouth', MAfn=None,
+                 n=2e4, ichrone='mist', MAfn=None,
                  mags=None, maxrad=None, f_binary=0.4, **kwargs):
         """
         Generate population.
@@ -1926,7 +1899,8 @@ class BEBPopulation(EclipsePopulation, MultipleStarPopulation,
         #create an OrbitPopulation here?
 
         EclipsePopulation.__init__(self, stars=stars, #orbpop=orbpop,
-                                   period=self.period, model=self.model,
+                                   period=self.period, cadence=self.cadence,
+                                   model=self.model,
                                    lhoodcachefile=self.lhoodcachefile,
                                    priorfactors=priorfactors, prob=tot_prob)
 
@@ -2037,7 +2011,9 @@ class PopulationSet(object):
 
     """
     def __init__(self, poplist=None,
-                 period=None, mags=None, n=2e4,
+                 period=None,
+                 cadence=1626./86400, #Kepler observing cadence, in days
+                 mags=None, n=2e4,
                  ra=None, dec=None, trilegal_filename=None,
                  Teff=None, logg=None, feh=None,
                  starmodel=None,
@@ -2052,7 +2028,7 @@ class PopulationSet(object):
                  fit_trap=True, do_only=None):
         #if string is passed, load from file
         if poplist is None:
-            self.generate(ra, dec, period, mags,
+            self.generate(ra, dec, period, cadence, mags,
                           n=n, MAfn=MAfn,
                           trilegal_filename=trilegal_filename,
                           Teff=Teff, logg=logg, feh=feh,
@@ -2071,7 +2047,7 @@ class PopulationSet(object):
         else:
             self.poplist = poplist
 
-    def generate(self, ra, dec, period, mags,
+    def generate(self, ra, dec, period, cadence, mags,
                  n=2e4, Teff=None, logg=None, feh=None,
                  MAfn=None,
                  rprs=None, trilegal_filename=None,
@@ -2105,7 +2081,7 @@ class PopulationSet(object):
             try:
                 hebpop = HEBPopulation(mags=mags,
                                        Teff=Teff, logg=logg, feh=feh,
-                                       period=period,
+                                       period=period, cadence=cadence,
                                        starmodel=triple_starmodel,
                                        starfield=trilegal_filename,
                                        MAfn=MAfn, n=n, **heb_kws)
@@ -2125,7 +2101,7 @@ class PopulationSet(object):
             try:
                 hebpop_Px2 = HEBPopulation_Px2(mags=mags,
                                        Teff=Teff, logg=logg, feh=feh,
-                                       period=period,
+                                       period=period, cadence=cadence,
                                        starmodel=triple_starmodel,
                                        starfield=trilegal_filename,
                                        MAfn=MAfn, n=n, **heb_kws)
@@ -2145,7 +2121,7 @@ class PopulationSet(object):
             try:
                 ebpop = EBPopulation(mags=mags,
                                      Teff=Teff, logg=logg, feh=feh,
-                                     period=period,
+                                     period=period, cadence=cadence,
                                      starmodel=binary_starmodel,
                                      starfield=trilegal_filename,
                                      MAfn=MAfn, n=n, **eb_kws)
@@ -2162,7 +2138,7 @@ class PopulationSet(object):
             try:
                 ebpop_Px2 = EBPopulation_Px2(mags=mags,
                                      Teff=Teff, logg=logg, feh=feh,
-                                     period=period,
+                                     period=period, cadence=cadence,
                                      starmodel=binary_starmodel,
                                      starfield=trilegal_filename,
                                      MAfn=MAfn, n=n, **eb_kws)
@@ -2178,7 +2154,7 @@ class PopulationSet(object):
         if 'beb' in do_only:
             try:
                 bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
-                                       ra=ra, dec=dec, period=period,
+                                       ra=ra, dec=dec, period=period, cadence=cadence,
                                        mags=mags, MAfn=MAfn, n=n, **beb_kws)
                 if fit_trap:
                     bebpop.fit_trapezoids(MAfn=MAfn)
@@ -2192,7 +2168,7 @@ class PopulationSet(object):
         if 'beb_Px2' in do_only:
             try:
                 bebpop_Px2 = BEBPopulation_Px2(trilegal_filename=trilegal_filename,
-                                       ra=ra, dec=dec, period=period,
+                                       ra=ra, dec=dec, period=period, cadence=cadence,
                                        mags=mags, MAfn=MAfn, n=n, **beb_kws)
                 if fit_trap:
                     bebpop_Px2.fit_trapezoids(MAfn=MAfn)
@@ -2205,7 +2181,8 @@ class PopulationSet(object):
 
         if 'pl' in do_only:
             try:
-                plpop = PlanetPopulation(period=period, rprs=rprs,
+                plpop = PlanetPopulation(period=period, cadence=cadence,
+                                         rprs=rprs,
                                          starmodel=starmodel,
                                          MAfn=MAfn, n=n, **pl_kws)
 
@@ -2761,7 +2738,6 @@ def calculate_eclipses(M1s, M2s, R1s, R2s, mag1s, mag2s,
     logging.debug('initial probability given mininc starting at {}'.format(prob))
 
     ws = np.random.random(n)*2*np.pi
-
 
     switched = (R2s > R1s)
     R_large = switched*R2s + ~switched*R1s
