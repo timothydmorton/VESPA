@@ -450,7 +450,7 @@ class EclipsePopulation(StarPopulation):
                 logging.info('{0} changed to {1} for {2} model'.format(kw,kwargs[kw],
                                                                        self.model))
 
-    def _make_kde(self, use_sklearn=True, bandwidth=None, rtol=1e-6,
+    def _make_kde(self, use_sklearn=False, bandwidth=None, rtol=1e-6,
                   sig_clip=50, no_sig_clip=False, cov_all=True,
                   **kwargs):
         """Creates KDE objects for 3-d shape parameter distribution
