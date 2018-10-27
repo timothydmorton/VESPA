@@ -20,6 +20,7 @@ else:
     np, pd, plt, cm = (None, None, None, None)
     gaussian_kde, quad = (None, None)
 
+from sklearn.preprocessing import normalize
 try:
     from sklearn.neighbors import KernelDensity
     from sklearn.grid_search import GridSearchCV
