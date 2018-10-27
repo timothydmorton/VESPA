@@ -16,5 +16,6 @@ conda create --yes -n test python=$PYTHON_VERSION
 source activate test
 
 conda install -c conda-forge numpy numba cython nose
+conda install scikit-learn
 
 python setup.py develop
