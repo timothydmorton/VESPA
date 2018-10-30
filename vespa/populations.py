@@ -585,16 +585,7 @@ class EclipsePopulation(StarPopulation):
             self.sklearn_kde = False
             #Yangyang: method 1
             points = (points+1e-07*np.random.uniform(-1.0, 1.0, np.shape(points))).data
-            try:
-              from scipy import linalg
-              
-              self.kde = gaussian_kde(points, **kwargs) #backward compatibility?
-            except np.linalg.linalg.LinAlgError:
-              print(points, np.shape(points))
-              from nose.tools import set_trace; set_trace()
-              set_trace()
-              self.kde = gaussian_kde(points, **kwargs)
-
+            self.kde = gaussian_kde(points, **kwargs) #backward compatibility?
 
             # Reset covariance based on uncut data
             self.kde._data_covariance = cov_all
