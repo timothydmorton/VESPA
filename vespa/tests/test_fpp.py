@@ -35,6 +35,7 @@ class TestFPP(unittest.TestCase):
     def test_bootstrap(self):
         h, lines = self.f.bootstrap_FPP(N=3)
         for line in lines:
+            print("line:"+line+'\n'+"linesplit:"+(line.split()[-1]))
             assert float(line.split()[-1]) > 0
 
 class TestFPP_CC(TestFPP):
@@ -44,7 +45,7 @@ class TestFPP_CC(TestFPP):
 class TestFPP_CC2(TestFPP):
     ini_file = 'fpp_cc2.ini'
     recalc = False
-
+    
 # class TestFPP_cadence(TestFPP):
 #     ini_file = 'fpp_cadence.ini'
 #     cadence = 0.01 # should be same as in fpp_cadence.ini

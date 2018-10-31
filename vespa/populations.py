@@ -23,6 +23,8 @@ else:
 try:
     from sklearn.neighbors import KernelDensity
     from sklearn.grid_search import GridSearchCV
+    from sklearn.preprocessing import normalize
+    from sklearn.model_selection import LeaveOneOut
 except ImportError:
     logging.warning('sklearn not available')
     KernelDensity = None
@@ -490,27 +492,39 @@ class EclipsePopulation(StarPopulation):
             return
             #raise EmptyPopulationError('< 4 valid systems in population')
 
-        logdeps = np.log10(self.depth)
-        durs = self.stars['duration']
-        slopes = self.stars['slope']
+        logdeps = np.log10(np.ma.array(self.depth, mask=~first_ok))
+        durs = np.ma.array(self.stars['duration'], mask=~first_ok)
+        slopes = np.ma.array(self.stars['slope'], mask=~first_ok)
 
         #Now sigma-clip those points that passed first cuts
         ok = np.ones(len(logdeps), dtype=bool)
         for x in [logdeps, durs, slopes]:
-            med = np.median(x[first_ok])
-            mad = np.median(np.absolute(x[first_ok] - med))
-            ok &= np.absolute(x - med) / mad < sig_clip
+            med = np.ma.median(x)
+            mad = np.ma.median((x - med).__abs__())
+            after_clip = np.ma.masked_where((x - med).__abs__() / mad > sig_clip, x)
+            ok &= ~after_clip.mask
 
-        second_ok = first_ok & ok
+        second_ok = ok & first_ok
+        assert np.allclose(second_ok, ok)
 
         # Before making KDE for real, first calculate
         #  covariance and inv_cov of uncut data, to use
         #  when it's cut, too.
 
-        points = np.array([durs[second_ok],
-                           logdeps[second_ok],
-                           slopes[second_ok]])
-        kde = gaussian_kde(np.vstack(points)) #backward compatibility?
+        points = np.ma.array([logdeps,
+                              durs,
+                              slopes], mask=np.row_stack((~second_ok, ~second_ok, ~second_ok)))
+
+        points = points.compress(~points.mask[0],axis=1).data
+        #from numpy.linalg import LinAlgError
+        
+        try:
+          from scipy import linalg
+          kde = gaussian_kde(points) #backward compatibility?
+          inv = linalg.inv(kde._data_covariance)
+          #print(np.vstack(points), np.shape(np.vstack(points)))
+        except np.linalg.linalg.LinAlgError:
+          print(points, np.shape(points))
         cov_all = kde._data_covariance
         icov_all = kde._data_inv_cov
         factor = kde.factor
@@ -519,9 +533,13 @@ class EclipsePopulation(StarPopulation):
 
         ok = second_ok & self.distok
 
-        logdeps = logdeps[ok]
-        durs = durs[ok]
-        slopes = slopes[ok]
+        points = np.ma.array([durs,
+                              logdeps,
+                              slopes], mask=np.row_stack((~ok, ~ok, ~ok)))
+        points = points.compress(~points.mask[0],axis=1)
+        logdeps = points.data[1]
+        durs = points.data[0]
+        slopes = points.data[2]
 
         if ok.sum() < 4 and not self.empty:
             logging.warning('Empty population ({}): < 4 valid systems! Cannot calculate lhood.'.format(self.model))
@@ -545,20 +563,29 @@ class EclipsePopulation(StarPopulation):
             self.std_slope = slopes.std()
 
             points = np.array([logdeps_normed, durs_normed, slopes_normed])
+            try:
+              points_skl = normalize(np.transpose([durs, logdeps, slopes]))
+            except ValueError:
+              from nose.tools import set_trace; set_trace()
+              set_trace()
+            #assert np.allclose(points_pre, points_skl)
 
             #find best bandwidth.  For some reason this doesn't work?
             if bandwidth is None:
-                grid = GridSearchCV(KernelDensity(rtol=rtol),
-                                    {'bandwidth':np.linspace(0.05,1,50)})
-                grid.fit(points)
+                bandwidths = np.linspace(0.05,1,100)
+                grid = GridSearchCV(KernelDensity(kernel='gaussian'),\
+                    {'bandwidth': bandwidths},\
+                    cv=3)
+                grid.fit(points_skl)
                 self._best_bandwidth = grid.best_params_
                 self.kde = grid.best_estimator_
             else:
-                self.kde = KernelDensity(rtol=rtol, bandwidth=bandwidth).fit(points)
+                self.kde = KernelDensity(rtol=rtol, bandwidth=bandwidth).fit(points_skl)
         else:
             self.sklearn_kde = False
-            points = np.array([durs, logdeps, slopes])
-            self.kde = gaussian_kde(np.vstack(points), **kwargs) #backward compatibility?
+            #Yangyang: method 1
+            points = (points+1e-07*np.random.uniform(-1.0, 1.0, np.shape(points))).data
+            self.kde = gaussian_kde(points, **kwargs) #backward compatibility?
 
             # Reset covariance based on uncut data
             self.kde._data_covariance = cov_all
@@ -566,7 +593,7 @@ class EclipsePopulation(StarPopulation):
             self.kde._compute_covariance()
 
 
-    def _density(self, logd, dur, slope):
+    def _density(self, dataset):
         """
         Evaluate KDE at given points.
 
@@ -578,12 +605,14 @@ class EclipsePopulation(StarPopulation):
         """
         if self.sklearn_kde:
             #TODO: fix preprocessing
-            pts = np.array([(logd - self.mean_logdepth)/self.std_logdepth,
-                            (dur - self.mean_dur)/self.std_dur,
-                            (slope - self.mean_slope)/self.std_slope])
-            return self.kde.score_samples(pts)
+            #Yangyang's modification(method2):
+            #pts = np.array([(logd - self.mean_logdepth)/self.std_logdepth,
+            #                (dur - self.mean_dur)/self.std_dur,
+            #                (slope - self.mean_slope)/self.std_slope])
+            pts = normalize(dataset.T)#(#sample, #features)to make consistent with scipy method, besides their density is in log, then...
+            return np.exp(self.kde.score_samples(pts))
         else:
-            return self.kde(np.array([logd, dur, slope]))
+            return self.kde(dataset)
 
     def lhood(self, trsig, recalc=False, cachefile=None):
         """Returns likelihood of transit signal
@@ -619,7 +648,7 @@ class EclipsePopulation(StarPopulation):
             return 0
 
         N = trsig.kde.dataset.shape[1]
-        lh = self.kde(trsig.kde.dataset).sum() / N
+        lh = np.sum(self._density(trsig.kde.dataset)) / N
 
         with open(cachefile, 'a') as fout:
             fout.write('%i %g\n' % (key, lh))
