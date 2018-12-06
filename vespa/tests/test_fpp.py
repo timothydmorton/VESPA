@@ -20,6 +20,10 @@ class TestFPP(unittest.TestCase):
 
     def setUp(self):
         dirname = os.path.join(ROOT, self.name)
+        try:
+            os.remove(os.path.join(dirname, 'trsig.pkl'))
+        except OSError:
+            pass
         self.f = FPPCalculation.from_ini(dirname, ini_file=self.ini_file,
                                     n=self.n, recalc=self.recalc,
                                     refit_trap=self.refit_trap)
