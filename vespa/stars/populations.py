@@ -64,7 +64,7 @@ except ImportError:
     logging.warning('isochrones package not installed; population simulations will not be fully functional')
     DARTMOUTH = None
 
-BANDS = ['g','r','i','z','J','H','K','Kepler']
+BANDS = ['g','r','i','z','J','H','K','Kepler','TESS']
 
 class StarPopulation(object):
     """A population of stars.
