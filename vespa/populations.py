@@ -950,7 +950,7 @@ class EclipsePopulation(StarPopulation):
     @property
     def _properties(self):
         return ['period','model','priorfactors','prob','lhoodcachefile',
-                'is_specific', 'cadence'] + \
+                'is_specific', 'cadence', 'band'] + \
             super(EclipsePopulation,self)._properties
 
     @classmethod
@@ -2035,6 +2035,7 @@ class PopulationSet(object):
     def __init__(self, poplist=None,
                  period=None,
                  cadence=1626./86400, #Kepler observing cadence, in days
+                 band='Kepler',
                  mags=None, n=2e4,
                  ra=None, dec=None, trilegal_filename=None,
                  Teff=None, logg=None, feh=None,
@@ -2051,6 +2052,7 @@ class PopulationSet(object):
         #if string is passed, load from file
         if poplist is None:
             self.generate(ra, dec, period, cadence, mags,
+                          band=band,
                           n=n, MAfn=MAfn,
                           trilegal_filename=trilegal_filename,
                           Teff=Teff, logg=logg, feh=feh,
@@ -2070,6 +2072,7 @@ class PopulationSet(object):
             self.poplist = poplist
 
     def generate(self, ra, dec, period, cadence, mags,
+                 band='Kepler',
                  n=2e4, Teff=None, logg=None, feh=None,
                  MAfn=None,
                  rprs=None, trilegal_filename=None,
@@ -2104,6 +2107,7 @@ class PopulationSet(object):
                 hebpop = HEBPopulation(mags=mags,
                                        Teff=Teff, logg=logg, feh=feh,
                                        period=period, cadence=cadence,
+                                       band=band,
                                        starmodel=triple_starmodel,
                                        starfield=trilegal_filename,
                                        MAfn=MAfn, n=n, **heb_kws)
@@ -2124,6 +2128,7 @@ class PopulationSet(object):
                 hebpop_Px2 = HEBPopulation_Px2(mags=mags,
                                        Teff=Teff, logg=logg, feh=feh,
                                        period=period, cadence=cadence,
+                                       band=band,
                                        starmodel=triple_starmodel,
                                        starfield=trilegal_filename,
                                        MAfn=MAfn, n=n, **heb_kws)
@@ -2144,6 +2149,7 @@ class PopulationSet(object):
                 ebpop = EBPopulation(mags=mags,
                                      Teff=Teff, logg=logg, feh=feh,
                                      period=period, cadence=cadence,
+                                     band=band,
                                      starmodel=binary_starmodel,
                                      starfield=trilegal_filename,
                                      MAfn=MAfn, n=n, **eb_kws)
@@ -2161,6 +2167,7 @@ class PopulationSet(object):
                 ebpop_Px2 = EBPopulation_Px2(mags=mags,
                                      Teff=Teff, logg=logg, feh=feh,
                                      period=period, cadence=cadence,
+                                     band=band,
                                      starmodel=binary_starmodel,
                                      starfield=trilegal_filename,
                                      MAfn=MAfn, n=n, **eb_kws)
@@ -2177,6 +2184,7 @@ class PopulationSet(object):
             try:
                 bebpop = BEBPopulation(trilegal_filename=trilegal_filename,
                                        ra=ra, dec=dec, period=period, cadence=cadence,
+                                       band=band,
                                        mags=mags, MAfn=MAfn, n=n, **beb_kws)
                 if fit_trap:
                     bebpop.fit_trapezoids(MAfn=MAfn)
@@ -2191,6 +2199,7 @@ class PopulationSet(object):
             try:
                 bebpop_Px2 = BEBPopulation_Px2(trilegal_filename=trilegal_filename,
                                        ra=ra, dec=dec, period=period, cadence=cadence,
+                                       band=band,
                                        mags=mags, MAfn=MAfn, n=n, **beb_kws)
                 if fit_trap:
                     bebpop_Px2.fit_trapezoids(MAfn=MAfn)
@@ -2204,7 +2213,7 @@ class PopulationSet(object):
         if 'pl' in do_only:
             try:
                 plpop = PlanetPopulation(period=period, cadence=cadence,
-                                         rprs=rprs,
+                                         rprs=rprs, band=band,
                                          starmodel=starmodel,
                                          MAfn=MAfn, n=n, **pl_kws)
 

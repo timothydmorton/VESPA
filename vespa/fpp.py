@@ -207,6 +207,13 @@ class FPPCalculation(object):
             logging.warning('If this is not a Kepler target, please set cadence (in days).')
             cadence = 1626.0/86400 # Default to Kepler cadence
 
+        try:
+            band = config['band']
+        except KeyError:
+            logging.warning('Transit band not provided in fpp.ini; defaulting to "Kepler."')
+            logging.warning('If this is not a Kepler target, please specify filter.')
+            band = 'Kepler' # Default to Kepler
+
         def fullpath(filename):
             if os.path.isabs(filename):
                 return filename
@@ -278,6 +285,7 @@ class FPPCalculation(object):
             logging.info('Populations ({}) already generated.'.format(DEFAULT_MODELS))
 
         popset = PopulationSet(period=period, cadence=cadence,
+                               band=band,
                                mags=single_starmodel.mags,
                                ra=ra, dec=dec,
                                trilegal_filename=starfield_file, # Maybe change parameter name?
