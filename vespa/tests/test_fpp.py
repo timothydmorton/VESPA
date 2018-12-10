@@ -49,7 +49,12 @@ class TestFPP_CC(TestFPP):
 class TestFPP_CC2(TestFPP):
     ini_file = 'fpp_cc2.ini'
     recalc = False
-    
+
+# class TestTESS(TestFPP):
+#     name = 'kepler-22-tess'
+#     ini_file = 'fpp_tess.ini'
+#     recalc = True
+
 # class TestFPP_cadence(TestFPP):
 #     ini_file = 'fpp_cadence.ini'
 #     cadence = 0.01 # should be same as in fpp_cadence.ini
