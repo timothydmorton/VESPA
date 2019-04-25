@@ -21,7 +21,7 @@ NONMAG_COLS = ['Gc','logAge', '[M/H]', 'm_ini', 'logL', 'logTe', 'logg',
                'm-M0', 'Av', 'm2/m1', 'mbol', 'Mact'] #all the rest are mags
 
 def get_trilegal(filename,ra,dec,folder='.', galactic=False,
-                 filterset='kepler_2mass',area=1,maglim=27,binaries=False,
+                 filterset='TESS_2mass_kepler',area=1,maglim=27,binaries=False,
                  trilegal_version='1.6',sigma_AV=0.1,convert_h5=True):
     """Runs get_trilegal perl script; optionally saves output into .h5 file
 
