@@ -1,3 +1,5 @@
+Note: Current recommendation is to retire VESPA in favor of TRICERATOPS (https://github.com/stevengiacalone/triceratops); see research note posted at https://iopscience.iop.org/article/10.3847/2515-5172/acd9a6 for more details.
+
 VESPA
 ======
 .. image:: https://travis-ci.com/timothydmorton/VESPA.svg?branch=master
